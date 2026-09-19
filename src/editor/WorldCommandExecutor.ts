@@ -82,10 +82,13 @@ export class WorldCommandExecutor implements IWorldCommandExecutor {
           return this.failure(`Unknown prop '${command.catalogId}'.`);
         }
 
+        const requestedRotation = definition.rotatable
+          ? (command.rotation ?? 0)
+          : 0;
         const changed = this.#placement.placeProp(document, {
           catalogId: command.catalogId,
           coord: command.coord,
-          ...(command.rotation === undefined ? {} : { rotation: command.rotation }),
+          rotation: requestedRotation,
           overlapPolicy: command.overlapPolicy ?? "reject",
         });
 
@@ -95,7 +98,7 @@ export class WorldCommandExecutor implements IWorldCommandExecutor {
             document,
             command.catalogId,
             command.coord,
-            command.rotation,
+            requestedRotation,
           )
         ) {
           return { ok: true, changed: false };
