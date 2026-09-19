@@ -1,4 +1,5 @@
 import type { CatalogEntry, IWorldCatalog } from "../domain/catalog";
+import { rotatedFootprint } from "../domain/geometry";
 import { validateMapDocument, type BrushSize, type LayerKind, type MapDocument } from "../domain/map";
 import type { IPrefabCatalog, PrefabDefinition } from "../domain/prefab";
 import type { ValidationIssue } from "../domain/validation";
@@ -335,7 +336,13 @@ export class EditorShell {
 
       const prop = state.document.props.find((candidate) => candidate.id === state.entitySelection?.id);
       const definition = prop ? this.catalog.get(prop.catalogId) : undefined;
-      const footprint = definition?.layer === "prop" ? definition.footprint : undefined;
+      const footprint =
+        definition?.layer === "prop" && prop
+          ? rotatedFootprint(
+              definition.footprint,
+              definition.network ? 0 : prop.rotation,
+            )
+          : undefined;
       container.innerHTML = `
         <div class="selection-card">
           <span class="eyebrow">selected prop</span>
