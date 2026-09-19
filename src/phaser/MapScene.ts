@@ -88,8 +88,7 @@ export class MapScene extends Phaser.Scene {
       this.updateCameraBounds(state.document);
     });
 
-    this.cameras.main.setZoom(0.85);
-    this.cameras.main.centerOn(18 * TILE_SIZE, 12 * TILE_SIZE);
+    this.fitCameraToMap(this.#editor.state.document);
 
     this.bindPointerControls();
     this.bindKeyboardControls();
@@ -321,6 +320,22 @@ export class MapScene extends Phaser.Scene {
       definition.footprint,
       definition.rotatable ? prop.rotation : 0,
     );
+  }
+
+  private fitCameraToMap(document: MapDocument): void {
+    const camera = this.cameras.main;
+    const worldWidth = document.width * TILE_SIZE;
+    const worldHeight = document.height * TILE_SIZE;
+    const horizontalZoom = camera.width / worldWidth;
+    const verticalZoom = camera.height / worldHeight;
+    const zoom = Phaser.Math.Clamp(
+      Math.min(horizontalZoom, verticalZoom) * 0.96,
+      0.35,
+      1,
+    );
+
+    camera.setZoom(zoom);
+    camera.centerOn(worldWidth / 2, worldHeight / 2);
   }
 
   private updateCameraBounds(document: MapDocument): void {
