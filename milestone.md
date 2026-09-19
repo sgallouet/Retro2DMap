@@ -11,7 +11,8 @@
 - ✅ Target screenshot palette is now sampled into code and applied across every procedural asset draw path.
 - ✅ Courtyard now uses bordered garden beds; castle front has dedicated gate towers/stairs.
 - 🧊 **Water visuals frozen for now:** keep structure/semantics only; a different water approach comes later.
-- 🚧 **Now:** side-by-side fidelity tuning of castle/village proportions and density; replace the weakest procedural art where needed.
-- ⏭ Then: authored sprite/atlas rollout → room/marquee tools only where they help the target.
+- ✅ Fidelity pass: major asset silhouettes redrawn (trees, houses, castle walls/towers/gate, actors, fountain), castle floors softened, village/forest density increased, village path made less rigid, and courtyard gardens enlarged with trees/statues.
+- 🚧 **Now:** continue side-by-side refinement of the biggest remaining shape-language gaps; avoid water polish.
+- ⏭ Then: authored sprite/atlas rollout for the assets where procedural drawing has clearly hit its ceiling.
 
 **Rule:** stop adding architecture unless it directly improves the reference-map result.
