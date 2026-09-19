@@ -1,13 +1,16 @@
 import { createBlankMap, type MapDocument } from "../domain/map";
 
 /**
- * Focused terrain-mapping study based on the target screenshot's bottom-right
- * composition. It deliberately removes trees, cliffs, water, buildings and
- * characters so we can judge one thing only: does a square meadow-grass tile
- * map correctly around roads, cut-outs, outer corners and inner corners?
+ * Focused meadow-grass mapping study inspired by the target screenshot's
+ * bottom-right section.
+ *
+ * This is intentionally NOT a miniature finished map. It is a diagnostic
+ * terrain board for one material family only: meadow grass. Path/cobble/soil
+ * exist merely to expose straight edges, outer corners, inner corners, notches
+ * and an isolated grass tile.
  */
 export function createGrassStudy(): MapDocument {
-  const map = createBlankMap(22, 16, "soil");
+  const map = createBlankMap(18, 12, "grass");
   map.id = "grass-tile-study";
   map.name = "Grass Tile Study · Bottom Right";
 
@@ -30,33 +33,27 @@ export function createGrassStudy(): MapDocument {
     }
   };
 
-  // Two upper grass shelves separated by the castle approach road.
-  rect(0, 0, 9, 10, "grass");
-  rect(12, 0, 10, 10, "grass");
+  // Main castle approach: grass against a strong vertical cobble boundary.
+  rect(8, 0, 3, 12, "cobble");
 
-  // Lower terraces leave exposed outer edges, similar to the target's steps
-  // down into the lower forest/mountain area.
-  rect(0, 11, 7, 5, "grass");
-  rect(13, 11, 9, 5, "grass");
+  // Warm horizontal paths, like the target's lower-right village roads.
+  rect(0, 5, 8, 1, "path");
+  rect(11, 5, 7, 1, "path");
 
-  // Main vertical castle road.
-  rect(9, 0, 3, 16, "cobble");
+  // Two terrace cut-outs create clean outer corners.
+  rect(2, 8, 4, 4, "soil");
+  rect(13, 8, 3, 4, "soil");
 
-  // Warm horizontal village/field paths entering from both sides.
-  rect(0, 7, 9, 1, "path");
-  rect(12, 7, 10, 1, "path");
+  // Concave diagonal bite: all cardinal neighbours around the relevant grass
+  // corners remain grass, but the diagonal cell is different.
+  set(15, 2, "soil");
 
-  // Small stair/terrace clearances represented only as substrate for now.
-  // These produce controlled outer corners without introducing cliff art.
-  rect(4, 10, 3, 2, "soil");
+  // A small rectangular notch tests two inner corners in one readable shape.
+  rect(1, 1, 2, 2, "soil");
+
+  // Isolated 1x1 grass tile in a neutral substrate pocket.
   rect(15, 9, 3, 3, "soil");
-
-  // A one-cell diagonal bite creates all four concave/inner-corner cases
-  // around it. This is intentionally diagnostic and easy to inspect.
-  set(18, 3, "soil");
-
-  // A tiny one-cell grass island verifies the fully exposed tile mapping.
-  set(20, 13, "grass");
+  set(16, 10, "grass");
 
   return map;
 }
