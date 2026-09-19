@@ -78,14 +78,14 @@ export class SpriteAssetProvider implements IAssetProvider {
       if (!topologyKey) return undefined;
       const frames = spec.topologies[topologyKey];
       if (!frames) return undefined;
-      return this.pick(frames, x, y, context.terrain?.variation ?? 0);
+      return this.pick(frames, x, y, context?.terrain?.variation ?? 0);
     }
 
     const topologyKey = context?.network?.topologyKey;
     if (!topologyKey) return undefined;
     const frames = spec.topologies[topologyKey];
     if (!frames) return undefined;
-    return this.pick(frames, x, y, context.network?.neighborMask ?? 0);
+    return this.pick(frames, x, y, context?.network?.neighborMask ?? 0);
   }
 
   private pick(
