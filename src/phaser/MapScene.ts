@@ -23,7 +23,14 @@ export class MapScene extends Phaser.Scene {
   #panning = false;
   #spaceDown = false;
   #lastHover: GridCoord | null = null;
-  #selection: EditorSelection = { layer: "terrain", catalogId: "grass", tool: "paint", brushSize: 1 };
+  #lineStart: GridCoord | null = null;
+  #selection: EditorSelection = {
+    layer: "terrain",
+    catalogId: "grass",
+    tool: "paint",
+    strokeMode: "brush",
+    brushSize: 1,
+  };
 
   constructor(dependencies: MapSceneDependencies) {
     super({ key: "MapScene" });
@@ -65,10 +72,18 @@ export class MapScene extends Phaser.Scene {
       }
 
       if (!pointer.leftButtonDown() && !pointer.rightButtonDown()) return;
+      const coord = this.pointerToGrid(pointer);
+      if (!coord) return;
+
       this.#painting = true;
       this.#eraseOverride = pointer.rightButtonDown();
       this.#editor.beginStroke();
-      this.applyPointer(pointer);
+
+      if (this.#selection.strokeMode === "line") {
+        this.#lineStart = coord;
+      } else {
+        this.#editor.applyAt(coord, this.#eraseOverride);
+      }
     });
 
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
@@ -87,14 +102,20 @@ export class MapScene extends Phaser.Scene {
         this.#renderer?.setHover(coord, this.#selection);
       }
 
-      if (this.#painting) this.applyPointer(pointer);
+      if (this.#painting && this.#selection.strokeMode === "brush") this.applyPointer(pointer);
     });
 
-    const finishPointer = (): void => {
+    const finishPointer = (pointer: Phaser.Input.Pointer): void => {
+      if (this.#painting && this.#selection.strokeMode === "line" && this.#lineStart) {
+        const end = this.pointerToGrid(pointer) ?? this.#lastHover ?? this.#lineStart;
+        this.#editor.applyLine(this.#lineStart, end, this.#eraseOverride);
+      }
+
       if (this.#painting) this.#editor.endStroke();
       this.#painting = false;
       this.#eraseOverride = false;
       this.#panning = false;
+      this.#lineStart = null;
     };
 
     this.input.on("pointerup", finishPointer);
