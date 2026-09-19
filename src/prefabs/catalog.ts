@@ -83,7 +83,8 @@ const riversideCrossing: PrefabDefinition = {
   terrain: [
     { terrainId: "grass", x: 0, y: 0, width: 9, height: 7 },
     { terrainId: "water", x: 3, y: 0, width: 3, height: 7 },
-    { terrainId: "path", x: 0, y: 3, width: 9, height: 1 },
+    { terrainId: "path", x: 0, y: 3, width: 3, height: 1 },
+    { terrainId: "path", x: 6, y: 3, width: 3, height: 1 },
   ],
   props: [
     { catalogId: "tree-round", x: 0, y: 0 },
