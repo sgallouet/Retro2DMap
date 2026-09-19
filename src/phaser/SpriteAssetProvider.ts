@@ -14,7 +14,7 @@ const deterministicIndex = (x: number, y: number, salt: number): number => {
 };
 
 /**
- * Atlas-backed asset provider with per-entry procedural fallback.
+ * Authored-image / atlas asset provider with per-entry procedural fallback.
  *
  * This class is intentionally usable before the final art exists: a manifest
  * can cover one catalog entry at a time while all un-authored entries continue
@@ -31,6 +31,12 @@ export class SpriteAssetProvider implements IAssetProvider {
   preload(scene: Phaser.Scene, catalog: IWorldCatalog): void {
     this.#scene = scene;
     this.fallback.preload(scene, catalog);
+
+    for (const image of this.manifest.images ?? []) {
+      if (!scene.textures.exists(image.key)) {
+        scene.load.image(image.key, image.imageUrl);
+      }
+    }
 
     for (const atlas of this.manifest.atlases) {
       if (!scene.textures.exists(atlas.key)) {
@@ -51,7 +57,17 @@ export class SpriteAssetProvider implements IAssetProvider {
     context?: AssetRenderContext,
   ): TextureRef {
     const spec = this.manifest.entries[entry.id];
-    if (!spec || !this.atlasReady(spec)) {
+    if (!spec) {
+      return this.fallback.textureRef(entry, x, y, context);
+    }
+
+    if (spec.kind === "image") {
+      return this.#scene?.textures.exists(spec.texture)
+        ? { key: spec.texture }
+        : this.fallback.textureRef(entry, x, y, context);
+    }
+
+    if (!this.atlasReady(spec)) {
       return this.fallback.textureRef(entry, x, y, context);
     }
 
@@ -64,7 +80,7 @@ export class SpriteAssetProvider implements IAssetProvider {
   }
 
   private resolveFrame(
-    spec: SpriteSpec,
+    spec: Exclude<SpriteSpec, { kind: "image" }>,
     x: number,
     y: number,
     context?: AssetRenderContext,
@@ -99,7 +115,9 @@ export class SpriteAssetProvider implements IAssetProvider {
     return choice[deterministicIndex(x, y, salt) % choice.length];
   }
 
-  private atlasReady(spec: SpriteSpec): boolean {
+  private atlasReady(
+    spec: Exclude<SpriteSpec, { kind: "image" }>,
+  ): boolean {
     return this.#scene?.textures.exists(spec.atlas) ?? false;
   }
 }
