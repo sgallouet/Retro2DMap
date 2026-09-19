@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
+import { TerrainTopologyResolver } from "../domain/autotile";
 import type { EditorSelection, GridCoord, MapDocument } from "../domain/map";
 import { TILE_SIZE } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
@@ -14,6 +15,7 @@ export class WorldRenderer implements IWorldRenderer {
   readonly #worldObjects: Phaser.GameObjects.GameObject[] = [];
   readonly #grid: Phaser.GameObjects.Graphics;
   readonly #hover: Phaser.GameObjects.Graphics;
+  readonly #topology: TerrainTopologyResolver;
   #lastDocument: MapDocument | null = null;
 
   constructor(
@@ -23,6 +25,7 @@ export class WorldRenderer implements IWorldRenderer {
   ) {
     this.#grid = scene.add.graphics().setDepth(100_000);
     this.#hover = scene.add.graphics().setDepth(100_100);
+    this.#topology = new TerrainTopologyResolver(catalog);
   }
 
   render(document: MapDocument, gridVisible: boolean): void {
@@ -36,7 +39,16 @@ export class WorldRenderer implements IWorldRenderer {
         const definition = this.catalog.get(cell.terrainId);
         if (!definition || definition.layer !== "terrain") continue;
         const image = this.scene.add
-          .image(x * TILE_SIZE, y * TILE_SIZE, this.assets.textureKey(definition, x, y))
+          .image(
+            x * TILE_SIZE,
+            y * TILE_SIZE,
+            this.assets.textureKey(
+              definition,
+              x,
+              y,
+              this.#topology.resolve(document, { x, y }, definition),
+            ),
+          )
           .setOrigin(0, 0)
           .setDepth(0);
         this.#worldObjects.push(image);
@@ -78,22 +90,32 @@ export class WorldRenderer implements IWorldRenderer {
     if (!coord || !document) return;
     if (coord.x < 0 || coord.y < 0 || coord.x >= document.width || coord.y >= document.height) return;
 
-    let width = 1;
-    let height = 1;
+    let width = selection.layer === "terrain" ? selection.brushSize : 1;
+    let height = selection.layer === "terrain" ? selection.brushSize : 1;
+    let anchorX = coord.x;
+    let anchorY = coord.y;
     const definition = this.catalog.get(selection.catalogId);
     if (definition?.layer === "prop") {
       width = definition.footprint.width;
       height = definition.footprint.height;
+    } else if (selection.layer === "terrain") {
+      const radius = Math.floor(selection.brushSize / 2);
+      anchorX -= radius;
+      anchorY -= radius;
     }
 
-    const valid = coord.x + width <= document.width && coord.y + height <= document.height;
+    const valid =
+      anchorX >= 0 &&
+      anchorY >= 0 &&
+      anchorX + width <= document.width &&
+      anchorY + height <= document.height;
     const fill = selection.tool === "erase" ? 0xd14747 : valid ? 0xf5e09b : 0xd14747;
     this.#hover.fillStyle(fill, 0.15);
-    this.#hover.fillRect(coord.x * TILE_SIZE, coord.y * TILE_SIZE, width * TILE_SIZE, height * TILE_SIZE);
+    this.#hover.fillRect(anchorX * TILE_SIZE, anchorY * TILE_SIZE, width * TILE_SIZE, height * TILE_SIZE);
     this.#hover.lineStyle(2, fill, 0.95);
     this.#hover.strokeRect(
-      coord.x * TILE_SIZE + 1,
-      coord.y * TILE_SIZE + 1,
+      anchorX * TILE_SIZE + 1,
+      anchorY * TILE_SIZE + 1,
       width * TILE_SIZE - 2,
       height * TILE_SIZE - 2,
     );
