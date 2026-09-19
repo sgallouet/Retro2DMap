@@ -3,6 +3,7 @@ import "./styles.css";
 import { worldCatalog } from "./domain/catalog";
 import { EditorController } from "./editor/EditorController";
 import { createSampleKingdom } from "./maps/sampleKingdom";
+import { createGrassStudy } from "./maps/grassStudy";
 import { MapScene } from "./phaser/MapScene";
 import { prefabCatalog } from "./prefabs/catalog";
 import { ProceduralAssetProvider } from "./phaser/ProceduralAssetProvider";
@@ -12,9 +13,13 @@ import { EditorShell } from "./ui/EditorShell";
 const root = document.querySelector<HTMLElement>("#app");
 if (!root) throw new Error("Missing #app root.");
 
-const editor = new EditorController(createSampleKingdom(), worldCatalog, prefabCatalog);
+const params = new URLSearchParams(window.location.search);
+const createInitialMap =
+  params.get("map") === "grass-study" ? createGrassStudy : createSampleKingdom;
+
+const editor = new EditorController(createInitialMap(), worldCatalog, prefabCatalog);
 const store = new LocalStorageMapStore();
-const shell = new EditorShell(root, editor, worldCatalog, prefabCatalog, store, createSampleKingdom);
+const shell = new EditorShell(root, editor, worldCatalog, prefabCatalog, store, createInitialMap);
 shell.mount();
 
 const assets = new ProceduralAssetProvider();
