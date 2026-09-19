@@ -1,3 +1,5 @@
+import type { QuarterTurn } from "./geometry";
+
 export const TILE_SIZE = 48;
 export const MAP_FORMAT_VERSION = 1 as const;
 
@@ -21,6 +23,11 @@ export interface PropInstance {
   catalogId: string;
   x: number;
   y: number;
+  /**
+   * Semantic orientation for non-network props. Optional keeps v1 map JSON
+   * backward compatible; absence means 0 degrees.
+   */
+  rotation?: QuarterTurn;
 }
 
 export interface ActorInstance {
