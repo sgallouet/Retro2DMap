@@ -54,4 +54,22 @@ describe("NavigationGridBuilder", () => {
       builder.build(map, { actorsBlockMovement: true }).at({ x: 1, y: 1 })?.walkable,
     ).toBe(false);
   });
+  it("blocks the rotated footprint of oriented props", () => {
+    const map = createBlankMap(7, 7, "grass");
+    map.props = [
+      {
+        id: "table",
+        catalogId: "table",
+        x: 2,
+        y: 1,
+        rotation: 90,
+      },
+    ];
+
+    const grid = new NavigationGridBuilder(worldCatalog).build(map);
+    expect(grid.at({ x: 2, y: 1 })?.walkable).toBe(false);
+    expect(grid.at({ x: 2, y: 3 })?.walkable).toBe(false);
+    expect(grid.at({ x: 4, y: 1 })?.walkable).toBe(true);
+  });
+
 });
