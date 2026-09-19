@@ -18,7 +18,7 @@ import {
   enumerateTerrainTopologies,
 } from "../domain/autotile";
 import { TILE_SIZE } from "../domain/map";
-import type { AssetRenderContext, IAssetProvider } from "./IAssetProvider";
+import type { AssetRenderContext, IAssetProvider, TextureRef } from "./IAssetProvider";
 
 type Draw = (ctx: CanvasRenderingContext2D, width: number, height: number) => void;
 
@@ -99,6 +99,10 @@ const line = (
 };
 
 export class ProceduralAssetProvider implements IAssetProvider {
+  preload(_scene: Phaser.Scene, _catalog: IWorldCatalog): void {
+    // Procedural textures are created synchronously in prepare().
+  }
+
   prepare(scene: Phaser.Scene, catalog: IWorldCatalog): void {
     const terrainTopologies = enumerateTerrainTopologies();
 
@@ -156,23 +160,23 @@ export class ProceduralAssetProvider implements IAssetProvider {
     });
   }
 
-  textureKey(
+  textureRef(
     entry: CatalogEntry,
     x: number,
     y: number,
     context?: AssetRenderContext,
-  ): string {
+  ): TextureRef {
     if (entry.layer === "terrain") {
       const variant = context?.terrain?.variation ?? hash(`${entry.id}:${x}:${y}`) % 4;
       const topologyKey = context?.terrain?.topologyKey ?? "c15-i0";
-      return this.terrainKey(entry.id, variant, topologyKey);
+      return { key: this.terrainKey(entry.id, variant, topologyKey) };
     }
 
     if (entry.layer === "prop" && entry.network) {
-      return this.networkKey(entry.id, context?.network?.neighborMask ?? 0);
+      return { key: this.networkKey(entry.id, context?.network?.neighborMask ?? 0) };
     }
 
-    return this.entryKey(entry.id);
+    return { key: this.entryKey(entry.id) };
   }
 
   private create(scene: Phaser.Scene, key: string, width: number, height: number, draw: Draw): void {
