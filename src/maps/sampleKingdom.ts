@@ -224,7 +224,6 @@ export function createSampleKingdom(): MapDocument {
   terrainLine(0, 10, 10, 10, "path");
   terrainLine(1, 18, 12, 18, "path");
   terrainLine(6, 7, 6, 25, "path");
-  terrainLine(7, 7, 7, 25, "path");
   terrainLine(2, 23, 13, 23, "path");
   terrainLine(6, 10, 10, 12, "path");
   terrainLine(6, 18, 10, 16, "path");
