@@ -6,6 +6,15 @@
  * color language while authored sprites are still being produced.
  */
 export const REFERENCE_TARGET_PALETTE = [
+  // Semantic samples taken from clean target-image regions.
+  "#80C42F", "#599E2B", "#2F792C", "#0E4527",
+  "#EDCA61", "#F4DC73", "#A58D35",
+  "#949392", "#C6C2BB", "#65625C", "#363828",
+  "#9B6C32", "#BB8848", "#6E491E", "#392610",
+  "#366CD6", "#5793F5", "#1C48A8", "#0C2A75",
+  "#E76735", "#A53012", "#602B11",
+  "#B22022", "#F1A346", "#DE9136",
+  "#8E7520", "#C8A736", "#4E3F11", "#B3A376",
   "#78BE22", "#7B7B7B", "#0168CF", "#97999B", "#C4BFBB", "#3B3939",
   "#024B2B", "#8BC731", "#A87F45", "#639A1E", "#614221", "#BCB9B5",
   "#5B5B5D", "#014E9C", "#C48743", "#0D79DC", "#726E6B", "#8B6230",
