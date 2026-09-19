@@ -239,10 +239,37 @@ export class EditorShell {
   private renderInspector(): void {
     const container = this.root.querySelector<HTMLElement>('[data-role="inspector"]');
     if (!container) return;
-    const state = this.editor.state;
-    const entry = this.catalog.get(state.selection.catalogId);
 
+    const state = this.editor.state;
+    const prefab = state.selectedPrefabId ? this.prefabs.get(state.selectedPrefabId) : undefined;
+
+    if (prefab) {
+      container.innerHTML = `
+        <div class="selection-card">
+          <span class="eyebrow">prefab</span>
+          <h2>${prefab.label}</h2>
+          <code>${prefab.id}</code>
+        </div>
+        <dl class="property-grid">
+          <dt>Footprint</dt><dd>${prefab.width}×${prefab.height}</dd>
+          <dt>Category</dt><dd>${prefab.category}</dd>
+          <dt>Terrain ops</dt><dd>${prefab.terrain.length}</dd>
+          <dt>Props</dt><dd>${prefab.props.length}</dd>
+          <dt>Networks</dt><dd>${prefab.networks.length}</dd>
+          <dt>Actors</dt><dd>${prefab.actors.length}</dd>
+          <dt>Overlap</dt><dd>${prefab.overlapPolicy}</dd>
+        </dl>
+        <div class="tip-card">
+          <strong>Semantic prefab</strong>
+          <span>Click once to stamp this compound structure. The map stores only the resulting terrain, props and actors — never a prefab or sprite-frame dependency.</span>
+        </div>
+      `;
+      return;
+    }
+
+    const entry = this.catalog.get(state.selection.catalogId);
     let details = "";
+
     if (entry?.layer === "terrain") {
       details = `
         <dt>Walkable</dt><dd>${entry.walkable ? "Yes" : "No"}</dd>
@@ -287,28 +314,40 @@ export class EditorShell {
 
   private syncToolbar(): void {
     const state = this.editor.state;
+    const prefabMode = state.selectedPrefabId !== null;
+
     this.setPressed("paint", state.selection.tool === "paint");
     this.setPressed("erase", state.selection.tool === "erase");
     this.setPressed("grid", state.gridVisible);
     this.setPressed("navigation", state.navigationVisible);
 
+    const paint = this.root.querySelector<HTMLButtonElement>('[data-action="paint"]');
+    const erase = this.root.querySelector<HTMLButtonElement>('[data-action="erase"]');
+    if (paint) paint.disabled = false;
+    if (erase) erase.disabled = prefabMode;
+
     const selected = this.catalog.get(state.selection.catalogId);
     const supportsLine =
-      state.selection.layer === "terrain" ||
-      (selected?.layer === "prop" && selected.network !== undefined);
-    const supportsRect = state.selection.layer === "terrain";
+      !prefabMode &&
+      (state.selection.layer === "terrain" ||
+        (selected?.layer === "prop" && selected.network !== undefined));
+    const supportsRect = !prefabMode && state.selection.layer === "terrain";
 
     this.root.querySelectorAll<HTMLButtonElement>("[data-stroke-mode]").forEach((button) => {
       const mode = button.dataset.strokeMode;
-      button.classList.toggle("active", mode === state.selection.strokeMode);
+      button.classList.toggle("active", !prefabMode && mode === state.selection.strokeMode);
       button.disabled =
+        prefabMode ||
         (mode === "line" && !supportsLine) ||
         (mode === "rect" && !supportsRect);
     });
 
     this.root.querySelectorAll<HTMLButtonElement>("[data-brush-size]").forEach((button) => {
-      button.classList.toggle("active", Number(button.dataset.brushSize) === state.selection.brushSize);
-      button.disabled = state.selection.layer !== "terrain";
+      button.classList.toggle(
+        "active",
+        !prefabMode && Number(button.dataset.brushSize) === state.selection.brushSize,
+      );
+      button.disabled = prefabMode || state.selection.layer !== "terrain";
     });
 
     const undo = this.root.querySelector<HTMLButtonElement>('[data-action="undo"]');
