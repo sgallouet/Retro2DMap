@@ -1,3 +1,4 @@
+import type { QuarterTurn } from "./geometry";
 import type { ActorInstance, GridCoord, OverlapPolicy } from "./map";
 
 export interface PrefabTerrainPatch {
@@ -12,6 +13,7 @@ export interface PrefabPropStamp {
   catalogId: string;
   x: number;
   y: number;
+  rotation?: QuarterTurn;
 }
 
 export interface PrefabNetworkStroke {
