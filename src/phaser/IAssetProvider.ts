@@ -1,10 +1,12 @@
 import type Phaser from "phaser";
 import type { CatalogEntry, IWorldCatalog } from "../domain/catalog";
 import type { NetworkRenderContext, TerrainRenderContext } from "../domain/autotile";
+import type { ActorInstance } from "../domain/map";
 
 export interface AssetRenderContext {
   terrain?: TerrainRenderContext;
   network?: NetworkRenderContext;
+  actor?: Readonly<{ facing: ActorInstance["facing"] }>;
 }
 
 /**
