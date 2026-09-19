@@ -329,12 +329,23 @@ export class ProceduralAssetProvider implements IAssetProvider {
             cell - 1,
             cell - 1,
             alternate ? colors[1] : colors[0],
-            colors[2],
+          );
+          line(
+            ctx,
+            [[x, y + cell - 1], [x + cell - 1, y + cell - 1]],
+            "rgba(91,91,93,.24)",
+            1,
+          );
+          line(
+            ctx,
+            [[x + cell - 1, y], [x + cell - 1, y + cell - 1]],
+            "rgba(91,91,93,.18)",
+            1,
           );
           line(
             ctx,
             [[x + 2, y + 2], [x + cell - 4, y + 2]],
-            "rgba(230,230,214,.15)",
+            "rgba(229,229,223,.22)",
             1,
           );
         }
@@ -349,9 +360,9 @@ export class ProceduralAssetProvider implements IAssetProvider {
     if (entry.id === "wood-floor") {
       for (let y = 0; y < height; y += 8) {
         rect(ctx, 0, y, width, 7, y % 16 === 0 ? colors[0] : colors[1]);
-        line(ctx, [[0, y + 7], [width, y + 7]], colors[2], 1);
+        line(ctx, [[0, y + 7], [width, y + 7]], "rgba(97,66,33,.36)", 1);
         for (let x = (y / 8) % 2 === 0 ? 13 : 27; x < width; x += 27) {
-          line(ctx, [[x, y], [x, y + 7]], colors[2], 1);
+          line(ctx, [[x, y], [x, y + 7]], "rgba(97,66,33,.24)", 1);
         }
       }
       return;
@@ -711,63 +722,77 @@ export class ProceduralAssetProvider implements IAssetProvider {
 
   private drawTree(ctx: CanvasRenderingContext2D, width: number, height: number, pine: boolean): void {
     const cx = width / 2;
-    ellipse(ctx, cx + 2, height - 5, 18, 5, "rgba(5,53,35,.24)");
-    rect(ctx, cx - 5, height - 39, 10, 33, "#795B30", "#29180C");
-    rect(ctx, cx - 2, height - 38, 3, 29, "#A87F45");
+    ellipse(ctx, cx + 2, height - 5, 19, 5, "rgba(5,53,35,.24)");
+
+    // The target hides most of the trunk under a broad crown.
+    rect(ctx, cx - 5, height - 30, 10, 24, "#795B30", "#29180C");
+    rect(ctx, cx - 2, height - 28, 3, 20, "#A87F45");
 
     if (pine) {
       const bands = [
-        { y: 17, half: 14, fill: "#29671D" },
-        { y: 28, half: 19, fill: "#39902C" },
-        { y: 40, half: 23, fill: "#639A1E" },
-        { y: 53, half: 27, fill: "#39902C" },
+        { y: 18, half: 15, fill: "#29671D" },
+        { y: 30, half: 21, fill: "#39902C" },
+        { y: 43, half: 25, fill: "#639A1E" },
+        { y: 57, half: 28, fill: "#39902C" },
+        { y: 68, half: 24, fill: "#29671D" },
       ];
+
       for (const band of bands) {
         ctx.fillStyle = referenceColor("#053523");
         ctx.beginPath();
-        ctx.moveTo(cx, band.y - 14);
-        ctx.lineTo(cx - band.half - 3, band.y + 14);
-        ctx.lineTo(cx + band.half + 3, band.y + 14);
+        ctx.moveTo(cx, band.y - 15);
+        ctx.lineTo(cx - band.half - 3, band.y + 13);
+        ctx.lineTo(cx + band.half + 3, band.y + 13);
         ctx.closePath();
         ctx.fill();
 
         ctx.fillStyle = referenceColor(band.fill);
         ctx.beginPath();
-        ctx.moveTo(cx, band.y - 12);
-        ctx.lineTo(cx - band.half, band.y + 11);
-        ctx.lineTo(cx + band.half, band.y + 11);
+        ctx.moveTo(cx, band.y - 13);
+        ctx.lineTo(cx - band.half, band.y + 10);
+        ctx.lineTo(cx + band.half, band.y + 10);
         ctx.closePath();
         ctx.fill();
 
-        line(ctx, [[cx - band.half + 5, band.y + 7], [cx - 1, band.y - 5]], "rgba(148,213,62,.42)", 2);
+        line(
+          ctx,
+          [[cx - band.half + 5, band.y + 6], [cx - 1, band.y - 6]],
+          "rgba(148,213,62,.46)",
+          2,
+        );
       }
       return;
     }
 
-    // Dark silhouette first, then many overlapping crown lobes.
     const silhouette = [
-      [cx, 27, 25, 20],
-      [cx - 14, 36, 22, 19],
-      [cx + 14, 36, 22, 19],
-      [cx - 8, 51, 24, 18],
-      [cx + 10, 50, 24, 18],
+      [cx, 29, 27, 22],
+      [cx - 15, 39, 23, 20],
+      [cx + 15, 39, 23, 20],
+      [cx - 10, 54, 24, 19],
+      [cx + 11, 54, 24, 19],
+      [cx, 63, 25, 17],
     ] as const;
-    silhouette.forEach(([x,y,rx,ry]) => ellipse(ctx, x, y, rx, ry, "#053523"));
+    silhouette.forEach(([x, y, rx, ry]) =>
+      ellipse(ctx, x, y, rx, ry, "#053523"),
+    );
 
     const lobes: ReadonlyArray<readonly [number, number, number, number, string]> = [
-      [cx - 7, 23, 15, 12, "#639A1E"],
-      [cx + 8, 24, 14, 12, "#78BE22"],
-      [cx - 18, 35, 15, 13, "#39902C"],
-      [cx, 35, 18, 15, "#8BC731"],
-      [cx + 18, 37, 14, 13, "#639A1E"],
-      [cx - 11, 49, 17, 13, "#39902C"],
-      [cx + 8, 49, 18, 14, "#78BE22"],
+      [cx - 8, 23, 16, 13, "#639A1E"],
+      [cx + 8, 24, 15, 13, "#78BE22"],
+      [cx - 19, 37, 16, 14, "#39902C"],
+      [cx, 36, 19, 16, "#8BC731"],
+      [cx + 19, 38, 15, 14, "#639A1E"],
+      [cx - 13, 51, 18, 14, "#39902C"],
+      [cx + 9, 51, 19, 15, "#78BE22"],
+      [cx - 2, 62, 19, 12, "#639A1E"],
     ];
-    lobes.forEach(([x,y,rx,ry,fill]) => ellipse(ctx, x, y, rx, ry, fill));
+    lobes.forEach(([x, y, rx, ry, fill]) => ellipse(ctx, x, y, rx, ry, fill));
 
-    ellipse(ctx, cx - 7, 21, 8, 5, "#94D53E");
-    ellipse(ctx, cx + 7, 29, 6, 4, "#8BC731");
-    ellipse(ctx, cx - 13, 40, 5, 4, "#72C33D");
+    // Small concentrated highlights make the crown read as glossy foliage.
+    ellipse(ctx, cx - 8, 20, 9, 5, "#94D53E");
+    ellipse(ctx, cx + 9, 30, 7, 4, "#8BC731");
+    ellipse(ctx, cx - 15, 42, 6, 4, "#72C33D");
+    ellipse(ctx, cx + 2, 47, 5, 3, "#94D53E");
   }
 
   private drawFlowers(ctx: CanvasRenderingContext2D, width: number, height: number): void {
