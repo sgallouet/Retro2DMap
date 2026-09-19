@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
-import { TerrainTopologyResolver } from "../domain/autotile";
+import { PropTopologyResolver, TerrainTopologyResolver } from "../domain/autotile";
 import type { EditorSelection, GridCoord, MapDocument } from "../domain/map";
 import { TILE_SIZE } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
@@ -15,7 +15,8 @@ export class WorldRenderer implements IWorldRenderer {
   readonly #worldObjects: Phaser.GameObjects.GameObject[] = [];
   readonly #grid: Phaser.GameObjects.Graphics;
   readonly #hover: Phaser.GameObjects.Graphics;
-  readonly #topology: TerrainTopologyResolver;
+  readonly #terrainTopology: TerrainTopologyResolver;
+  readonly #propTopology: PropTopologyResolver;
   #lastDocument: MapDocument | null = null;
 
   constructor(
@@ -25,7 +26,8 @@ export class WorldRenderer implements IWorldRenderer {
   ) {
     this.#grid = scene.add.graphics().setDepth(100_000);
     this.#hover = scene.add.graphics().setDepth(100_100);
-    this.#topology = new TerrainTopologyResolver(catalog);
+    this.#terrainTopology = new TerrainTopologyResolver(catalog);
+    this.#propTopology = new PropTopologyResolver(catalog);
   }
 
   render(document: MapDocument, gridVisible: boolean): void {
@@ -42,12 +44,9 @@ export class WorldRenderer implements IWorldRenderer {
           .image(
             x * TILE_SIZE,
             y * TILE_SIZE,
-            this.assets.textureKey(
-              definition,
-              x,
-              y,
-              this.#topology.resolve(document, { x, y }, definition),
-            ),
+            this.assets.textureKey(definition, x, y, {
+              terrain: this.#terrainTopology.resolve(document, { x, y }, definition),
+            }),
           )
           .setOrigin(0, 0)
           .setDepth(0);
@@ -60,7 +59,13 @@ export class WorldRenderer implements IWorldRenderer {
       if (!definition || definition.layer !== "prop") return;
       const propDefinition = definition as PropDefinition;
       const image = this.scene.add
-        .image(prop.x * TILE_SIZE, prop.y * TILE_SIZE, this.assets.textureKey(definition, prop.x, prop.y))
+        .image(
+          prop.x * TILE_SIZE,
+          prop.y * TILE_SIZE,
+          this.assets.textureKey(definition, prop.x, prop.y, {
+            network: this.#propTopology.resolve(document, prop, propDefinition),
+          }),
+        )
         .setOrigin(0, 0)
         .setDepth(
           1_000 +
