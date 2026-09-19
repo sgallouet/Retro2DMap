@@ -1,3 +1,5 @@
+import { worldCatalog } from "../domain/catalog";
+import { rotatedFootprint } from "../domain/geometry";
 import {
   createBlankMap,
   type ActorInstance,
@@ -78,6 +80,55 @@ export function createSampleKingdom(): MapDocument {
       ...(rotation === undefined ? {} : { rotation }),
     };
     map.props.push(entry);
+  };
+
+  const tryProp = (
+    catalogId: string,
+    x: number,
+    y: number,
+  ): boolean => {
+    const definition = worldCatalog.get(catalogId);
+    if (!definition || definition.layer !== "prop") return false;
+
+    const footprint = rotatedFootprint(definition.footprint, 0);
+    if (
+      x < 0 ||
+      y < 0 ||
+      x + footprint.width > map.width ||
+      y + footprint.height > map.height
+    ) {
+      return false;
+    }
+
+    const overlapsProp = map.props.some((candidate) => {
+      const candidateDefinition = worldCatalog.get(candidate.catalogId);
+      if (!candidateDefinition || candidateDefinition.layer !== "prop") return false;
+      const candidateFootprint = rotatedFootprint(
+        candidateDefinition.footprint,
+        candidateDefinition.rotatable ? candidate.rotation : 0,
+      );
+
+      return (
+        x < candidate.x + candidateFootprint.width &&
+        x + footprint.width > candidate.x &&
+        y < candidate.y + candidateFootprint.height &&
+        y + footprint.height > candidate.y
+      );
+    });
+
+    if (overlapsProp) return false;
+
+    const overlapsActor = map.actors.some(
+      (candidate) =>
+        candidate.x >= x &&
+        candidate.x < x + footprint.width &&
+        candidate.y >= y &&
+        candidate.y < y + footprint.height,
+    );
+    if (overlapsActor) return false;
+
+    prop(catalogId, x, y);
+    return true;
   };
 
   const networkProp = (catalogId: string, x: number, y: number): void => {
@@ -416,6 +467,50 @@ export function createSampleKingdom(): MapDocument {
   actor("farmer", 3, 27, "east");
   actor("guard", 25, 20, "south");
   actor("guard", 29, 20, "south");
+
+  // ---------------------------------------------------------------------------
+  // DENSITY PASS: the reference is lush and intentionally crowded. These
+  // candidates use semantic footprints and quietly skip occupied cells so the
+  // composition gains foliage/flower density without introducing overlaps.
+  // ---------------------------------------------------------------------------
+
+  const treeCandidates: ReadonlyArray<readonly [number, number, "tree-round" | "tree-pine"]> = [
+    // Village / north-west framing.
+    [0, 1, "tree-round"], [2, 1, "tree-round"], [4, 1, "tree-pine"],
+    [7, 1, "tree-round"], [8, 3, "tree-round"], [3, 7, "tree-round"],
+    [8, 7, "tree-round"], [9, 10, "tree-pine"], [3, 12, "tree-round"],
+    [8, 13, "tree-round"], [9, 15, "tree-round"], [2, 17, "tree-round"],
+    [9, 18, "tree-pine"], [1, 20, "tree-round"], [4, 20, "tree-round"],
+    [10, 20, "tree-round"], [12, 21, "tree-pine"],
+
+    // South-west farm framing.
+    [0, 24, "tree-round"], [2, 23, "tree-round"], [5, 23, "tree-pine"],
+    [7, 25, "tree-round"], [7, 28, "tree-pine"], [14, 23, "tree-round"],
+
+    // South / castle approach forest.
+    [15, 23, "tree-round"], [17, 24, "tree-round"], [19, 23, "tree-round"],
+    [21, 25, "tree-pine"], [23, 24, "tree-round"], [24, 27, "tree-round"],
+    [29, 23, "tree-round"], [31, 24, "tree-pine"], [33, 23, "tree-round"],
+    [35, 24, "tree-round"], [37, 23, "tree-round"], [39, 24, "tree-pine"],
+    [30, 27, "tree-round"], [32, 26, "tree-round"], [34, 27, "tree-round"],
+    [36, 26, "tree-round"], [38, 27, "tree-pine"],
+  ];
+
+  treeCandidates.forEach(([x, y, tree]) => {
+    tryProp(tree, x, y);
+  });
+
+  const flowerCandidates: ReadonlyArray<readonly [number, number]> = [
+    [3, 8], [4, 9], [8, 8], [9, 9], [2, 13], [4, 13],
+    [8, 14], [10, 14], [3, 16], [5, 17], [9, 17], [1, 19],
+    [3, 19], [8, 20], [11, 19], [2, 22], [5, 22], [10, 22],
+    [13, 23], [16, 23], [18, 25], [20, 24], [22, 26], [24, 24],
+    [29, 22], [31, 22], [33, 22], [35, 22], [37, 22],
+  ];
+
+  flowerCandidates.forEach(([x, y]) => {
+    tryProp("flowers", x, y);
+  });
 
   return map;
 }
