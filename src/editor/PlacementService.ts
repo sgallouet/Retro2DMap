@@ -25,6 +25,7 @@ export interface IEntityPlacementService {
   placeProp(document: MapDocument, request: PropPlacementRequest): boolean;
   erasePropsAt(document: MapDocument, coord: GridCoord): boolean;
   paintNetworkPath(document: MapDocument, request: NetworkPathRequest): boolean;
+  erasePropsPath(document: MapDocument, points: readonly GridCoord[]): boolean;
   placeActor(document: MapDocument, catalogId: string, coord: GridCoord): boolean;
   eraseActorsAt(document: MapDocument, coord: GridCoord): boolean;
   propOccupies(prop: PropInstance, coord: GridCoord): boolean;
@@ -84,6 +85,14 @@ export class EntityPlacementService implements IEntityPlacementService {
           coord,
           overlapPolicy: request.overlapPolicy ?? "replace",
         }) || changed;
+    }
+    return changed;
+  }
+
+  erasePropsPath(document: MapDocument, points: readonly GridCoord[]): boolean {
+    let changed = false;
+    for (const coord of rasterizePolyline(points)) {
+      changed = this.erasePropsAt(document, coord) || changed;
     }
     return changed;
   }
