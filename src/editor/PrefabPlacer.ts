@@ -224,12 +224,18 @@ export class PrefabPlacer implements IPrefabPlacer {
     coord: GridCoord,
     rotation?: 0 | 90 | 180 | 270,
   ): boolean {
+    const definition = this.catalog.get(catalogId);
+    const expectedRotation =
+      definition?.layer === "prop" && definition.rotatable
+        ? (rotation ?? 0)
+        : 0;
+
     return document.props.some(
       (prop) =>
         prop.catalogId === catalogId &&
         prop.x === coord.x &&
         prop.y === coord.y &&
-        (rotation === undefined || (prop.rotation ?? 0) === rotation),
+        (prop.rotation ?? 0) === expectedRotation,
     );
   }
 
