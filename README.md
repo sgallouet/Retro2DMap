@@ -29,6 +29,7 @@ npm run build
 
 - **Left click / drag**: paint selected item
 - **Right click / drag**: erase on the selected layer
+- **1 / 3 / 5**: switch terrain brush between 1×1, 3×3 and 5×5
 - **Mouse wheel**: zoom
 - **Middle drag** or **Space + left drag**: pan
 - **Ctrl/Cmd+Z**: undo
