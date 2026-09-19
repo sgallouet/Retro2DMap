@@ -130,6 +130,7 @@ export class EditorController implements IEditorController {
   }
 
   setTool(tool: EditorSelection["tool"]): void {
+    if (this.#selectedPrefabId && tool === "erase") return;
     this.#selection = { ...this.#selection, tool };
     this.emit();
   }
