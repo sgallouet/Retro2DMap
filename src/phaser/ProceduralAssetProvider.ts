@@ -276,44 +276,48 @@ export class ProceduralAssetProvider implements IAssetProvider {
     }
 
     if (entry.id === "grass") {
-      // Target-sampled meadow palette:
-      // base #79BE21, shadow #59A526, highlight #94D532.
-      //
-      // Keep the tile readable as one material, but add enough micro-structure
-      // that a large meadow no longer looks like a flat CSS rectangle.
+      // Target-sampled meadow palette.
       rect(ctx, 0, 0, width, height, "#79BE21");
 
-      // Soft broad patches. Their opacity is intentionally tiny; these should
-      // be felt as surface variation, not seen as blobs.
-      ellipse(ctx, 11 + variant * 5, 11, 15, 8, "rgba(148,213,50,.11)");
-      ellipse(ctx, 35 - variant * 3, 31, 14, 8, "rgba(89,165,38,.09)");
-      ellipse(ctx, 20, 43 - variant * 2, 11, 5, "rgba(148,213,50,.07)");
+      // Very soft large-scale value drift.
+      ellipse(ctx, 10 + variant * 5, 11, 15, 8, "rgba(148,213,50,.10)");
+      ellipse(ctx, 35 - variant * 3, 31, 14, 8, "rgba(89,165,38,.08)");
+      ellipse(ctx, 20, 43 - variant * 2, 11, 5, "rgba(148,213,50,.06)");
 
-      // Deterministic JRPG-style blade clusters. Four variants are enough to
-      // break obvious repetition while every texture stays perfectly stable.
+      // Dense micro-grass similar to the target: many tiny strokes, very few
+      // large marks. Deterministic RNG keeps each of the four variants stable.
+      for (let i = 0; i < 22; i += 1) {
+        const x = 2 + Math.floor(random() * (width - 5));
+        const y = 3 + Math.floor(random() * (height - 7));
+        const bright = random() > 0.70;
+        const dark = random() > 0.55;
+        const blade = bright ? "#94D532" : dark ? "#59A526" : "#79BE21";
+
+        if (random() > 0.35) {
+          line(ctx, [[x, y + 2], [x + 1, y]], blade, 1);
+        } else {
+          rect(ctx, x, y + 1, 1, 2, blade);
+        }
+
+        if (random() > 0.78) {
+          rect(ctx, x + 3, y + 2, 1, 1, bright ? "#94D532" : "#427A13");
+        }
+      }
+
+      // A handful of recognizable tuft clusters stop the surface from feeling
+      // like pure noise.
       const clusterSets = [
-        [[5, 14], [12, 33], [24, 8], [31, 24], [39, 40], [43, 17], [20, 43]],
-        [[8, 9], [14, 27], [26, 14], [35, 35], [42, 23], [6, 41], [29, 44]],
-        [[5, 24], [16, 10], [23, 35], [33, 18], [42, 42], [11, 44], [38, 7]],
-        [[7, 38], [13, 17], [25, 27], [34, 8], [43, 31], [19, 45], [39, 16]],
+        [[7, 27], [29, 10], [39, 37]],
+        [[10, 12], [24, 31], [41, 20]],
+        [[8, 36], [22, 11], [36, 29]],
+        [[12, 22], [27, 40], [40, 9]],
       ] as const;
-
-      const points = clusterSets[variant % clusterSets.length] ?? clusterSets[0];
-      points.forEach(([x, y], index) => {
-        const bright = index % 3 === 0;
-        const blade = bright ? "#94D532" : "#59A526";
-        const middle = bright ? "#79BE21" : "#427A13";
-
+      const clusters = clusterSets[variant % clusterSets.length] ?? clusterSets[0];
+      clusters.forEach(([x, y], index) => {
+        const blade = index === 1 ? "#94D532" : "#59A526";
         line(ctx, [[x, y + 4], [x + 1, y]], blade, 1);
         line(ctx, [[x + 3, y + 4], [x + 5, y + 1]], blade, 1);
-        line(ctx, [[x + 2, y + 4], [x + 2, y + 2]], middle, 1);
-
-        // A few tiny leaf pixels match the target's granular grass texture
-        // without turning the tile into random visual noise.
-        if (index % 2 === 0) {
-          rect(ctx, x + 6, y + 2, 1, 1, "#94D532");
-          rect(ctx, x - 1, y + 4, 1, 1, "#59A526");
-        }
+        line(ctx, [[x + 2, y + 4], [x + 2, y + 2]], "#427A13", 1);
       });
 
       return;
@@ -588,8 +592,8 @@ export class ProceduralAssetProvider implements IAssetProvider {
       steps.forEach((offset, index) => {
         const x = index * segment;
         const y = 1 + offset;
-        rect(ctx, x, y, segment, 2, shadow);
-        rect(ctx, x, y + 2, segment, 1, light);
+        rect(ctx, x, y + 1, segment, 1, shadow);
+        rect(ctx, x + 1, y + 2, segment - 2, 1, light);
         if ((index + variant) % 2 === 0) {
           tuftHorizontal(x + 2, y + 3, true);
         }
@@ -600,8 +604,8 @@ export class ProceduralAssetProvider implements IAssetProvider {
       steps.forEach((offset, index) => {
         const x = index * segment;
         const y = height - 4 - offset;
-        rect(ctx, x, y, segment, 1, light);
-        rect(ctx, x, y + 1, segment, 2, shadow);
+        rect(ctx, x + 1, y, segment - 2, 1, light);
+        rect(ctx, x, y + 1, segment, 1, shadow);
         if ((index + variant) % 2 === 1) {
           tuftHorizontal(x + 2, y - 1, false);
         }
@@ -612,8 +616,8 @@ export class ProceduralAssetProvider implements IAssetProvider {
       steps.forEach((offset, index) => {
         const y = index * segment;
         const x = 1 + offset;
-        rect(ctx, x, y, 2, segment, shadow);
-        rect(ctx, x + 2, y, 1, segment, light);
+        rect(ctx, x + 1, y, 1, segment, shadow);
+        rect(ctx, x + 2, y + 1, 1, segment - 2, light);
         if ((index + variant) % 2 === 0) {
           tuftVertical(x + 3, y + 2, true);
         }
@@ -624,8 +628,8 @@ export class ProceduralAssetProvider implements IAssetProvider {
       steps.forEach((offset, index) => {
         const y = index * segment;
         const x = width - 4 - offset;
-        rect(ctx, x, y, 1, segment, light);
-        rect(ctx, x + 1, y, 2, segment, shadow);
+        rect(ctx, x, y + 1, 1, segment - 2, light);
+        rect(ctx, x + 1, y, 1, segment, shadow);
         if ((index + variant) % 2 === 1) {
           tuftVertical(x - 1, y + 2, false);
         }
@@ -699,15 +703,27 @@ export class ProceduralAssetProvider implements IAssetProvider {
       rect(ctx, 6, 5, 1, 2, deep);
     }
 
-    // A couple of extra blades immediately behind an exposed lip make the
-    // transition feel grown-over rather than printed.
+    // Extra blades immediately behind an exposed lip make the transition feel
+    // grown-over rather than printed.
     if (openSouth) {
-      tuftHorizontal(11 + variant * 4, height - 7, false);
-      tuftHorizontal(31 - variant * 2, height - 8, false);
+      tuftHorizontal(5 + variant * 3, height - 7, false);
+      tuftHorizontal(19 + variant * 2, height - 8, false);
+      tuftHorizontal(35 - variant * 2, height - 7, false);
     }
     if (openNorth) {
-      tuftHorizontal(9 + variant * 3, 7, true);
-      tuftHorizontal(33 - variant * 2, 8, true);
+      tuftHorizontal(5 + variant * 3, 7, true);
+      tuftHorizontal(20 + variant * 2, 8, true);
+      tuftHorizontal(37 - variant * 2, 7, true);
+    }
+    if (openWest) {
+      tuftVertical(7, 7 + variant * 3, true);
+      tuftVertical(8, 25 + variant * 2, true);
+      tuftVertical(7, 39 - variant, true);
+    }
+    if (openEast) {
+      tuftVertical(width - 7, 7 + variant * 3, false);
+      tuftVertical(width - 8, 24 + variant * 2, false);
+      tuftVertical(width - 7, 39 - variant, false);
     }
 
     // Keep the center color continuous at tile seams.
