@@ -1,10 +1,11 @@
 import Phaser from "phaser";
 import type { CatalogEntry, IWorldCatalog } from "../domain/catalog";
 import type { SpriteAssetManifest, FrameChoice, SpriteSpec } from "../assets/SpriteAssetManifest";
-import type {
-  AssetRenderContext,
-  IAssetProvider,
-  TextureRef,
+import {
+  isTerrainMaterialHost,
+  type AssetRenderContext,
+  type IAssetProvider,
+  type TextureRef,
 } from "./IAssetProvider";
 
 const deterministicIndex = (x: number, y: number, salt: number): number => {
@@ -47,6 +48,15 @@ export class SpriteAssetProvider implements IAssetProvider {
 
   prepare(scene: Phaser.Scene, catalog: IWorldCatalog): void {
     this.#scene = scene;
+    if (isTerrainMaterialHost(this.fallback)) {
+      for (const [catalogId, spec] of Object.entries(this.manifest.entries)) {
+        if (spec.kind !== "terrain-base") continue;
+        const key = this.pick(spec.texture, 0, 0, 0);
+        if (key && scene.textures.exists(key)) {
+          this.fallback.useTerrainMaterial(catalogId, key);
+        }
+      }
+    }
     this.fallback.prepare(scene, catalog);
   }
 
@@ -62,9 +72,14 @@ export class SpriteAssetProvider implements IAssetProvider {
     }
 
     if (spec.kind === "image") {
-      return this.#scene?.textures.exists(spec.texture)
-        ? { key: spec.texture }
+      const key = this.pick(spec.texture, x, y, 0);
+      return key && this.#scene?.textures.exists(key)
+        ? { key }
         : this.fallback.textureRef(entry, x, y, context);
+    }
+
+    if (spec.kind === "terrain-base") {
+      return this.fallback.textureRef(entry, x, y, context);
     }
 
     if (!this.atlasReady(spec)) {
@@ -80,7 +95,7 @@ export class SpriteAssetProvider implements IAssetProvider {
   }
 
   private resolveFrame(
-    spec: Exclude<SpriteSpec, { kind: "image" }>,
+    spec: Exclude<SpriteSpec, { kind: "image" } | { kind: "terrain-base" }>,
     x: number,
     y: number,
     context?: AssetRenderContext,
@@ -116,7 +131,7 @@ export class SpriteAssetProvider implements IAssetProvider {
   }
 
   private atlasReady(
-    spec: Exclude<SpriteSpec, { kind: "image" }>,
+    spec: Exclude<SpriteSpec, { kind: "image" } | { kind: "terrain-base" }>,
   ): boolean {
     return this.#scene?.textures.exists(spec.atlas) ?? false;
   }

@@ -108,6 +108,8 @@ Prompt and sizing contract:
 - [SPRITE_PROMPT_TREE_ROUND.md](SPRITE_PROMPT_TREE_ROUND.md)
 - logical footprint: 48×96 px
 - visual canvas: 72×96 px
-- target path: `public/assets/props/tree-round.png`
+- target paths: `public/assets/props/tree-round.png` plus `tree-round-02.png` / `tree-round-03.png` / `tree-round-04.png` as deterministic visual variants
 
 The runtime is already using `SpriteAssetProvider` with `ProceduralAssetProvider` fallback, so authored art can be enabled one asset at a time.
+
+`kind: "terrain-base"` maps a catalog terrain to a fill image. The procedural provider still paints topology edges on top of that fill. Missing images fall back to a fully procedural tile.

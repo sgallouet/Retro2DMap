@@ -100,11 +100,19 @@ const line = (
 };
 
 export class ProceduralAssetProvider implements IAssetProvider {
+  #scene?: Phaser.Scene;
+  readonly #terrainMaterials = new Map<string, string>();
+
   preload(_scene: Phaser.Scene, _catalog: IWorldCatalog): void {
     // Procedural textures are created synchronously in prepare().
   }
 
+  useTerrainMaterial(catalogId: string, textureKey: string): void {
+    this.#terrainMaterials.set(catalogId, textureKey);
+  }
+
   prepare(scene: Phaser.Scene, catalog: IWorldCatalog): void {
+    this.#scene = scene;
     const terrainTopologies = enumerateTerrainTopologies();
 
     catalog.terrains.forEach((entry) => {
@@ -249,6 +257,8 @@ export class ProceduralAssetProvider implements IAssetProvider {
     entry: TerrainDefinition,
     variant: number,
   ): void {
+    if (this.blitTerrainMaterial(ctx, entry.id, width, height)) return;
+
     const random = rng(hash(entry.id) + variant * 997);
     const palette: Record<string, readonly [string, string, string]> = {
       grass: ["#78BE22", "#94D53E", "#639A1E"],
@@ -451,6 +461,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
         cardinalMask,
         innerCornerMask,
         variant,
+        this.#terrainMaterials.has(entry.id),
       );
       return;
     }
@@ -548,6 +559,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     cardinalMask: number,
     innerCornerMask: number,
     variant: number,
+    authoredBase = false,
   ): void {
     const openNorth = (cardinalMask & NORTH) === 0;
     const openEast = (cardinalMask & EAST) === 0;
@@ -726,12 +738,31 @@ export class ProceduralAssetProvider implements IAssetProvider {
       tuftVertical(width - 7, 39 - variant, false);
     }
 
-    // Keep the center color continuous at tile seams.
+    // Keep the procedural center color continuous at tile seams.
+    // Authored center textures are already seamless, so painting a 1px lip
+    // would reintroduce a visible grid.
     if (!openNorth && !openEast && !openSouth && !openWest && innerCornerMask === 0) {
-      rect(ctx, 0, 0, 1, height, mid);
-      rect(ctx, width - 1, 0, 1, height, mid);
+      if (!authoredBase) {
+        rect(ctx, 0, 0, 1, height, mid);
+        rect(ctx, width - 1, 0, 1, height, mid);
+      }
     }
   }
+
+  private blitTerrainMaterial(
+    ctx: CanvasRenderingContext2D,
+    catalogId: string,
+    width: number,
+    height: number,
+  ): boolean {
+    const key = this.#terrainMaterials.get(catalogId);
+    if (!key || !this.#scene?.textures.exists(key)) return false;
+    const source = this.#scene.textures.get(key).getSourceImage() as CanvasImageSource;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(source, 0, 0, width, height);
+    return true;
+  }
+
   private drawProp(
     ctx: CanvasRenderingContext2D,
     width: number,

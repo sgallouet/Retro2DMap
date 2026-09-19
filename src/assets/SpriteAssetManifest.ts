@@ -15,8 +15,20 @@ export type FrameChoice = string | readonly string[];
 
 export interface ImageSpriteSpec {
   kind: "image";
-  /** Texture key declared in manifest.images. */
-  texture: string;
+  /**
+   * Texture key(s) declared in manifest.images.
+   * Multiple keys are deterministic cosmetic variants.
+   */
+  texture: FrameChoice;
+}
+
+export interface TerrainBaseSpriteSpec {
+  kind: "terrain-base";
+  /**
+   * Loose image used as the fill for every topology of this terrain.
+   * Procedural / topology-driven edges still paint on top.
+   */
+  texture: FrameChoice;
 }
 
 export interface StaticSpriteSpec {
@@ -46,6 +58,7 @@ export interface NetworkSpriteSpec {
 
 export type SpriteSpec =
   | ImageSpriteSpec
+  | TerrainBaseSpriteSpec
   | StaticSpriteSpec
   | TerrainSpriteSpec
   | NetworkSpriteSpec;

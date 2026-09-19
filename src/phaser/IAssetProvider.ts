@@ -18,6 +18,20 @@ export interface TextureRef {
   frame?: string | number;
 }
 
+/**
+ * Optional hook for authored terrain fill textures. Procedural providers that
+ * implement this can composite the image under existing topology overlays.
+ */
+export interface ITerrainMaterialHost {
+  useTerrainMaterial(catalogId: string, textureKey: string): void;
+}
+
+export const isTerrainMaterialHost = (
+  provider: IAssetProvider,
+): provider is IAssetProvider & ITerrainMaterialHost =>
+  typeof (provider as IAssetProvider & Partial<ITerrainMaterialHost>).useTerrainMaterial ===
+  "function";
+
 export interface IAssetProvider {
   /**
    * Register external assets with Phaser's loader. Procedural providers can

@@ -4,6 +4,7 @@ import { worldCatalog } from "./domain/catalog";
 import { EditorController } from "./editor/EditorController";
 import { createSampleKingdom } from "./maps/sampleKingdom";
 import { createGrassStudy } from "./maps/grassStudy";
+import { createGrassSeamStudy } from "./maps/grassSeamStudy";
 import { MapScene } from "./phaser/MapScene";
 import { prefabCatalog } from "./prefabs/catalog";
 import { ProceduralAssetProvider } from "./phaser/ProceduralAssetProvider";
@@ -16,8 +17,13 @@ const root = document.querySelector<HTMLElement>("#app");
 if (!root) throw new Error("Missing #app root.");
 
 const params = new URLSearchParams(window.location.search);
+const mapParam = params.get("map");
 const createInitialMap =
-  params.get("map") === "grass-study" ? createGrassStudy : createSampleKingdom;
+  mapParam === "grass-study"
+    ? createGrassStudy
+    : mapParam === "grass-seam"
+      ? createGrassSeamStudy
+      : createSampleKingdom;
 
 const editor = new EditorController(createInitialMap(), worldCatalog, prefabCatalog);
 const store = new LocalStorageMapStore();
