@@ -231,7 +231,15 @@ export class ProceduralAssetProvider implements IAssetProvider {
     innerCornerMask: number,
   ): void {
     this.drawTerrainBase(ctx, width, height, entry, variant);
-    this.drawTerrainEdges(ctx, width, height, entry, cardinalMask, innerCornerMask);
+    this.drawTerrainEdges(
+      ctx,
+      width,
+      height,
+      entry,
+      cardinalMask,
+      innerCornerMask,
+      variant,
+    );
   }
 
   private drawTerrainBase(
@@ -268,24 +276,29 @@ export class ProceduralAssetProvider implements IAssetProvider {
     }
 
     if (entry.id === "grass") {
-      // Mapping-study grass: one restrained material, not a bag of random
-      // pixels. Edge/corner identity is drawn separately by drawGrassTileEdges.
+      // One deliberately simple material family. The center must tile quietly;
+      // topology should be readable from the edge treatment, not from noise.
       rect(ctx, 0, 0, width, height, "#78BE22");
 
-      // Broad, very low-contrast mottling keeps repeated center tiles alive
-      // without obscuring the topology.
-      ellipse(ctx, 12 + variant * 4, 12, 13, 7, "rgba(148,213,62,.10)");
-      ellipse(ctx, 34 - variant * 3, 34, 12, 6, "rgba(99,154,30,.10)");
+      // Broad tonal islands sampled from the target's sunny meadow look.
+      ellipse(ctx, 10 + variant * 5, 11, 15, 8, "rgba(148,213,62,.12)");
+      ellipse(ctx, 35 - variant * 3, 32, 14, 8, "rgba(99,154,30,.11)");
+      ellipse(ctx, 20, 43 - variant * 2, 10, 5, "rgba(139,199,49,.08)");
 
-      const tuftPositions = [
-        [8 + variant * 2, 28],
-        [29, 11 + variant],
-        [37 - variant, 36],
+      const clusters = [
+        [7 + variant, 24, false],
+        [28, 9 + variant, true],
+        [38 - variant, 34, false],
+        [17 + variant * 2, 39, true],
+        [43 - variant, 18 + variant, false],
       ] as const;
-      tuftPositions.forEach(([x, y], index) => {
-        const shade = index === 1 ? "#94D53E" : "#639A1E";
-        line(ctx, [[x, y + 3], [x + 1, y]], shade, 1);
-        line(ctx, [[x + 2, y + 3], [x + 4, y + 1]], shade, 1);
+
+      clusters.forEach(([x, y, bright]) => {
+        const blade = bright ? "#94D53E" : "#639A1E";
+        const shadow = bright ? "#78BE22" : "#599E2B";
+        line(ctx, [[x, y + 4], [x + 1, y]], blade, 1);
+        line(ctx, [[x + 3, y + 4], [x + 5, y + 1]], blade, 1);
+        line(ctx, [[x + 2, y + 4], [x + 2, y + 2]], shadow, 1);
       });
       return;
     }
@@ -407,6 +420,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     entry: TerrainDefinition,
     cardinalMask: number,
     innerCornerMask: number,
+    variant: number,
   ): void {
     if (entry.edgeStyle === "none") return;
 
@@ -417,6 +431,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
         height,
         cardinalMask,
         innerCornerMask,
+        variant,
       );
       return;
     }
@@ -513,122 +528,156 @@ export class ProceduralAssetProvider implements IAssetProvider {
     height: number,
     cardinalMask: number,
     innerCornerMask: number,
+    variant: number,
   ): void {
     const openNorth = (cardinalMask & NORTH) === 0;
     const openEast = (cardinalMask & EAST) === 0;
     const openSouth = (cardinalMask & SOUTH) === 0;
     const openWest = (cardinalMask & WEST) === 0;
 
+    const base = "#78BE22";
     const dark = "#29671D";
     const mid = "#639A1E";
     const light = "#94D53E";
-    const edge = 5;
 
-    const grassBlade = (x: number, y: number, flip = false): void => {
-      if (flip) {
-        line(ctx, [[x, y], [x + 2, y + 4]], light, 1);
-        line(ctx, [[x + 3, y], [x + 4, y + 3]], mid, 1);
-      } else {
-        line(ctx, [[x, y + 4], [x + 2, y]], light, 1);
-        line(ctx, [[x + 3, y + 3], [x + 4, y]], mid, 1);
-      }
+    // Six 8px steps span exactly one 48px tile. The first/last offsets are
+    // zero, so adjacent exposed tiles join seamlessly while the edge itself is
+    // no longer ruler-straight.
+    const horizontal = [0, 1, 2, 1, 1, 0] as const;
+    const vertical = [0, 1, 2, 1, 1, 0] as const;
+    const segment = 8;
+    const undercut = 5;
+
+    const drawTop = (): void => {
+      horizontal.forEach((offset, index) => {
+        const x = index * segment;
+        rect(ctx, x, 0, segment, undercut + offset, dark);
+        rect(ctx, x, undercut + offset, segment, 2, mid);
+        if ((index + variant) % 2 === 0) {
+          line(
+            ctx,
+            [[x + 2, undercut + offset + 4], [x + 4, undercut + offset]],
+            light,
+            1,
+          );
+          line(
+            ctx,
+            [[x + 5, undercut + offset + 3], [x + 6, undercut + offset]],
+            mid,
+            1,
+          );
+        }
+      });
     };
 
-    if (openNorth) {
-      rect(ctx, 0, 0, width, edge, dark);
-      rect(ctx, 0, edge, width, 2, mid);
-      for (let x = 3; x < width - 2; x += 8) grassBlade(x, edge - 1, false);
-    }
+    const drawBottom = (): void => {
+      horizontal.forEach((offset, index) => {
+        const x = index * segment;
+        rect(
+          ctx,
+          x,
+          height - undercut - offset,
+          segment,
+          undercut + offset,
+          dark,
+        );
+        rect(ctx, x, height - undercut - offset - 2, segment, 2, light);
+        if ((index + variant) % 2 === 1) {
+          line(
+            ctx,
+            [[x + 2, height - undercut - offset - 5], [x + 4, height - undercut - offset - 1]],
+            light,
+            1,
+          );
+          line(
+            ctx,
+            [[x + 5, height - undercut - offset - 4], [x + 6, height - undercut - offset - 1]],
+            mid,
+            1,
+          );
+        }
+      });
+    };
 
-    if (openSouth) {
-      rect(ctx, 0, height - edge, width, edge, dark);
-      rect(ctx, 0, height - edge - 2, width, 2, light);
-      for (let x = 5; x < width - 2; x += 8) grassBlade(x, height - edge - 5, true);
-    }
+    const drawLeft = (): void => {
+      vertical.forEach((offset, index) => {
+        const y = index * segment;
+        rect(ctx, 0, y, undercut + offset, segment, dark);
+        rect(ctx, undercut + offset, y, 2, segment, mid);
+        if ((index + variant) % 2 === 0) {
+          line(
+            ctx,
+            [[undercut + offset + 4, y + 2], [undercut + offset, y + 4]],
+            light,
+            1,
+          );
+        }
+      });
+    };
 
-    if (openWest) {
-      rect(ctx, 0, 0, edge, height, dark);
-      rect(ctx, edge, 0, 2, height, mid);
-      for (let y = 5; y < height - 3; y += 9) {
-        line(ctx, [[edge - 1, y], [edge + 3, y - 2]], light, 1);
-      }
-    }
+    const drawRight = (): void => {
+      vertical.forEach((offset, index) => {
+        const y = index * segment;
+        rect(
+          ctx,
+          width - undercut - offset,
+          y,
+          undercut + offset,
+          segment,
+          dark,
+        );
+        rect(ctx, width - undercut - offset - 2, y, 2, segment, light);
+        if ((index + variant) % 2 === 1) {
+          line(
+            ctx,
+            [[width - undercut - offset - 5, y + 2], [width - undercut - offset - 1, y + 4]],
+            light,
+            1,
+          );
+        }
+      });
+    };
 
-    if (openEast) {
-      rect(ctx, width - edge, 0, edge, height, dark);
-      rect(ctx, width - edge - 2, 0, 2, height, light);
-      for (let y = 4; y < height - 3; y += 9) {
-        line(ctx, [[width - edge, y], [width - edge - 4, y - 2]], light, 1);
-      }
-    }
+    if (openNorth) drawTop();
+    if (openEast) drawRight();
+    if (openSouth) drawBottom();
+    if (openWest) drawLeft();
 
-    // Outer corners: join exposed sides into one deliberate corner block.
-    if (openNorth && openWest) {
-      rect(ctx, 0, 0, edge + 3, edge + 3, dark);
-      line(ctx, [[edge + 1, 0], [edge + 1, edge + 4], [0, edge + 4]], light, 1);
-    }
-    if (openNorth && openEast) {
-      rect(ctx, width - edge - 3, 0, edge + 3, edge + 3, dark);
-      line(
-        ctx,
-        [[width - edge - 2, 0], [width - edge - 2, edge + 4], [width, edge + 4]],
-        light,
-        1,
-      );
-    }
-    if (openSouth && openWest) {
-      rect(ctx, 0, height - edge - 3, edge + 3, edge + 3, dark);
-      line(
-        ctx,
-        [[0, height - edge - 4], [edge + 1, height - edge - 4], [edge + 1, height]],
-        light,
-        1,
-      );
-    }
-    if (openSouth && openEast) {
-      rect(ctx, width - edge - 3, height - edge - 3, edge + 3, edge + 3, dark);
-      line(
-        ctx,
-        [
-          [width - edge - 2, height],
-          [width - edge - 2, height - edge - 4],
-          [width, height - edge - 4],
-        ],
-        light,
-        1,
-      );
-    }
+    // Convex outer corners. The sides above create a square overlap; painting
+    // the meadow back into that overlap turns it into a soft rounded corner.
+    const softenOuter = (cx: number, cy: number): void => {
+      ellipse(ctx, cx, cy, 7, 7, mid);
+      ellipse(ctx, cx, cy, 5, 5, base);
+      ellipse(ctx, cx + (cx < width / 2 ? 2 : -2), cy + (cy < height / 2 ? 2 : -2), 2, 2, light);
+    };
 
-    // Concave inner corners: a diagonal hole in otherwise connected grass.
-    const inner = 8;
+    if (openNorth && openWest) softenOuter(8, 8);
+    if (openNorth && openEast) softenOuter(width - 8, 8);
+    if (openSouth && openWest) softenOuter(8, height - 8);
+    if (openSouth && openEast) softenOuter(width - 8, height - 8);
+
+    // Concave corners are circular notches rather than square blocks. This is
+    // the key visual distinction between an outer corner and an inner corner.
+    const innerRadius = 9;
+    const drawInner = (cx: number, cy: number, lipX: number, lipY: number): void => {
+      ellipse(ctx, cx, cy, innerRadius, innerRadius, dark);
+      ellipse(ctx, cx + lipX, cy + lipY, innerRadius - 3, innerRadius - 3, mid);
+      ellipse(ctx, cx + lipX * 2, cy + lipY * 2, innerRadius - 6, innerRadius - 6, light);
+    };
+
     if ((innerCornerMask & NORTH_EAST) !== 0) {
-      rect(ctx, width - inner, 0, inner, inner, dark);
-      line(ctx, [[width - inner, inner], [width - inner, 2], [width - 2, 2]], light, 1);
+      drawInner(width, 0, -1, 1);
     }
     if ((innerCornerMask & SOUTH_EAST) !== 0) {
-      rect(ctx, width - inner, height - inner, inner, inner, dark);
-      line(
-        ctx,
-        [[width - inner, height - inner], [width - inner, height - 2], [width - 2, height - 2]],
-        light,
-        1,
-      );
+      drawInner(width, height, -1, -1);
     }
     if ((innerCornerMask & SOUTH_WEST) !== 0) {
-      rect(ctx, 0, height - inner, inner, inner, dark);
-      line(
-        ctx,
-        [[inner, height - inner], [inner, height - 2], [2, height - 2]],
-        light,
-        1,
-      );
+      drawInner(0, height, 1, -1);
     }
     if ((innerCornerMask & NORTH_WEST) !== 0) {
-      rect(ctx, 0, 0, inner, inner, dark);
-      line(ctx, [[inner, inner], [inner, 2], [2, 2]], light, 1);
+      drawInner(0, 0, 1, 1);
     }
   }
-
   private drawProp(
     ctx: CanvasRenderingContext2D,
     width: number,
