@@ -85,6 +85,7 @@ export class MapScene extends Phaser.Scene {
 
       if (this.#selection.strokeMode === "line") {
         this.#lineStart = coord;
+        this.#renderer?.setLinePreview(coord, coord, this.#selection);
       } else {
         this.#editor.applyAt(coord, this.#eraseOverride);
       }
@@ -106,7 +107,16 @@ export class MapScene extends Phaser.Scene {
         this.#renderer?.setHover(coord, this.#selection);
       }
 
-      if (this.#painting && this.#selection.strokeMode === "brush") this.applyPointer(pointer);
+      if (this.#painting && this.#selection.strokeMode === "brush") {
+        this.applyPointer(pointer);
+      } else if (
+        this.#painting &&
+        this.#selection.strokeMode === "line" &&
+        this.#lineStart &&
+        coord
+      ) {
+        this.#renderer?.setLinePreview(this.#lineStart, coord, this.#selection);
+      }
     });
 
     const finishPointer = (pointer: Phaser.Input.Pointer): void => {
@@ -120,6 +130,7 @@ export class MapScene extends Phaser.Scene {
       this.#eraseOverride = false;
       this.#panning = false;
       this.#lineStart = null;
+      this.#renderer?.clearLinePreview();
     };
 
     this.input.on("pointerup", finishPointer);
