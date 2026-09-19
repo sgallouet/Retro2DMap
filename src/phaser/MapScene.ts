@@ -23,7 +23,7 @@ export class MapScene extends Phaser.Scene {
   #panning = false;
   #spaceDown = false;
   #lastHover: GridCoord | null = null;
-  #lineStart: GridCoord | null = null;
+  #gestureStart: GridCoord | null = null;
   #selection: EditorSelection = {
     layer: "terrain",
     catalogId: "grass",
@@ -84,8 +84,11 @@ export class MapScene extends Phaser.Scene {
       this.#editor.beginStroke();
 
       if (this.#selection.strokeMode === "line") {
-        this.#lineStart = coord;
+        this.#gestureStart = coord;
         this.#renderer?.setLinePreview(coord, coord, this.#selection);
+      } else if (this.#selection.strokeMode === "rect") {
+        this.#gestureStart = coord;
+        this.#renderer?.setRectPreview(coord, coord, this.#selection);
       } else {
         this.#editor.applyAt(coord, this.#eraseOverride);
       }
@@ -112,24 +115,35 @@ export class MapScene extends Phaser.Scene {
       } else if (
         this.#painting &&
         this.#selection.strokeMode === "line" &&
-        this.#lineStart &&
+        this.#gestureStart &&
         coord
       ) {
-        this.#renderer?.setLinePreview(this.#lineStart, coord, this.#selection);
+        this.#renderer?.setLinePreview(this.#gestureStart, coord, this.#selection);
+      } else if (
+        this.#painting &&
+        this.#selection.strokeMode === "rect" &&
+        this.#gestureStart &&
+        coord
+      ) {
+        this.#renderer?.setRectPreview(this.#gestureStart, coord, this.#selection);
       }
     });
 
     const finishPointer = (pointer: Phaser.Input.Pointer): void => {
-      if (this.#painting && this.#selection.strokeMode === "line" && this.#lineStart) {
-        const end = this.pointerToGrid(pointer) ?? this.#lastHover ?? this.#lineStart;
-        this.#editor.applyLine(this.#lineStart, end, this.#eraseOverride);
+      if (this.#painting && this.#gestureStart) {
+        const end = this.pointerToGrid(pointer) ?? this.#lastHover ?? this.#gestureStart;
+        if (this.#selection.strokeMode === "line") {
+          this.#editor.applyLine(this.#gestureStart, end, this.#eraseOverride);
+        } else if (this.#selection.strokeMode === "rect") {
+          this.#editor.applyRect(this.#gestureStart, end, this.#eraseOverride);
+        }
       }
 
       if (this.#painting) this.#editor.endStroke();
       this.#painting = false;
       this.#eraseOverride = false;
       this.#panning = false;
-      this.#lineStart = null;
+      this.#gestureStart = null;
       this.#renderer?.clearLinePreview();
     };
 
