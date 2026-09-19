@@ -9,7 +9,11 @@ import type { IAssetProvider } from "./IAssetProvider";
 
 export interface IWorldRenderer {
   render(document: MapDocument, gridVisible: boolean, navigationVisible: boolean): void;
-  setHover(coord: GridCoord | null, selection: EditorSelection): void;
+  setHover(
+    coord: GridCoord | null,
+    selection: EditorSelection,
+    footprintOverride?: Readonly<{ width: number; height: number }>,
+  ): void;
   setLinePreview(from: GridCoord, to: GridCoord, selection: EditorSelection): void;
   setRectPreview(from: GridCoord, to: GridCoord, selection: EditorSelection): void;
   clearLinePreview(): void;
@@ -100,21 +104,26 @@ export class WorldRenderer implements IWorldRenderer {
     this.drawGrid(document, gridVisible);
   }
 
-  setHover(coord: GridCoord | null, selection: EditorSelection): void {
+  setHover(
+    coord: GridCoord | null,
+    selection: EditorSelection,
+    footprintOverride?: Readonly<{ width: number; height: number }>,
+  ): void {
     this.#hover.clear();
     const document = this.#lastDocument;
     if (!coord || !document) return;
     if (coord.x < 0 || coord.y < 0 || coord.x >= document.width || coord.y >= document.height) return;
 
-    let width: number = selection.layer === "terrain" ? selection.brushSize : 1;
-    let height: number = selection.layer === "terrain" ? selection.brushSize : 1;
+    let width: number = footprintOverride?.width ?? (selection.layer === "terrain" ? selection.brushSize : 1);
+    let height: number = footprintOverride?.height ?? (selection.layer === "terrain" ? selection.brushSize : 1);
     let anchorX = coord.x;
     let anchorY = coord.y;
     const definition = this.catalog.get(selection.catalogId);
-    if (definition?.layer === "prop") {
+
+    if (!footprintOverride && definition?.layer === "prop") {
       width = definition.footprint.width;
       height = definition.footprint.height;
-    } else if (selection.layer === "terrain") {
+    } else if (!footprintOverride && selection.layer === "terrain") {
       const radius = Math.floor(selection.brushSize / 2);
       anchorX -= radius;
       anchorY -= radius;
