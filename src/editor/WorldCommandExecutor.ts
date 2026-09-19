@@ -1,4 +1,5 @@
 import type { IWorldCatalog } from "../domain/catalog";
+import { rasterizePolyline } from "../domain/grid";
 import type {
   CommandBatchResult,
   CommandExecutionResult,
@@ -108,7 +109,13 @@ export class WorldCommandExecutor implements IWorldCommandExecutor {
           points: command.points,
           overlapPolicy: command.overlapPolicy ?? "reject",
         });
-        return { ok: true, changed };
+
+        const complete = rasterizePolyline(command.points).every((coord) =>
+          this.samePropExists(document, command.catalogId, coord),
+        );
+        return complete
+          ? { ok: true, changed }
+          : this.failure(`Could not place complete network '${command.catalogId}'.`);
       }
 
       case "place-actor": {
