@@ -69,6 +69,8 @@ export class MapScene extends Phaser.Scene {
         state.gridVisible,
         state.navigationVisible,
         state.entitySelection,
+        state.validationIssues,
+        state.routePreview?.path ?? [],
       );
       const prefab = state.selectedPrefabId ? this.#prefabs.get(state.selectedPrefabId) : undefined;
       const selectedFootprint =
@@ -108,6 +110,12 @@ export class MapScene extends Phaser.Scene {
       if (!pointer.leftButtonDown() && !pointer.rightButtonDown()) return;
       const coord = this.pointerToGrid(pointer);
       if (!coord) return;
+
+      if (this.#selection.tool === "route") {
+        if (pointer.rightButtonDown()) this.#editor.clearRoute();
+        else if (pointer.leftButtonDown()) this.#editor.routeClick(coord);
+        return;
+      }
 
       if (this.#selection.tool === "select") {
         if (!pointer.leftButtonDown()) return;
