@@ -25,7 +25,14 @@ export interface IEntityPlacementService {
   erasePropsAt(document: MapDocument, coord: GridCoord): boolean;
   paintNetworkPath(document: MapDocument, request: NetworkPathRequest): boolean;
   erasePropsPath(document: MapDocument, points: readonly GridCoord[]): boolean;
+  moveProp(
+    document: MapDocument,
+    propId: string,
+    coord: GridCoord,
+    overlapPolicy?: OverlapPolicy,
+  ): boolean;
   placeActor(document: MapDocument, catalogId: string, coord: GridCoord): boolean;
+  moveActor(document: MapDocument, actorId: string, coord: GridCoord): boolean;
   eraseActorsAt(document: MapDocument, coord: GridCoord): boolean;
   propOccupies(prop: PropInstance, coord: GridCoord): boolean;
 }
@@ -96,6 +103,40 @@ export class EntityPlacementService implements IEntityPlacementService {
     return changed;
   }
 
+  moveProp(
+    document: MapDocument,
+    propId: string,
+    coord: GridCoord,
+    overlapPolicy: OverlapPolicy = "reject",
+  ): boolean {
+    const prop = document.props.find((item) => item.id === propId);
+    if (!prop) return false;
+
+    const definition = this.catalog.get(prop.catalogId);
+    if (!definition || definition.layer !== "prop") return false;
+    if (!this.footprintInside(document, coord, definition)) return false;
+    if (prop.x === coord.x && prop.y === coord.y) return false;
+
+    const overlaps = document.props.filter(
+      (candidate) =>
+        candidate.id !== propId &&
+        this.propsOverlap(candidate, coord, definition),
+    );
+
+    if (overlapPolicy === "reject" && overlaps.length > 0) return false;
+
+    if (overlapPolicy === "replace") {
+      const overlapIds = new Set(overlaps.map((candidate) => candidate.id));
+      document.props = document.props.filter(
+        (candidate) => candidate.id === propId || !overlapIds.has(candidate.id),
+      );
+    }
+
+    prop.x = coord.x;
+    prop.y = coord.y;
+    return true;
+  }
+
   placeActor(document: MapDocument, catalogId: string, coord: GridCoord): boolean {
     const definition = this.catalog.get(catalogId);
     if (!definition || definition.layer !== "actor" || !this.coordInside(document, coord)) {
@@ -122,6 +163,24 @@ export class EntityPlacementService implements IEntityPlacementService {
       facing: "south",
     };
     document.actors.push(actor);
+    return true;
+  }
+
+  moveActor(document: MapDocument, actorId: string, coord: GridCoord): boolean {
+    const actor = document.actors.find((item) => item.id === actorId);
+    if (!actor || !this.coordInside(document, coord)) return false;
+    if (actor.x === coord.x && actor.y === coord.y) return false;
+
+    const occupied = document.actors.some(
+      (candidate) =>
+        candidate.id !== actorId &&
+        candidate.x === coord.x &&
+        candidate.y === coord.y,
+    );
+    if (occupied) return false;
+
+    actor.x = coord.x;
+    actor.y = coord.y;
     return true;
   }
 
