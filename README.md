@@ -32,6 +32,7 @@ npm run build
 - **Left click / drag**: paint selected item
 - **Right click / drag**: erase on the selected layer
 - **S**: select; drag an actor/prop to move it
+- **Turn ↻**: rotate selected actor facing or a rotatable prop by 90°
 - **F**: route inspector; click start then goal, right-click clears
 - **B / L / R**: freehand brush, semantic straight line, or filled terrain rectangle
 - **1 / 3 / 5**: switch terrain brush between 1×1, 3×3 and 5×5
@@ -47,7 +48,7 @@ npm run build
 
 The important boundary is `IAssetProvider`: today `ProceduralAssetProvider` creates all textures in code. A future `SpriteAssetProvider` can resolve the same catalog IDs to PNG/WebP/atlas frames without touching editor/domain code.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/TOPOLOGY.md](docs/TOPOLOGY.md), and [docs/ASSET_PIPELINE.md](docs/ASSET_PIPELINE.md).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/TOPOLOGY.md](docs/TOPOLOGY.md), [docs/ASSET_PIPELINE.md](docs/ASSET_PIPELINE.md), and [docs/COMMANDS.md](docs/COMMANDS.md).
 
 ## Current sample
 
@@ -63,3 +64,4 @@ The bundled sample intentionally mirrors the *structure* of the supplied referen
 - Editor mutations are history-backed and renderer-agnostic.
 - Terrain uses 8-neighbour semantic topology; connected walls/fences/bridges/cliffs derive their own network variants.
 - Domain topology and placement rules are covered by automated tests.
+- Serializable semantic world commands drive generators and are intended as the future AI-building boundary.
