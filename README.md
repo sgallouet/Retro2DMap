@@ -31,6 +31,7 @@ npm run build
 
 - **Left click / drag**: paint selected item
 - **Right click / drag**: erase on the selected layer
+- **B / L**: freehand brush or semantic straight-line mode
 - **1 / 3 / 5**: switch terrain brush between 1×1, 3×3 and 5×5
 - **Mouse wheel**: zoom
 - **Middle drag** or **Space + left drag**: pan
@@ -56,3 +57,5 @@ The bundled sample intentionally mirrors the *structure* of the supplied referen
 - Terrain is a dense cell grid; props and actors are sparse entity arrays.
 - JSON is the canonical map interchange format.
 - Editor mutations are history-backed and renderer-agnostic.
+- Terrain uses 8-neighbour semantic topology; connected walls/fences/bridges/cliffs derive their own network variants.
+- Domain topology and placement rules are covered by automated tests.
