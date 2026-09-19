@@ -3,12 +3,17 @@ import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
 import { PropTopologyResolver, TerrainTopologyResolver } from "../domain/autotile";
 import { rasterizeGridLine } from "../domain/grid";
 import { NavigationGridBuilder } from "../domain/navigation";
-import type { EditorSelection, GridCoord, MapDocument } from "../domain/map";
+import type { EditorEntitySelection, EditorSelection, GridCoord, MapDocument } from "../domain/map";
 import { TILE_SIZE } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
 
 export interface IWorldRenderer {
-  render(document: MapDocument, gridVisible: boolean, navigationVisible: boolean): void;
+  render(
+    document: MapDocument,
+    gridVisible: boolean,
+    navigationVisible: boolean,
+    entitySelection: EditorEntitySelection | null,
+  ): void;
   setHover(
     coord: GridCoord | null,
     selection: EditorSelection,
@@ -23,6 +28,7 @@ export interface IWorldRenderer {
 export class WorldRenderer implements IWorldRenderer {
   readonly #worldObjects: Phaser.GameObjects.GameObject[] = [];
   readonly #navigationOverlay: Phaser.GameObjects.Graphics;
+  readonly #entitySelectionOverlay: Phaser.GameObjects.Graphics;
   readonly #grid: Phaser.GameObjects.Graphics;
   readonly #linePreview: Phaser.GameObjects.Graphics;
   readonly #hover: Phaser.GameObjects.Graphics;
@@ -37,6 +43,7 @@ export class WorldRenderer implements IWorldRenderer {
     private readonly assets: IAssetProvider,
   ) {
     this.#navigationOverlay = scene.add.graphics().setDepth(99_900);
+    this.#entitySelectionOverlay = scene.add.graphics().setDepth(99_950);
     this.#grid = scene.add.graphics().setDepth(100_000);
     this.#linePreview = scene.add.graphics().setDepth(100_050);
     this.#hover = scene.add.graphics().setDepth(100_100);
@@ -45,7 +52,12 @@ export class WorldRenderer implements IWorldRenderer {
     this.#navigation = new NavigationGridBuilder(catalog);
   }
 
-  render(document: MapDocument, gridVisible: boolean, navigationVisible: boolean): void {
+  render(
+    document: MapDocument,
+    gridVisible: boolean,
+    navigationVisible: boolean,
+    entitySelection: EditorEntitySelection | null,
+  ): void {
     this.#lastDocument = document;
     this.#worldObjects.splice(0).forEach((object) => object.destroy());
 
@@ -101,6 +113,7 @@ export class WorldRenderer implements IWorldRenderer {
     });
 
     this.drawNavigation(document, navigationVisible);
+    this.drawEntitySelection(document, entitySelection);
     this.drawGrid(document, gridVisible);
   }
 
@@ -225,9 +238,56 @@ export class WorldRenderer implements IWorldRenderer {
   destroy(): void {
     this.#worldObjects.splice(0).forEach((object) => object.destroy());
     this.#navigationOverlay.destroy();
+    this.#entitySelectionOverlay.destroy();
     this.#grid.destroy();
     this.#linePreview.destroy();
     this.#hover.destroy();
+  }
+
+  private drawEntitySelection(
+    document: MapDocument,
+    selection: EditorEntitySelection | null,
+  ): void {
+    this.#entitySelectionOverlay.clear();
+    if (!selection) return;
+
+    let x = 0;
+    let y = 0;
+    let width = 1;
+    let height = 1;
+
+    if (selection.kind === "actor") {
+      const actor = document.actors.find((candidate) => candidate.id === selection.id);
+      if (!actor) return;
+      x = actor.x;
+      y = actor.y;
+    } else {
+      const prop = document.props.find((candidate) => candidate.id === selection.id);
+      if (!prop) return;
+      const definition = this.catalog.get(prop.catalogId);
+      if (!definition || definition.layer !== "prop") return;
+
+      x = prop.x;
+      y = prop.y;
+      width = definition.footprint.width;
+      height = definition.footprint.height;
+    }
+
+    const inset = 2;
+    this.#entitySelectionOverlay.fillStyle(0xf2cf71, 0.10);
+    this.#entitySelectionOverlay.lineStyle(3, 0xf2cf71, 0.95);
+    this.#entitySelectionOverlay.fillRect(
+      x * TILE_SIZE + inset,
+      y * TILE_SIZE + inset,
+      width * TILE_SIZE - inset * 2,
+      height * TILE_SIZE - inset * 2,
+    );
+    this.#entitySelectionOverlay.strokeRect(
+      x * TILE_SIZE + inset,
+      y * TILE_SIZE + inset,
+      width * TILE_SIZE - inset * 2,
+      height * TILE_SIZE - inset * 2,
+    );
   }
 
   private drawNavigation(document: MapDocument, visible: boolean): void {
