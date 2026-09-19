@@ -1,6 +1,4 @@
-import { tileAt, type GridCoord, type MapDocument } from "../domain/map";
-
-export type BrushSize = 1 | 3 | 5;
+import { tileAt, type BrushSize, type GridCoord, type MapDocument } from "../domain/map";
 
 export interface TerrainBrushRequest {
   center: GridCoord;
