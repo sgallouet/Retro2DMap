@@ -243,12 +243,12 @@ export class ProceduralAssetProvider implements IAssetProvider {
   ): void {
     const random = rng(hash(entry.id) + variant * 997);
     const palette: Record<string, readonly [string, string, string]> = {
-      grass: ["#80C42F", "#94D53E", "#599E2B"],
-      "grass-dark": ["#2F792C", "#4B8F2A", "#0E4527"],
-      path: ["#EDCA61", "#F4DC73", "#A58D35"],
-      cobble: ["#949392", "#C6C2BB", "#65625C"],
-      "stone-floor": ["#949392", "#C6C2BB", "#65625C"],
-      "wood-floor": ["#9B6C32", "#BB8848", "#6E491E"],
+      grass: ["#78BE22", "#94D53E", "#639A1E"],
+      "grass-dark": ["#29671D", "#39902C", "#053523"],
+      path: ["#ECC75E", "#F4DC73", "#A58D35"],
+      cobble: ["#A3A29C", "#C4BFBB", "#656666"],
+      "stone-floor": ["#ACB2A0", "#E5E5DF", "#7B7B7B"],
+      "wood-floor": ["#A87F45", "#C48743", "#614221"],
       water: ["#187cc4", "#2f9ee0", "#0b599e"],
       "deep-water": ["#1265ad", "#2089cc", "#08477f"],
       soil: ["#8E7520", "#C8A736", "#4E3F11"],
@@ -268,14 +268,14 @@ export class ProceduralAssetProvider implements IAssetProvider {
     }
 
     if (entry.id === "grass" || entry.id === "grass-dark") {
-      const tuftCount = entry.id === "grass" ? 11 : 15;
+      const tuftCount = entry.id === "grass" ? 7 : 10;
       for (let i = 0; i < tuftCount; i += 1) {
         const x = 3 + Math.floor(random() * Math.max(1, width - 7));
         const y = 6 + Math.floor(random() * Math.max(1, height - 12));
         const shade = random() > 0.42 ? colors[1] : colors[2];
         line(ctx, [[x, y + 4], [x + 1, y]], shade, 1);
         line(ctx, [[x + 2, y + 4], [x + 4, y + 1]], shade, 1);
-        if (random() > 0.6) rect(ctx, x + 5, y + 3, 2, 2, shade);
+        if (random() > 0.72) rect(ctx, x + 5, y + 3, 2, 2, shade);
       }
 
       // Large, faint tonal patches keep grass from reading as noisy confetti.
@@ -288,28 +288,28 @@ export class ProceduralAssetProvider implements IAssetProvider {
     }
 
     if (entry.id === "path") {
-      for (let i = 0; i < 13; i += 1) {
+      for (let i = 0; i < 18; i += 1) {
         const x = Math.floor(random() * width);
         const y = Math.floor(random() * height);
         const pebble = random() > 0.52 ? colors[1] : colors[2];
-        ellipse(ctx, x, y, 1 + random() * 2, 1 + random() * 1.2, pebble);
+        ellipse(ctx, x, y, 0.7 + random() * 1.5, 0.7 + random() * 0.8, pebble);
       }
 
       // Two soft travel tracks make roads feel used rather than painted.
-      line(ctx, [[4, 14], [width - 5, 12]], "rgba(94,72,48,.13)", 2);
-      line(ctx, [[4, height - 13], [width - 5, height - 15]], "rgba(94,72,48,.13)", 2);
+      line(ctx, [[3, 13], [width - 4, 11]], "rgba(97,66,33,.11)", 1);
+      line(ctx, [[3, height - 12], [width - 4, height - 14]], "rgba(97,66,33,.11)", 1);
       return;
     }
 
     if (entry.id === "cobble") {
       rect(ctx, 0, 0, width, height, colors[0]);
-      for (let y = 0; y < height; y += 11) {
-        const shift = (Math.floor(y / 11) % 2) * 6;
-        for (let x = -shift; x < width; x += 13) {
-          const tone = (x + y + variant) % 3 === 0 ? colors[1] : colors[0];
-          rect(ctx, x, y, 12, 10, tone, colors[2]);
-          if ((x + y) % 4 === 0) {
-            rect(ctx, x + 3, y + 2, 4, 2, "rgba(228,218,190,.12)");
+      for (let y = 0; y < height; y += 9) {
+        const shift = (Math.floor(y / 9) % 2) * 5;
+        for (let x = -shift; x < width; x += 11) {
+          const tone = (x + y + variant) % 4 === 0 ? colors[1] : colors[0];
+          rect(ctx, x, y, 10, 8, tone, colors[2]);
+          if ((x + y) % 5 === 0) {
+            rect(ctx, x + 2, y + 2, 3, 1, "rgba(229,229,223,.15)");
           }
         }
       }
@@ -318,7 +318,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
 
     if (entry.id === "stone-floor") {
       rect(ctx, 0, 0, width, height, colors[0]);
-      const cell = 16;
+      const cell = 12;
       for (let y = 0; y < height; y += cell) {
         for (let x = 0; x < width; x += cell) {
           const alternate = ((x / cell) + (y / cell) + variant) % 3 === 0;
@@ -347,11 +347,11 @@ export class ProceduralAssetProvider implements IAssetProvider {
     }
 
     if (entry.id === "wood-floor") {
-      for (let y = 0; y < height; y += 10) {
-        rect(ctx, 0, y, width, 9, y % 20 === 0 ? colors[0] : colors[1]);
-        line(ctx, [[0, y + 9], [width, y + 9]], colors[2], 1);
-        for (let x = (y / 10) % 2 === 0 ? 16 : 30; x < width; x += 30) {
-          line(ctx, [[x, y], [x, y + 9]], colors[2], 1);
+      for (let y = 0; y < height; y += 8) {
+        rect(ctx, 0, y, width, 7, y % 16 === 0 ? colors[0] : colors[1]);
+        line(ctx, [[0, y + 7], [width, y + 7]], colors[2], 1);
+        for (let x = (y / 8) % 2 === 0 ? 13 : 27; x < width; x += 27) {
+          line(ctx, [[x, y], [x, y + 7]], colors[2], 1);
         }
       }
       return;
@@ -626,227 +626,234 @@ export class ProceduralAssetProvider implements IAssetProvider {
     facing: "north" | "east" | "south" | "west",
   ): void {
     const cx = width / 2;
-    ellipse(ctx, cx, height - 5, 12, 4, "rgba(27,31,29,.32)");
+    const side = facing === "east" || facing === "west";
+    ellipse(ctx, cx + 1, height - 4, 12, 4, "rgba(7,22,25,.28)");
 
     const palette: Record<string, readonly [string, string, string]> = {
-      hero: ["#315f87", "#4c83ad", "#203f59"],
-      guard: ["#4e6478", "#7d93a2", "#293943"],
-      king: ["#8d2632", "#bc3948", "#5d1b25"],
-      scholar: ["#66517f", "#846c9f", "#3e334f"],
-      farmer: ["#5d7748", "#78945c", "#3d5031"],
-      "villager-f": ["#8a4a55", "#ac6670", "#59313a"],
-      "villager-m": ["#5b6f4b", "#748861", "#3b4932"],
+      hero: ["#B81F25", "#F3CF63", "#4C2A12"],
+      guard: ["#116ACE", "#E5E5DF", "#123659"],
+      king: ["#B81F25", "#F3CF63", "#8C2015"],
+      scholar: ["#6F794D", "#E1D0A7", "#4D4533"],
+      farmer: ["#8B6230", "#F3CF63", "#4C2A12"],
+      "villager-f": ["#B81F25", "#E5E5DF", "#614221"],
+      "villager-m": ["#639A1E", "#E1D0A7", "#4D4533"],
     };
-    const [body, light, dark] = palette[entry.id] ?? ["#596d58", "#72866f", "#39463a"];
+    const [body, accent, dark] = palette[entry.id] ?? ["#639A1E", "#E1D0A7", "#4D4533"];
 
-    // Feet and lower body.
-    rect(ctx, cx - 10, 33, 7, 10, "#2f3333");
-    rect(ctx, cx + 3, 33, 7, 10, "#2f3333");
-    rect(ctx, cx - 11, 24, 22, 14, body, dark);
-    rect(ctx, cx - 8, 25, 5, 11, light);
-    rect(ctx, cx + 5, 25, 3, 11, dark);
+    // Chibi legs/body: compact and readable like the target.
+    rect(ctx, cx - 8, 31, 6, 11, dark, "#071619");
+    rect(ctx, cx + 2, 31, 6, 11, dark, "#071619");
+    rect(ctx, cx - 11, 24, 22, 13, body, "#071619");
+    rect(ctx, cx - 14, 25, 5, 10, body, "#071619");
+    rect(ctx, cx + 9, 25, 5, 10, body, "#071619");
+    rect(ctx, cx - 7, 25, 4, 9, accent);
 
-    // Arms read clearly at map scale.
-    rect(ctx, cx - 15, 25, 5, 10, body, dark);
-    rect(ctx, cx + 10, 25, 5, 10, body, dark);
+    // Oversized head is a major part of the target's JRPG readability.
+    ellipse(ctx, cx + (side ? 1 : 0), 16, 10, 10, "#E1D0A7", "#29180C");
+    rect(ctx, cx - 8, 9, 16, facing === "north" ? 10 : 6, "#614221", "#29180C");
+    rect(ctx, cx - 9, 12, 4, 9, "#614221");
+    rect(ctx, cx + 5, 12, 4, 9, "#614221");
 
-    // Head and facing cues. North shows the back of the head; east/west use
-    // one visible eye and a slightly offset nose. West is mirrored by renderer.
-    ellipse(ctx, cx, 18, 9, 9, "#e0b68e", "#5a4033");
-    rect(ctx, cx - 7, 11, 14, facing === "north" ? 9 : 5, "#6a4631");
-    rect(ctx, cx - 8, 14, 3, 8, "#6a4631");
-    rect(ctx, cx + 5, 14, 3, 8, "#6a4631");
-
-    if (facing === "north") {
-      rect(ctx, cx - 5, 17, 10, 7, "#6a4631");
-      rect(ctx, cx - 2, 13, 4, 2, "#8a5d3d");
-    } else if (facing === "east" || facing === "west") {
-      rect(ctx, cx + 2, 18, 2, 2, "#43352e");
-      rect(ctx, cx + 7, 20, 3, 2, "#c69072");
-    } else {
-      rect(ctx, cx - 3, 18, 2, 2, "#43352e");
-      rect(ctx, cx + 3, 18, 2, 2, "#43352e");
-      rect(ctx, cx - 1, 21, 3, 1, "#9f6758");
-    }
-
-    if (entry.id === "hero" && facing === "north") {
-      ctx.fillStyle = referenceColor("#8c3f43");
-      ctx.beginPath();
-      ctx.moveTo(cx - 11, 24);
-      ctx.lineTo(cx + 11, 24);
-      ctx.lineTo(cx + 8, 39);
-      ctx.lineTo(cx - 8, 39);
-      ctx.closePath();
-      ctx.fill();
+    if (facing === "south") {
+      rect(ctx, cx - 4, 16, 2, 2, "#071619");
+      rect(ctx, cx + 3, 16, 2, 2, "#071619");
+      rect(ctx, cx - 1, 20, 3, 1, "#8C2015");
+    } else if (side) {
+      const eyeX = facing === "east" ? cx + 4 : cx - 5;
+      rect(ctx, eyeX, 16, 2, 2, "#071619");
     }
 
     if (entry.id === "guard") {
-      rect(ctx, cx - 10, 8, 20, 9, "#aeb8ba", "#475156");
-      rect(ctx, cx - 6, 5, 12, 6, "#c9d0d0", "#475156");
-      rect(ctx, cx - 2, 6, 4, 13, "#657f90");
-      rect(ctx, cx + 12, 21, 4, 19, "#b9c2c2", "#4c5659");
-      line(ctx, [[cx + 14, 20], [cx + 14, 5]], "#6a4c2e", 2);
+      rect(ctx, cx - 10, 7, 20, 10, "#BCB9B5", "#123659");
+      rect(ctx, cx - 7, 4, 14, 6, "#E5E5DF", "#123659");
+      rect(ctx, cx - 2, 5, 4, 13, "#116ACE");
+      rect(ctx, cx - 9, 25, 18, 5, "#116ACE", "#123659");
+      line(ctx, [[cx + 14, 35], [cx + 14, 7]], "#BEA475", 2);
+      line(ctx, [[cx + 12, 9], [cx + 16, 9]], "#E5E5DF", 2);
     } else if (entry.id === "king") {
-      rect(ctx, cx - 9, 24, 18, 4, "#d2a744", "#76591e");
-      ctx.fillStyle = referenceColor("#F1A346");
+      rect(ctx, cx - 10, 24, 20, 5, "#F3CF63", "#8C2015");
+      ctx.fillStyle = referenceColor("#F3CF63");
       ctx.beginPath();
-      ctx.moveTo(cx - 9, 12);
-      ctx.lineTo(cx - 7, 5);
-      ctx.lineTo(cx - 2, 10);
-      ctx.lineTo(cx + 1, 4);
-      ctx.lineTo(cx + 5, 10);
-      ctx.lineTo(cx + 9, 5);
-      ctx.lineTo(cx + 8, 13);
-      ctx.closePath();
-      ctx.fill();
-      rect(ctx, cx - 9, 11, 17, 4, "#F1A346", "#76591e");
-    } else if (entry.id === "farmer") {
-      ellipse(ctx, cx, 11, 15, 4, "#b8944e", "#70562d");
-      rect(ctx, cx - 8, 6, 16, 7, "#c8a45b", "#70562d");
-    } else if (entry.id === "scholar") {
-      rect(ctx, cx - 10, 8, 20, 5, "#4a395d");
-      ctx.fillStyle = referenceColor("#6d5688");
-      ctx.beginPath();
-      ctx.moveTo(cx - 6, 10);
+      ctx.moveTo(cx - 9, 10);
+      ctx.lineTo(cx - 7, 3);
+      ctx.lineTo(cx - 2, 8);
       ctx.lineTo(cx + 1, 2);
-      ctx.lineTo(cx + 7, 11);
+      ctx.lineTo(cx + 5, 8);
+      ctx.lineTo(cx + 9, 3);
+      ctx.lineTo(cx + 8, 11);
       ctx.closePath();
       ctx.fill();
-      rect(ctx, cx - 12, 31, 24, 5, dark);
-    } else if (entry.id === "hero" && facing !== "north") {
-      // Small shoulder cape and sword silhouette.
-      rect(ctx, cx - 12, 22, 24, 5, "#8c3f43", "#552a2e");
-      line(ctx, [[cx + 12, 29], [cx + 17, 12]], "#c4c8c4", 3);
-      line(ctx, [[cx + 9, 25], [cx + 15, 27]], "#6b4a2e", 3);
+      rect(ctx, cx - 9, 10, 17, 4, "#F3CF63", "#8E7520");
+    } else if (entry.id === "farmer") {
+      ellipse(ctx, cx, 8, 15, 4, "#CEB56D", "#795B30");
+      rect(ctx, cx - 10, 5, 20, 6, "#F3CF63", "#795B30");
+    } else if (entry.id === "scholar") {
+      rect(ctx, cx - 10, 7, 20, 5, "#6F794D", "#4D4533");
+      ctx.fillStyle = referenceColor("#6F794D");
+      ctx.beginPath();
+      ctx.moveTo(cx - 6, 9);
+      ctx.lineTo(cx + 1, 1);
+      ctx.lineTo(cx + 7, 10);
+      ctx.closePath();
+      ctx.fill();
+    } else if (entry.id === "hero") {
+      rect(ctx, cx - 12, 22, 24, 5, "#B81F25", "#4C2A12");
+      if (facing === "north") {
+        rect(ctx, cx - 9, 25, 18, 14, "#B81F25", "#4C2A12");
+      } else {
+        line(ctx, [[cx + 12, 31], [cx + 17, 11]], "#E5E5DF", 3);
+      }
     } else if (entry.id === "villager-f") {
-      rect(ctx, cx - 12, 32, 24, 8, light, dark);
-      rect(ctx, cx - 9, 9, 18, 5, "#7a503c");
+      rect(ctx, cx - 12, 31, 24, 8, "#E5E5DF", dark);
+      rect(ctx, cx - 8, 23, 16, 5, body, dark);
     }
   }
 
   private drawTree(ctx: CanvasRenderingContext2D, width: number, height: number, pine: boolean): void {
     const cx = width / 2;
-    ellipse(ctx, cx + 2, height - 7, 20, 6, "rgba(34,47,30,.28)");
-    rect(ctx, cx - 5, height - 43, 10, 36, "#6b492f", "#403023");
-    rect(ctx, cx - 2, height - 40, 3, 31, "#966744");
+    ellipse(ctx, cx + 2, height - 5, 18, 5, "rgba(5,53,35,.24)");
+    rect(ctx, cx - 5, height - 39, 10, 33, "#795B30", "#29180C");
+    rect(ctx, cx - 2, height - 38, 3, 29, "#A87F45");
 
     if (pine) {
-      const layers = [
-        [17, 17, "#0E4527"],
-        [29, 23, "#2F792C"],
-        [43, 28, "#4B8F2A"],
-        [57, 32, "#2F792C"],
-      ] as const;
-
-      for (const [y, half, fill] of layers) {
-        ctx.fillStyle = referenceColor("#0E4527");
+      const bands = [
+        { y: 17, half: 14, fill: "#29671D" },
+        { y: 28, half: 19, fill: "#39902C" },
+        { y: 40, half: 23, fill: "#639A1E" },
+        { y: 53, half: 27, fill: "#39902C" },
+      ];
+      for (const band of bands) {
+        ctx.fillStyle = referenceColor("#053523");
         ctx.beginPath();
-        ctx.moveTo(cx + 2, y - 13);
-        ctx.lineTo(cx - half - 2, y + 18);
-        ctx.lineTo(cx + half + 3, y + 18);
+        ctx.moveTo(cx, band.y - 14);
+        ctx.lineTo(cx - band.half - 3, band.y + 14);
+        ctx.lineTo(cx + band.half + 3, band.y + 14);
         ctx.closePath();
         ctx.fill();
 
-        ctx.fillStyle = referenceColor(fill);
+        ctx.fillStyle = referenceColor(band.fill);
         ctx.beginPath();
-        ctx.moveTo(cx, y - 12);
-        ctx.lineTo(cx - half, y + 15);
-        ctx.lineTo(cx + half, y + 15);
+        ctx.moveTo(cx, band.y - 12);
+        ctx.lineTo(cx - band.half, band.y + 11);
+        ctx.lineTo(cx + band.half, band.y + 11);
         ctx.closePath();
         ctx.fill();
 
-        line(ctx, [[cx - half + 6, y + 9], [cx + 3, y - 4]], "rgba(184,210,142,.22)", 2);
+        line(ctx, [[cx - band.half + 5, band.y + 7], [cx - 1, band.y - 5]], "rgba(148,213,62,.42)", 2);
       }
       return;
     }
 
-    const clusters: ReadonlyArray<readonly [number, number, number, number, string]> = [
-      [cx, 29, 25, 20, "#0E4527"],
-      [cx - 13, 40, 22, 18, "#2F792C"],
-      [cx + 13, 40, 22, 18, "#2F792C"],
-      [cx - 3, 52, 26, 19, "#4B8F2A"],
-      [cx + 10, 28, 17, 14, "#599E2B"],
-    ];
-    clusters.forEach(([x, y, rx, ry, fill]) =>
-      ellipse(ctx, x, y, rx, ry, fill, "#0E4527"),
-    );
+    // Dark silhouette first, then many overlapping crown lobes.
+    const silhouette = [
+      [cx, 27, 25, 20],
+      [cx - 14, 36, 22, 19],
+      [cx + 14, 36, 22, 19],
+      [cx - 8, 51, 24, 18],
+      [cx + 10, 50, 24, 18],
+    ] as const;
+    silhouette.forEach(([x,y,rx,ry]) => ellipse(ctx, x, y, rx, ry, "#053523"));
 
-    ellipse(ctx, cx - 10, 25, 10, 6, "#80C42F");
-    ellipse(ctx, cx + 8, 36, 7, 5, "#599E2B");
-    rect(ctx, cx - 18, 42, 4, 3, "#2f5837");
-    rect(ctx, cx + 14, 48, 5, 3, "#2f5837");
+    const lobes: ReadonlyArray<readonly [number, number, number, number, string]> = [
+      [cx - 7, 23, 15, 12, "#639A1E"],
+      [cx + 8, 24, 14, 12, "#78BE22"],
+      [cx - 18, 35, 15, 13, "#39902C"],
+      [cx, 35, 18, 15, "#8BC731"],
+      [cx + 18, 37, 14, 13, "#639A1E"],
+      [cx - 11, 49, 17, 13, "#39902C"],
+      [cx + 8, 49, 18, 14, "#78BE22"],
+    ];
+    lobes.forEach(([x,y,rx,ry,fill]) => ellipse(ctx, x, y, rx, ry, fill));
+
+    ellipse(ctx, cx - 7, 21, 8, 5, "#94D53E");
+    ellipse(ctx, cx + 7, 29, 6, 4, "#8BC731");
+    ellipse(ctx, cx - 13, 40, 5, 4, "#72C33D");
   }
 
   private drawFlowers(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    const colors = ["#fff6d5", "#ef6b88", "#f4d34c", "#75b8f4"];
-    for (let i = 0; i < 8; i += 1) {
-      const x = 7 + ((i * 13) % (width - 12));
-      const y = 10 + ((i * 17) % (height - 14));
-      line(ctx, [[x, y + 4], [x, y + 10]], "#337a42", 1);
-      ellipse(ctx, x, y, 3, 3, colors[i % colors.length] ?? "#fff");
+    const colors = ["#E5E5DF", "#F3CF63", "#E76735", "#B81F25", "#5793F5"];
+    for (let i = 0; i < 14; i += 1) {
+      const x = 5 + ((i * 11) % Math.max(8, width - 10));
+      const y = 7 + ((i * 17) % Math.max(10, height - 12));
+      line(ctx, [[x, y + 2], [x, y + 8]], "#39902C", 1);
+      ellipse(ctx, x - 2, y, 2.5, 2.5, colors[i % colors.length] ?? "#E5E5DF");
+      ellipse(ctx, x + 2, y + 1, 2.5, 2.5, colors[(i + 2) % colors.length] ?? "#F3CF63");
+      ellipse(ctx, x, y - 2, 2, 2, "#E5E5DF");
     }
   }
 
   private drawHouse(ctx: CanvasRenderingContext2D, width: number, height: number, roof: string): void {
     const cx = width / 2;
-    ellipse(ctx, cx + 3, height - 7, width * 0.39, 8, "rgba(38,40,31,.26)");
+    ellipse(ctx, cx + 4, height - 5, width * 0.39, 7, "rgba(41,24,12,.24)");
 
-    // Lower plaster/timber facade.
-    rect(ctx, 15, 61, width - 30, height - 68, "#B3A376", "#5a4430");
-    rect(ctx, 19, 65, width - 38, height - 75, "#D2C7B4");
-    rect(ctx, 18, 63, 6, height - 71, "#603F1A");
-    rect(ctx, width - 24, 63, 6, height - 71, "#603F1A");
-    line(ctx, [[24, 68], [width - 24, height - 20]], "#7e593c", 3);
-    line(ctx, [[width - 24, 68], [24, height - 20]], "#7e593c", 3);
+    // Deep facade and warm plaster.
+    rect(ctx, 13, 62, width - 26, height - 68, "#614221", "#29180C");
+    rect(ctx, 19, 67, width - 38, height - 76, "#E1D0A7", "#795B30");
+    rect(ctx, cx - 15, height - 45, 30, 39, "#795B30", "#29180C");
+    rect(ctx, cx - 10, height - 39, 20, 33, "#4C2A12");
+    ellipse(ctx, cx + 6, height - 24, 2, 2, "#F3CF63");
 
-    // Door and windows.
-    rect(ctx, cx - 12, height - 43, 24, 36, "#6E491E", "#392610");
-    ellipse(ctx, cx + 6, height - 26, 2, 2, "#d6b65b");
-    rect(ctx, 27, 79, 19, 17, "#6f9da8", "#4d4332");
-    rect(ctx, width - 46, 79, 19, 17, "#6f9da8", "#4d4332");
-    line(ctx, [[36, 80], [36, 95]], "rgba(232,235,198,.5)", 2);
-    line(ctx, [[width - 37, 80], [width - 37, 95]], "rgba(232,235,198,.5)", 2);
+    // Timber frame.
+    rect(ctx, 18, 66, 6, height - 75, "#614221");
+    rect(ctx, width - 24, 66, 6, height - 75, "#614221");
+    line(ctx, [[24, 70], [width - 24, height - 21]], "#614221", 3);
+    line(ctx, [[width - 24, 70], [24, height - 21]], "#614221", 3);
 
-    // Deep roof eaves first, then roof plane.
-    ctx.fillStyle = referenceColor("#392610");
+    // Windows with pale glass.
+    for (const x of [30, width - 50]) {
+      rect(ctx, x, 80, 20, 18, "#123659", "#4C2A12");
+      rect(ctx, x + 3, 83, 14, 12, "#238EC7");
+      line(ctx, [[x + 10, 83], [x + 10, 95]], "#E1D0A7", 1);
+      line(ctx, [[x + 3, 89], [x + 17, 89]], "#E1D0A7", 1);
+    }
+
+    // Dark roof underlay.
+    ctx.fillStyle = referenceColor("#29180C");
     ctx.beginPath();
-    ctx.moveTo(3, 67);
-    ctx.lineTo(cx, 15);
-    ctx.lineTo(width - 3, 67);
-    ctx.lineTo(width - 10, 73);
-    ctx.lineTo(cx, 28);
-    ctx.lineTo(10, 73);
+    ctx.moveTo(2, 68);
+    ctx.lineTo(cx, 13);
+    ctx.lineTo(width - 2, 68);
+    ctx.lineTo(width - 9, 76);
+    ctx.lineTo(cx, 29);
+    ctx.lineTo(9, 76);
     ctx.closePath();
     ctx.fill();
 
+    // Main roof plane.
     ctx.fillStyle = referenceColor(roof);
     ctx.beginPath();
-    ctx.moveTo(8, 62);
-    ctx.lineTo(cx, 18);
-    ctx.lineTo(width - 8, 62);
-    ctx.lineTo(width - 16, 67);
+    ctx.moveTo(7, 63);
+    ctx.lineTo(cx, 17);
+    ctx.lineTo(width - 7, 63);
+    ctx.lineTo(width - 14, 69);
     ctx.lineTo(cx, 29);
-    ctx.lineTo(16, 67);
+    ctx.lineTo(14, 69);
     ctx.closePath();
     ctx.fill();
 
-    // Roof tile/shingle rhythm.
-    for (let y = 34; y <= 58; y += 7) {
-      const inset = Math.round((y - 29) * 0.8);
-      line(
-        ctx,
-        [[inset, y], [width - inset, y]],
-        "rgba(255,244,214,.20)",
-        2,
-      );
-    }
-    for (let x = 28; x < width - 22; x += 18) {
-      line(ctx, [[cx, 22], [x, 63]], "rgba(70,43,39,.28)", 1);
+    // Target-like scalloped tile rows.
+    for (let row = 0; row < 5; row += 1) {
+      const y = 34 + row * 7;
+      const inset = 18 + row * 8;
+      line(ctx, [[inset, y], [width - inset, y]], "rgba(229,229,223,.34)", 2);
+      for (let x = inset + 5; x < width - inset; x += 11) {
+        ellipse(ctx, x, y + 2, 5, 2, roof, "rgba(41,24,12,.18)");
+      }
     }
 
-    // Small chimney gives the silhouette a JRPG landmark read.
-    rect(ctx, width - 40, 28, 13, 30, "#8A6A44", "#392610");
-    rect(ctx, width - 43, 24, 19, 7, "#B3A376", "#392610");
+    // Attic face and window.
+    ctx.fillStyle = referenceColor("#614221");
+    ctx.beginPath();
+    ctx.moveTo(cx - 28, 58);
+    ctx.lineTo(cx, 30);
+    ctx.lineTo(cx + 28, 58);
+    ctx.closePath();
+    ctx.fill();
+    rect(ctx, cx - 10, 42, 20, 16, "#E1D0A7", "#29180C");
+    rect(ctx, cx - 7, 45, 14, 10, "#238EC7", "#4C2A12");
+
+    rect(ctx, width - 40, 27, 13, 30, "#8D8371", "#4C2A12");
+    rect(ctx, width - 43, 23, 19, 7, "#BCB9B5", "#4C2A12");
   }
 
   private drawSign(ctx: CanvasRenderingContext2D, width: number, height: number, text: string): void {
@@ -1084,18 +1091,13 @@ export class ProceduralAssetProvider implements IAssetProvider {
     const cx = width / 2;
     const cy = height / 2;
     const effectiveMask = mask === 0 ? EAST | WEST : mask;
-    const half = 16;
+    const half = 15;
 
-    const drawBranch = (
-      x: number,
-      y: number,
-      w: number,
-      h: number,
-    ): void => {
-      // Strong lower/right shadow makes the cutaway castle read above floors.
-      rect(ctx, x + 3, y + 4, w, h, "rgba(44,47,46,.42)");
-      rect(ctx, x, y, w, h, "#949392", "#363828");
-      rect(ctx, x + 2, y + 2, Math.max(1, w - 4), 4, "#C6C2BB");
+    const drawBranch = (x: number, y: number, w: number, h: number): void => {
+      rect(ctx, x + 2, y + 5, w, h, "rgba(59,57,57,.30)");
+      rect(ctx, x, y, w, h, "#BCB9B5", "#7B7B7B");
+      rect(ctx, x + 2, y + 2, Math.max(1, w - 4), 4, "#E5E5DF");
+      rect(ctx, x + 2, y + h - 5, Math.max(1, w - 4), 3, "#7B7B7B");
     };
 
     if ((effectiveMask & NORTH) !== 0) drawBranch(cx - half, 0, half * 2, cy + half);
@@ -1104,22 +1106,22 @@ export class ProceduralAssetProvider implements IAssetProvider {
     if ((effectiveMask & EAST) !== 0) drawBranch(cx - half, cy - half, width - cx + half, half * 2);
     drawBranch(cx - half, cy - half, half * 2, half * 2);
 
-    // Warm, chunky masonry rather than a perfect checkerboard.
-    for (let y = 7; y < height; y += 11) {
-      const shift = (Math.floor(y / 11) % 2) * 7;
-      for (let x = -shift; x < width; x += 15) {
-        const sampleX = Math.min(Math.max(x + 5, 0), width - 1);
-        const sampleY = Math.min(y + 3, height - 1);
+    for (let y = 9; y < height - 4; y += 10) {
+      const shift = (Math.floor(y / 10) % 2) * 6;
+      for (let x = -shift; x < width; x += 13) {
+        const sampleX = Math.min(Math.max(x + 4, 0), width - 1);
+        const sampleY = Math.min(y + 2, height - 1);
         if ((ctx.getImageData(sampleX, sampleY, 1, 1).data[3] ?? 0) === 0) continue;
-        line(ctx, [[x, y], [x + 11, y]], "rgba(67,72,69,.55)", 1);
-        if ((x + y) % 3 === 0) rect(ctx, x + 2, y - 5, 7, 3, "rgba(202,202,190,.18)");
+        line(ctx, [[x, y], [x + 9, y]], "rgba(91,91,93,.50)", 1);
+        line(ctx, [[x + 9, y], [x + 9, y + 4]], "rgba(91,91,93,.30)", 1);
       }
     }
 
-    // Sparse crenellation cues on exposed endpoints/junctions.
-    if (mask === 0 || ((effectiveMask & NORTH) === 0 && (effectiveMask & SOUTH) === 0)) {
-      for (let x = 3; x < width; x += 16) {
-        rect(ctx, x, cy - half - 5, 10, 7, "#a9aaa3", "#363828");
+    // Exposed top edge crenellation.
+    if ((effectiveMask & NORTH) === 0 || mask === 0) {
+      for (let x = 2; x < width; x += 15) {
+        rect(ctx, x, Math.max(0, cy - half - 6), 9, 7, "#C4BFBB", "#7B7B7B");
+        rect(ctx, x + 2, Math.max(1, cy - half - 5), 5, 2, "#E5E5DF");
       }
     }
   }
@@ -1135,80 +1137,97 @@ export class ProceduralAssetProvider implements IAssetProvider {
 
   private drawTower(ctx: CanvasRenderingContext2D, width: number, height: number): void {
     const cx = width / 2;
-    ellipse(ctx, cx + 3, height - 7, width * 0.39, 9, "rgba(38,42,41,.34)");
+    ellipse(ctx, cx + 3, height - 6, width * 0.38, 8, "rgba(59,57,57,.28)");
 
-    // Cylindrical tower body with a cutaway-friendly stone face.
-    ellipse(ctx, cx, 34, width * 0.36, 18, "#949392", "#363828");
-    rect(ctx, 13, 34, width - 26, height - 45, "#949392", "#363828");
-    ellipse(ctx, cx, height - 12, width * 0.36, 13, "#65625C", "#363828");
+    // Cylindrical body with bright center and darker curved sides.
+    ellipse(ctx, cx, 31, width * 0.36, 15, "#C4BFBB", "#7B7B7B");
+    rect(ctx, 13, 31, width - 26, height - 43, "#BCB9B5", "#7B7B7B");
+    rect(ctx, 15, 34, 10, height - 48, "#97999B");
+    rect(ctx, width - 25, 34, 10, height - 48, "#97999B");
+    rect(ctx, cx - 13, 34, 26, height - 48, "#C4BFBB");
 
-    for (let y = 43; y < height - 18; y += 14) {
-      const shift = (Math.floor(y / 14) % 2) * 9;
-      for (let x = 17 - shift; x < width - 13; x += 19) {
-        rect(ctx, x, y, 16, 10, "#9aa09b", "#646a67");
+    for (let y = 42; y < height - 18; y += 11) {
+      const shift = (Math.floor(y / 11) % 2) * 8;
+      for (let x = 17 - shift; x < width - 12; x += 17) {
+        line(ctx, [[x, y], [x + 13, y]], "#7B7B7B", 1);
       }
     }
 
-    // Raised battlement rim.
-    ellipse(ctx, cx, 25, width * 0.39, 14, "#C6C2BB", "#363828");
-    ellipse(ctx, cx, 28, width * 0.29, 9, "#65625C", "#363828");
-    for (let x = 7; x < width - 5; x += 19) {
-      rect(ctx, x, 8, 14, 21, "#C6C2BB", "#363828");
-      rect(ctx, x + 2, 10, 10, 4, "#C6C2BB");
+    // Round battlement crown.
+    ellipse(ctx, cx, 24, width * 0.39, 13, "#C4BFBB", "#7B7B7B");
+    ellipse(ctx, cx, 27, width * 0.28, 8, "#656666", "#7B7B7B");
+    for (let x = 7; x < width - 6; x += 18) {
+      rect(ctx, x, 7, 13, 20, "#C4BFBB", "#7B7B7B");
+      rect(ctx, x + 2, 9, 9, 4, "#E5E5DF");
     }
 
-    // Arrow slit.
-    rect(ctx, cx - 3, height * 0.53, 6, 20, "#353c3b", "#646a67");
+    rect(ctx, cx - 3, height * 0.53, 6, 18, "#3B3939");
   }
 
   private drawGate(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    ellipse(ctx, width / 2, height - 5, width * 0.42, 7, "rgba(34,38,37,.35)");
-    rect(ctx, 3, 16, width - 6, height - 19, "#949392", "#4b5350");
+    ellipse(ctx, width / 2, height - 5, width * 0.42, 7, "rgba(59,57,57,.28)");
+    rect(ctx, 3, 15, width - 6, height - 18, "#BCB9B5", "#7B7B7B");
 
-    // Masonry bands.
-    for (let y = 22; y < height - 9; y += 13) {
-      const shift = (Math.floor(y / 13) % 2) * 10;
-      for (let x = 7 - shift; x < width - 6; x += 20) {
-        rect(ctx, x, y, 18, 11, "#949392", "#65625C");
+    for (let y = 24; y < height - 8; y += 11) {
+      const shift = (Math.floor(y / 11) % 2) * 8;
+      for (let x = 7 - shift; x < width - 6; x += 17) {
+        line(ctx, [[x, y], [x + 13, y]], "#7B7B7B", 1);
       }
     }
 
-    // Battlements.
-    for (let x = 4; x < width - 8; x += 22) {
-      rect(ctx, x, 3, 15, 20, "#C6C2BB", "#4b5350");
-      rect(ctx, x + 2, 5, 11, 4, "#C6C2BB");
+    for (let x = 4; x < width - 8; x += 21) {
+      rect(ctx, x, 2, 14, 20, "#C4BFBB", "#7B7B7B");
+      rect(ctx, x + 2, 4, 10, 4, "#E5E5DF");
     }
 
-    // Dark arch with warm wooden portcullis.
     const cx = width / 2;
-    ctx.fillStyle = referenceColor("#302d2a");
+    ctx.fillStyle = referenceColor("#29180C");
     ctx.beginPath();
-    ctx.arc(cx, height - 30, 29, Math.PI, 0);
-    ctx.lineTo(cx + 29, height);
-    ctx.lineTo(cx - 29, height);
+    ctx.arc(cx, height - 29, 28, Math.PI, 0);
+    ctx.lineTo(cx + 28, height);
+    ctx.lineTo(cx - 28, height);
     ctx.closePath();
     ctx.fill();
 
-    for (let x = cx - 22; x <= cx + 22; x += 9) {
-      line(ctx, [[x, height - 51], [x, height]], "#8d683c", 5);
-      ctx.fillStyle = referenceColor("#8d683c");
-      ctx.beginPath();
-      ctx.moveTo(x - 3, height - 2);
-      ctx.lineTo(x + 3, height - 2);
-      ctx.lineTo(x, height + 5);
-      ctx.closePath();
-      ctx.fill();
+    for (let x = cx - 21; x <= cx + 21; x += 8) {
+      line(ctx, [[x, height - 49], [x, height]], "#A87F45", 4);
     }
-    line(ctx, [[cx - 28, height - 27], [cx + 28, height - 27]], "#5b432c", 5);
-    line(ctx, [[cx - 27, height - 42], [cx + 27, height - 42]], "#b08852", 2);
+    line(ctx, [[cx - 27, height - 28], [cx + 27, height - 28]], "#614221", 4);
+    line(ctx, [[cx - 25, height - 41], [cx + 25, height - 41]], "#BEA475", 2);
   }
 
   private drawFountain(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    ellipse(ctx, width / 2, height * 0.68, width * 0.38, height * 0.2, "#777f80", "#4c5556");
-    ellipse(ctx, width / 2, height * 0.64, width * 0.30, height * 0.13, "#35a7dc", "#d1dfdc");
-    rect(ctx, width / 2 - 6, height * 0.28, 12, height * 0.36, "#a8b0af", "#616a6a");
-    ellipse(ctx, width / 2, height * 0.28, 11, 7, "#3cc0ee", "#d1f4ff");
-    line(ctx, [[width / 2, 10], [width / 2, height * 0.30]], "#a7ecff", 3);
+    const cx = width / 2;
+    const cy = height * 0.66;
+    ellipse(ctx, cx, height - 7, width * 0.35, 7, "rgba(59,57,57,.22)");
+
+    ctx.fillStyle = referenceColor("#7B7B7B");
+    ctx.beginPath();
+    ctx.moveTo(cx - 30, cy - 9);
+    ctx.lineTo(cx - 20, cy - 19);
+    ctx.lineTo(cx + 20, cy - 19);
+    ctx.lineTo(cx + 30, cy - 9);
+    ctx.lineTo(cx + 24, cy + 12);
+    ctx.lineTo(cx - 24, cy + 12);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = referenceColor("#C4BFBB");
+    ctx.beginPath();
+    ctx.moveTo(cx - 25, cy - 10);
+    ctx.lineTo(cx - 17, cy - 15);
+    ctx.lineTo(cx + 17, cy - 15);
+    ctx.lineTo(cx + 25, cy - 10);
+    ctx.lineTo(cx + 20, cy + 7);
+    ctx.lineTo(cx - 20, cy + 7);
+    ctx.closePath();
+    ctx.fill();
+
+    ellipse(ctx, cx, cy - 3, 21, 9, "#0168CF", "#E5E5DF");
+    rect(ctx, cx - 5, 25, 10, 35, "#BCB9B5", "#7B7B7B");
+    ellipse(ctx, cx, 25, 9, 5, "#238EC7", "#E5E5DF");
+    ellipse(ctx, cx, 18, 5, 8, "#5793F5", "#E5E5DF");
+    line(ctx, [[cx, 7], [cx, 20]], "#E5E5DF", 2);
   }
 
   private drawPottedFlowers(
