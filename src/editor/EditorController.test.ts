@@ -137,4 +137,46 @@ describe("EditorController semantic gestures", () => {
     expect(editor.state.document.actors[0]?.facing).toBe("west");
   });
 
+  it("builds a route preview from derived navigation", () => {
+    const map = createBlankMap(5, 3, "grass");
+    for (let y = 0; y < 3; y += 1) {
+      map.tiles[y * map.width + 2] = { terrainId: "water" };
+    }
+    map.props.push({ id: "bridge", catalogId: "bridge", x: 2, y: 1 });
+
+    const editor = new EditorController(map, worldCatalog);
+    editor.setTool("route");
+    editor.routeClick({ x: 0, y: 1 });
+    editor.routeClick({ x: 4, y: 1 });
+
+    expect(editor.state.routePreview?.found).toBe(true);
+    expect(editor.state.routePreview?.path).toContainEqual({ x: 2, y: 1 });
+  });
+
+  it("validates the map and clears stale diagnostics after an edit", () => {
+    const map = createBlankMap(5, 5, "grass");
+    map.tiles[2 * map.width + 2] = { terrainId: "water" };
+    map.actors.push({
+      id: "hero",
+      catalogId: "hero",
+      x: 2,
+      y: 2,
+      facing: "south",
+    });
+
+    const editor = new EditorController(map, worldCatalog);
+    expect(
+      editor.validateMap().some((issue) => issue.code === "actor-on-blocked-cell"),
+    ).toBe(true);
+    expect(editor.state.validationIssues.length).toBeGreaterThan(0);
+
+    editor.select("terrain", "grass");
+    editor.beginStroke();
+    editor.applyAt({ x: 2, y: 2 });
+    editor.endStroke();
+
+    expect(editor.state.validationIssues).toEqual([]);
+    expect(editor.validateMap()).toEqual([]);
+  });
+
 });
