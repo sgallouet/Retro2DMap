@@ -10,7 +10,7 @@ A command says:
 
 - paint this region as water,
 - draw this path as road,
-- place this semantic prop,
+- place this semantic prop, optionally with a supported quarter-turn orientation,
 - draw this connected wall/fence/bridge network,
 - place this actor,
 - stamp this semantic prefab.
