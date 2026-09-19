@@ -276,33 +276,48 @@ export class ProceduralAssetProvider implements IAssetProvider {
     }
 
     if (entry.id === "grass") {
-      // One deliberately simple material family. The center must tile quietly;
-      // topology should be readable from the edge treatment, not from noise.
-      rect(ctx, 0, 0, width, height, "#78BE22");
+      // Target-sampled meadow palette:
+      // base #79BE21, shadow #59A526, highlight #94D532.
+      //
+      // Keep the tile readable as one material, but add enough micro-structure
+      // that a large meadow no longer looks like a flat CSS rectangle.
+      rect(ctx, 0, 0, width, height, "#79BE21");
 
-      // Broad tonal islands sampled from the target's sunny meadow look.
-      ellipse(ctx, 10 + variant * 5, 11, 15, 8, "rgba(148,213,62,.12)");
-      ellipse(ctx, 35 - variant * 3, 32, 14, 8, "rgba(99,154,30,.11)");
-      ellipse(ctx, 20, 43 - variant * 2, 10, 5, "rgba(139,199,49,.08)");
+      // Soft broad patches. Their opacity is intentionally tiny; these should
+      // be felt as surface variation, not seen as blobs.
+      ellipse(ctx, 11 + variant * 5, 11, 15, 8, "rgba(148,213,50,.11)");
+      ellipse(ctx, 35 - variant * 3, 31, 14, 8, "rgba(89,165,38,.09)");
+      ellipse(ctx, 20, 43 - variant * 2, 11, 5, "rgba(148,213,50,.07)");
 
-      const clusters = [
-        [7 + variant, 24, false],
-        [28, 9 + variant, true],
-        [38 - variant, 34, false],
-        [17 + variant * 2, 39, true],
-        [43 - variant, 18 + variant, false],
+      // Deterministic JRPG-style blade clusters. Four variants are enough to
+      // break obvious repetition while every texture stays perfectly stable.
+      const clusterSets = [
+        [[5, 14], [12, 33], [24, 8], [31, 24], [39, 40], [43, 17], [20, 43]],
+        [[8, 9], [14, 27], [26, 14], [35, 35], [42, 23], [6, 41], [29, 44]],
+        [[5, 24], [16, 10], [23, 35], [33, 18], [42, 42], [11, 44], [38, 7]],
+        [[7, 38], [13, 17], [25, 27], [34, 8], [43, 31], [19, 45], [39, 16]],
       ] as const;
 
-      clusters.forEach(([x, y, bright]) => {
-        const blade = bright ? "#94D53E" : "#639A1E";
-        const shadow = bright ? "#78BE22" : "#599E2B";
+      const points = clusterSets[variant % clusterSets.length] ?? clusterSets[0];
+      points.forEach(([x, y], index) => {
+        const bright = index % 3 === 0;
+        const blade = bright ? "#94D532" : "#59A526";
+        const middle = bright ? "#79BE21" : "#427A13";
+
         line(ctx, [[x, y + 4], [x + 1, y]], blade, 1);
         line(ctx, [[x + 3, y + 4], [x + 5, y + 1]], blade, 1);
-        line(ctx, [[x + 2, y + 4], [x + 2, y + 2]], shadow, 1);
+        line(ctx, [[x + 2, y + 4], [x + 2, y + 2]], middle, 1);
+
+        // A few tiny leaf pixels match the target's granular grass texture
+        // without turning the tile into random visual noise.
+        if (index % 2 === 0) {
+          rect(ctx, x + 6, y + 2, 1, 1, "#94D532");
+          rect(ctx, x - 1, y + 4, 1, 1, "#59A526");
+        }
       });
+
       return;
     }
-
     if (entry.id === "grass-dark") {
       const tuftCount = 9;
       for (let i = 0; i < tuftCount; i += 1) {
@@ -535,147 +550,170 @@ export class ProceduralAssetProvider implements IAssetProvider {
     const openSouth = (cardinalMask & SOUTH) === 0;
     const openWest = (cardinalMask & WEST) === 0;
 
-    const base = "#78BE22";
-    const dark = "#29671D";
-    const mid = "#639A1E";
-    const light = "#94D53E";
+    // Grass owns only its grassy lip. It must NOT paint a fake dark cliff or
+    // substrate when adjacent to path/cobble/soil; those materials own their
+    // own visuals. This keeps mapping semantically correct and prevents the
+    // heavy black-green outline seen in the first study.
+    const shadow = "#59A526";
+    const mid = "#79BE21";
+    const light = "#94D532";
+    const deep = "#427A13";
 
-    // Six 8px steps span exactly one 48px tile. The first/last offsets are
-    // zero, so adjacent exposed tiles join seamlessly while the edge itself is
-    // no longer ruler-straight.
-    const horizontal = [0, 1, 2, 1, 1, 0] as const;
-    const vertical = [0, 1, 2, 1, 1, 0] as const;
+    // Slightly stepped lip. The pattern starts/ends at zero so neighboring
+    // exposed tiles meet cleanly at the 48px boundary.
+    const steps = [0, 1, 2, 1, 1, 0] as const;
     const segment = 8;
-    const undercut = 5;
 
-    const drawTop = (): void => {
-      horizontal.forEach((offset, index) => {
+    const tuftHorizontal = (
+      x: number,
+      y: number,
+      pointsDown: boolean,
+    ): void => {
+      const direction = pointsDown ? 1 : -1;
+      line(ctx, [[x, y], [x + 1, y + 3 * direction]], light, 1);
+      line(ctx, [[x + 3, y], [x + 5, y + 2 * direction]], shadow, 1);
+    };
+
+    const tuftVertical = (
+      x: number,
+      y: number,
+      pointsRight: boolean,
+    ): void => {
+      const direction = pointsRight ? 1 : -1;
+      line(ctx, [[x, y], [x + 3 * direction, y + 1]], light, 1);
+      line(ctx, [[x, y + 3], [x + 2 * direction, y + 5]], shadow, 1);
+    };
+
+    if (openNorth) {
+      steps.forEach((offset, index) => {
         const x = index * segment;
-        rect(ctx, x, 0, segment, undercut + offset, dark);
-        rect(ctx, x, undercut + offset, segment, 2, mid);
+        const y = 1 + offset;
+        rect(ctx, x, y, segment, 2, shadow);
+        rect(ctx, x, y + 2, segment, 1, light);
         if ((index + variant) % 2 === 0) {
-          line(
-            ctx,
-            [[x + 2, undercut + offset + 4], [x + 4, undercut + offset]],
-            light,
-            1,
-          );
-          line(
-            ctx,
-            [[x + 5, undercut + offset + 3], [x + 6, undercut + offset]],
-            mid,
-            1,
-          );
+          tuftHorizontal(x + 2, y + 3, true);
         }
       });
-    };
+    }
 
-    const drawBottom = (): void => {
-      horizontal.forEach((offset, index) => {
+    if (openSouth) {
+      steps.forEach((offset, index) => {
         const x = index * segment;
-        rect(
-          ctx,
-          x,
-          height - undercut - offset,
-          segment,
-          undercut + offset,
-          dark,
-        );
-        rect(ctx, x, height - undercut - offset - 2, segment, 2, light);
+        const y = height - 4 - offset;
+        rect(ctx, x, y, segment, 1, light);
+        rect(ctx, x, y + 1, segment, 2, shadow);
         if ((index + variant) % 2 === 1) {
-          line(
-            ctx,
-            [[x + 2, height - undercut - offset - 5], [x + 4, height - undercut - offset - 1]],
-            light,
-            1,
-          );
-          line(
-            ctx,
-            [[x + 5, height - undercut - offset - 4], [x + 6, height - undercut - offset - 1]],
-            mid,
-            1,
-          );
+          tuftHorizontal(x + 2, y - 1, false);
         }
       });
-    };
+    }
 
-    const drawLeft = (): void => {
-      vertical.forEach((offset, index) => {
+    if (openWest) {
+      steps.forEach((offset, index) => {
         const y = index * segment;
-        rect(ctx, 0, y, undercut + offset, segment, dark);
-        rect(ctx, undercut + offset, y, 2, segment, mid);
+        const x = 1 + offset;
+        rect(ctx, x, y, 2, segment, shadow);
+        rect(ctx, x + 2, y, 1, segment, light);
         if ((index + variant) % 2 === 0) {
-          line(
-            ctx,
-            [[undercut + offset + 4, y + 2], [undercut + offset, y + 4]],
-            light,
-            1,
-          );
+          tuftVertical(x + 3, y + 2, true);
         }
       });
-    };
+    }
 
-    const drawRight = (): void => {
-      vertical.forEach((offset, index) => {
+    if (openEast) {
+      steps.forEach((offset, index) => {
         const y = index * segment;
-        rect(
-          ctx,
-          width - undercut - offset,
-          y,
-          undercut + offset,
-          segment,
-          dark,
-        );
-        rect(ctx, width - undercut - offset - 2, y, 2, segment, light);
+        const x = width - 4 - offset;
+        rect(ctx, x, y, 1, segment, light);
+        rect(ctx, x + 1, y, 2, segment, shadow);
         if ((index + variant) % 2 === 1) {
-          line(
-            ctx,
-            [[width - undercut - offset - 5, y + 2], [width - undercut - offset - 1, y + 4]],
-            light,
-            1,
-          );
+          tuftVertical(x - 1, y + 2, false);
         }
       });
+    }
+
+    // Outer corners should read as a continuous grass fringe, not as circular
+    // green beads. A small 3-step join softens the right angle.
+    const outerNW = (): void => {
+      rect(ctx, 2, 2, 5, 2, shadow);
+      rect(ctx, 2, 2, 2, 5, shadow);
+      rect(ctx, 4, 4, 3, 1, light);
+      rect(ctx, 4, 4, 1, 3, light);
+    };
+    const outerNE = (): void => {
+      rect(ctx, width - 7, 2, 5, 2, shadow);
+      rect(ctx, width - 4, 2, 2, 5, shadow);
+      rect(ctx, width - 7, 4, 3, 1, light);
+      rect(ctx, width - 5, 4, 1, 3, light);
+    };
+    const outerSW = (): void => {
+      rect(ctx, 2, height - 4, 5, 2, shadow);
+      rect(ctx, 2, height - 7, 2, 5, shadow);
+      rect(ctx, 4, height - 5, 3, 1, light);
+      rect(ctx, 4, height - 7, 1, 3, light);
+    };
+    const outerSE = (): void => {
+      rect(ctx, width - 7, height - 4, 5, 2, shadow);
+      rect(ctx, width - 4, height - 7, 2, 5, shadow);
+      rect(ctx, width - 7, height - 5, 3, 1, light);
+      rect(ctx, width - 5, height - 7, 1, 3, light);
     };
 
-    if (openNorth) drawTop();
-    if (openEast) drawRight();
-    if (openSouth) drawBottom();
-    if (openWest) drawLeft();
+    if (openNorth && openWest) outerNW();
+    if (openNorth && openEast) outerNE();
+    if (openSouth && openWest) outerSW();
+    if (openSouth && openEast) outerSE();
 
-    // Convex outer corners. The sides above create a square overlap; painting
-    // the meadow back into that overlap turns it into a soft rounded corner.
-    const softenOuter = (cx: number, cy: number): void => {
-      ellipse(ctx, cx, cy, 7, 7, mid);
-      ellipse(ctx, cx, cy, 5, 5, base);
-      ellipse(ctx, cx + (cx < width / 2 ? 2 : -2), cy + (cy < height / 2 ? 2 : -2), 2, 2, light);
-    };
-
-    if (openNorth && openWest) softenOuter(8, 8);
-    if (openNorth && openEast) softenOuter(width - 8, 8);
-    if (openSouth && openWest) softenOuter(8, height - 8);
-    if (openSouth && openEast) softenOuter(width - 8, height - 8);
-
-    // Concave corners are circular notches rather than square blocks. This is
-    // the key visual distinction between an outer corner and an inner corner.
-    const innerRadius = 9;
-    const drawInner = (cx: number, cy: number, lipX: number, lipY: number): void => {
-      ellipse(ctx, cx, cy, innerRadius, innerRadius, dark);
-      ellipse(ctx, cx + lipX, cy + lipY, innerRadius - 3, innerRadius - 3, mid);
-      ellipse(ctx, cx + lipX * 2, cy + lipY * 2, innerRadius - 6, innerRadius - 6, light);
-    };
-
+    // Concave corners are subtle: the diagonal neighbor is different, while
+    // both cardinal neighbors are still grass. A tiny L/arc cue is enough.
+    // Painting a big square here was visually wrong and made holes look like
+    // posts or blobs.
     if ((innerCornerMask & NORTH_EAST) !== 0) {
-      drawInner(width, 0, -1, 1);
+      line(ctx, [[width - 8, 1], [width - 3, 1], [width - 3, 7]], shadow, 2);
+      line(ctx, [[width - 8, 3], [width - 5, 3], [width - 5, 7]], light, 1);
+      rect(ctx, width - 7, 5, 1, 2, deep);
     }
     if ((innerCornerMask & SOUTH_EAST) !== 0) {
-      drawInner(width, height, -1, -1);
+      line(
+        ctx,
+        [[width - 3, height - 8], [width - 3, height - 3], [width - 8, height - 3]],
+        shadow,
+        2,
+      );
+      line(
+        ctx,
+        [[width - 5, height - 8], [width - 5, height - 5], [width - 8, height - 5]],
+        light,
+        1,
+      );
+      rect(ctx, width - 7, height - 7, 1, 2, deep);
     }
     if ((innerCornerMask & SOUTH_WEST) !== 0) {
-      drawInner(0, height, 1, -1);
+      line(ctx, [[3, height - 8], [3, height - 3], [8, height - 3]], shadow, 2);
+      line(ctx, [[5, height - 8], [5, height - 5], [8, height - 5]], light, 1);
+      rect(ctx, 6, height - 7, 1, 2, deep);
     }
     if ((innerCornerMask & NORTH_WEST) !== 0) {
-      drawInner(0, 0, 1, 1);
+      line(ctx, [[8, 1], [3, 1], [3, 7]], shadow, 2);
+      line(ctx, [[8, 3], [5, 3], [5, 7]], light, 1);
+      rect(ctx, 6, 5, 1, 2, deep);
+    }
+
+    // A couple of extra blades immediately behind an exposed lip make the
+    // transition feel grown-over rather than printed.
+    if (openSouth) {
+      tuftHorizontal(11 + variant * 4, height - 7, false);
+      tuftHorizontal(31 - variant * 2, height - 8, false);
+    }
+    if (openNorth) {
+      tuftHorizontal(9 + variant * 3, 7, true);
+      tuftHorizontal(33 - variant * 2, 8, true);
+    }
+
+    // Keep the center color continuous at tile seams.
+    if (!openNorth && !openEast && !openSouth && !openWest && innerCornerMask === 0) {
+      rect(ctx, 0, 0, 1, height, mid);
+      rect(ctx, width - 1, 0, 1, height, mid);
     }
   }
   private drawProp(
