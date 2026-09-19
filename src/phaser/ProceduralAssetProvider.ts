@@ -479,11 +479,15 @@ export class ProceduralAssetProvider implements IAssetProvider {
         this.drawSign(ctx, width, height, entry.id === "shop-sign" ? "SHOP" : "INN");
         return;
       case "crops":
-        for (let x = 5; x < width; x += 9) {
-          line(ctx, [[x, height - 4], [x - 1, 13]], "#80622c", 2);
-          for (let y = 16; y < height - 5; y += 7) {
-            ellipse(ctx, x - 4, y, 4, 2, "#e9c74d");
-            ellipse(ctx, x + 3, y + 2, 4, 2, "#d6aa32");
+        for (let x = 4; x < width; x += 6) {
+          const sway = ((x / 6) % 3) - 1;
+          const top = 10 + ((x * 7) % 6);
+          line(ctx, [[x, height - 3], [x + sway, top + 5]], "#765b2c", 2);
+          ellipse(ctx, x + sway, top, 3, 6, "#d4ad39", "#8d7028");
+          ellipse(ctx, x + sway - 2, top + 1, 2, 4, "#e5c65a");
+          if (x % 12 === 4) {
+            line(ctx, [[x, 28], [x - 5, 23]], "#9e8435", 1);
+            line(ctx, [[x, 32], [x + 5, 27]], "#9e8435", 1);
           }
         }
         return;
@@ -870,19 +874,48 @@ export class ProceduralAssetProvider implements IAssetProvider {
   ): void {
     const cx = width / 2;
     const cy = height / 2;
-    const rail = "#7b4b2b";
-    const railDark = "#4e321f";
-    const post = "#9b6238";
-
+    const rail = "#765039";
+    const railLight = "#9b6b46";
+    const railDark = "#463126";
     const effectiveMask = mask === 0 ? EAST | WEST : mask;
 
-    if ((effectiveMask & NORTH) !== 0) rect(ctx, cx - 3, 0, 6, cy, rail, railDark);
-    if ((effectiveMask & SOUTH) !== 0) rect(ctx, cx - 3, cy, 6, height - cy, rail, railDark);
-    if ((effectiveMask & WEST) !== 0) rect(ctx, 0, cy - 3, cx, 6, rail, railDark);
-    if ((effectiveMask & EAST) !== 0) rect(ctx, cx, cy - 3, width - cx, 6, rail, railDark);
+    const horizontalRail = (y: number): void => {
+      if ((effectiveMask & WEST) !== 0) {
+        rect(ctx, 0, y, cx, 4, rail, railDark);
+        rect(ctx, 1, y + 1, Math.max(1, cx - 2), 1, railLight);
+      }
+      if ((effectiveMask & EAST) !== 0) {
+        rect(ctx, cx, y, width - cx, 4, rail, railDark);
+        rect(ctx, cx + 1, y + 1, Math.max(1, width - cx - 2), 1, railLight);
+      }
+    };
 
-    rect(ctx, cx - 5, cy - 7, 10, 14, post, railDark);
-    rect(ctx, cx - 3, cy - 10, 6, 5, "#b67b48", railDark);
+    const verticalRail = (x: number): void => {
+      if ((effectiveMask & NORTH) !== 0) {
+        rect(ctx, x, 0, 4, cy, rail, railDark);
+        rect(ctx, x + 1, 1, 1, Math.max(1, cy - 2), railLight);
+      }
+      if ((effectiveMask & SOUTH) !== 0) {
+        rect(ctx, x, cy, 4, height - cy, rail, railDark);
+        rect(ctx, x + 1, cy + 1, 1, Math.max(1, height - cy - 2), railLight);
+      }
+    };
+
+    horizontalRail(cy - 8);
+    horizontalRail(cy + 4);
+    verticalRail(cx - 8);
+    verticalRail(cx + 4);
+
+    // Chunky post with a pointed cap like the target farm/village fences.
+    rect(ctx, cx - 6, cy - 11, 12, 23, "#855a3c", railDark);
+    rect(ctx, cx - 4, cy - 9, 8, 18, "#a16f47");
+    ctx.fillStyle = "#b07c4f";
+    ctx.beginPath();
+    ctx.moveTo(cx - 6, cy - 11);
+    ctx.lineTo(cx, cy - 17);
+    ctx.lineTo(cx + 6, cy - 11);
+    ctx.closePath();
+    ctx.fill();
   }
 
   private drawBridgeNetwork(
