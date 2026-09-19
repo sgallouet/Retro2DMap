@@ -507,6 +507,15 @@ export class ProceduralAssetProvider implements IAssetProvider {
       case "pillar":
         this.drawPillar(ctx, width, height);
         return;
+      case "potted-flowers":
+        this.drawPottedFlowers(ctx, width, height);
+        return;
+      case "candelabra":
+        this.drawCandelabra(ctx, width, height);
+        return;
+      case "painting":
+        this.drawPainting(ctx, width, height);
+        return;
       case "bookshelf":
         this.drawBookshelf(ctx, width, height);
         return;
@@ -1043,6 +1052,62 @@ export class ProceduralAssetProvider implements IAssetProvider {
     rect(ctx, width / 2 - 6, height * 0.28, 12, height * 0.36, "#a8b0af", "#616a6a");
     ellipse(ctx, width / 2, height * 0.28, 11, 7, "#3cc0ee", "#d1f4ff");
     line(ctx, [[width / 2, 10], [width / 2, height * 0.30]], "#a7ecff", 3);
+  }
+
+  private drawPottedFlowers(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+  ): void {
+    ellipse(ctx, width / 2, height - 5, 13, 4, "rgba(41,35,30,.24)");
+    rect(ctx, 15, 28, 18, 14, "#7f5540", "#49342a");
+    rect(ctx, 12, 25, 24, 7, "#a06a4b", "#49342a");
+    line(ctx, [[24, 25], [24, 11]], "#3e6b3f", 2);
+    line(ctx, [[24, 20], [16, 14]], "#3e6b3f", 2);
+    line(ctx, [[24, 19], [32, 13]], "#3e6b3f", 2);
+    ellipse(ctx, 16, 14, 5, 3, "#5c8750");
+    ellipse(ctx, 32, 13, 5, 3, "#638d55");
+    ellipse(ctx, 24, 10, 4, 4, "#d76875");
+    ellipse(ctx, 17, 12, 3, 3, "#e7c95d");
+    ellipse(ctx, 31, 11, 3, 3, "#d88fc5");
+  }
+
+  private drawCandelabra(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+  ): void {
+    ellipse(ctx, width / 2, height - 5, 10, 4, "rgba(45,35,24,.24)");
+    rect(ctx, 22, 19, 4, 22, "#b68d3c", "#674f24");
+    line(ctx, [[24, 23], [13, 17], [13, 10]], "#b68d3c", 3);
+    line(ctx, [[24, 23], [35, 17], [35, 10]], "#b68d3c", 3);
+    line(ctx, [[24, 19], [24, 8]], "#b68d3c", 3);
+    [13, 24, 35].forEach((x) => {
+      ellipse(ctx, x, 7, 4, 6, "#e4952f");
+      ellipse(ctx, x, 6, 2, 4, "#fff0a5");
+    });
+    ellipse(ctx, 24, 41, 10, 4, "#8b6c32", "#5d4823");
+  }
+
+  private drawPainting(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+  ): void {
+    rect(ctx, 5, 5, width - 10, height - 10, "#6e4b2e", "#3c2a20");
+    rect(ctx, 10, 10, width - 20, height - 20, "#9f8254", "#d1b06e");
+    rect(ctx, 13, 13, width - 26, height - 26, "#6f9a99");
+    rect(ctx, 13, height * 0.55, width - 26, height * 0.20, "#65855a");
+    ctx.fillStyle = "#66785c";
+    ctx.beginPath();
+    ctx.moveTo(16, height * 0.58);
+    ctx.lineTo(width * 0.42, 18);
+    ctx.lineTo(width * 0.55, height * 0.58);
+    ctx.lineTo(width * 0.72, 22);
+    ctx.lineTo(width - 16, height * 0.58);
+    ctx.closePath();
+    ctx.fill();
+    ellipse(ctx, width * 0.74, 18, 5, 5, "#d9c06a");
   }
 
   private drawBookshelf(ctx: CanvasRenderingContext2D, width: number, height: number): void {
