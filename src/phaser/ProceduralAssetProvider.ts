@@ -267,22 +267,37 @@ export class ProceduralAssetProvider implements IAssetProvider {
       return;
     }
 
-    if (entry.id === "grass" || entry.id === "grass-dark") {
-      const tuftCount = entry.id === "grass" ? 7 : 10;
+    if (entry.id === "grass") {
+      // Mapping-study grass: one restrained material, not a bag of random
+      // pixels. Edge/corner identity is drawn separately by drawGrassTileEdges.
+      rect(ctx, 0, 0, width, height, "#78BE22");
+
+      // Broad, very low-contrast mottling keeps repeated center tiles alive
+      // without obscuring the topology.
+      ellipse(ctx, 12 + variant * 4, 12, 13, 7, "rgba(148,213,62,.10)");
+      ellipse(ctx, 34 - variant * 3, 34, 12, 6, "rgba(99,154,30,.10)");
+
+      const tuftPositions = [
+        [8 + variant * 2, 28],
+        [29, 11 + variant],
+        [37 - variant, 36],
+      ] as const;
+      tuftPositions.forEach(([x, y], index) => {
+        const shade = index === 1 ? "#94D53E" : "#639A1E";
+        line(ctx, [[x, y + 3], [x + 1, y]], shade, 1);
+        line(ctx, [[x + 2, y + 3], [x + 4, y + 1]], shade, 1);
+      });
+      return;
+    }
+
+    if (entry.id === "grass-dark") {
+      const tuftCount = 9;
       for (let i = 0; i < tuftCount; i += 1) {
         const x = 3 + Math.floor(random() * Math.max(1, width - 7));
         const y = 6 + Math.floor(random() * Math.max(1, height - 12));
         const shade = random() > 0.42 ? colors[1] : colors[2];
         line(ctx, [[x, y + 4], [x + 1, y]], shade, 1);
         line(ctx, [[x + 2, y + 4], [x + 4, y + 1]], shade, 1);
-        if (random() > 0.72) rect(ctx, x + 5, y + 3, 2, 2, shade);
-      }
-
-      // Large, faint tonal patches keep grass from reading as noisy confetti.
-      for (let i = 0; i < 3; i += 1) {
-        const x = Math.floor(random() * width);
-        const y = Math.floor(random() * height);
-        ellipse(ctx, x, y, 7 + random() * 5, 3 + random() * 3, "rgba(255,255,220,.035)");
       }
       return;
     }
@@ -395,6 +410,17 @@ export class ProceduralAssetProvider implements IAssetProvider {
   ): void {
     if (entry.edgeStyle === "none") return;
 
+    if (entry.id === "grass") {
+      this.drawGrassTileEdges(
+        ctx,
+        width,
+        height,
+        cardinalMask,
+        innerCornerMask,
+      );
+      return;
+    }
+
     const missingNorth = (cardinalMask & NORTH) === 0;
     const missingEast = (cardinalMask & EAST) === 0;
     const missingSouth = (cardinalMask & SOUTH) === 0;
@@ -467,6 +493,139 @@ export class ProceduralAssetProvider implements IAssetProvider {
     if ((innerCornerMask & NORTH_WEST) !== 0) {
       rect(ctx, 0, 0, innerSize, innerSize, edgeColor);
       rect(ctx, 0, innerSize, innerSize + 1, 1, highlight);
+    }
+  }
+
+  /**
+   * Explicit square-tile mapping for meadow grass.
+   *
+   * cardinalMask tells us which N/E/S/W sides connect to more grass.
+   * Missing cardinal sides are outer edges/corners. innerCornerMask marks a
+   * concave corner where both adjacent sides connect but the diagonal does not.
+   *
+   * The art is intentionally simple for this milestone: a dark exposed fringe,
+   * a bright grassy lip and tiny blades. Once this mapping is proven, the same
+   * topology contract can drive a much richer authored or procedural tile set.
+   */
+  private drawGrassTileEdges(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    cardinalMask: number,
+    innerCornerMask: number,
+  ): void {
+    const openNorth = (cardinalMask & NORTH) === 0;
+    const openEast = (cardinalMask & EAST) === 0;
+    const openSouth = (cardinalMask & SOUTH) === 0;
+    const openWest = (cardinalMask & WEST) === 0;
+
+    const dark = "#29671D";
+    const mid = "#639A1E";
+    const light = "#94D53E";
+    const edge = 5;
+
+    const grassBlade = (x: number, y: number, flip = false): void => {
+      if (flip) {
+        line(ctx, [[x, y], [x + 2, y + 4]], light, 1);
+        line(ctx, [[x + 3, y], [x + 4, y + 3]], mid, 1);
+      } else {
+        line(ctx, [[x, y + 4], [x + 2, y]], light, 1);
+        line(ctx, [[x + 3, y + 3], [x + 4, y]], mid, 1);
+      }
+    };
+
+    if (openNorth) {
+      rect(ctx, 0, 0, width, edge, dark);
+      rect(ctx, 0, edge, width, 2, mid);
+      for (let x = 3; x < width - 2; x += 8) grassBlade(x, edge - 1, false);
+    }
+
+    if (openSouth) {
+      rect(ctx, 0, height - edge, width, edge, dark);
+      rect(ctx, 0, height - edge - 2, width, 2, light);
+      for (let x = 5; x < width - 2; x += 8) grassBlade(x, height - edge - 5, true);
+    }
+
+    if (openWest) {
+      rect(ctx, 0, 0, edge, height, dark);
+      rect(ctx, edge, 0, 2, height, mid);
+      for (let y = 5; y < height - 3; y += 9) {
+        line(ctx, [[edge - 1, y], [edge + 3, y - 2]], light, 1);
+      }
+    }
+
+    if (openEast) {
+      rect(ctx, width - edge, 0, edge, height, dark);
+      rect(ctx, width - edge - 2, 0, 2, height, light);
+      for (let y = 4; y < height - 3; y += 9) {
+        line(ctx, [[width - edge, y], [width - edge - 4, y - 2]], light, 1);
+      }
+    }
+
+    // Outer corners: join exposed sides into one deliberate corner block.
+    if (openNorth && openWest) {
+      rect(ctx, 0, 0, edge + 3, edge + 3, dark);
+      line(ctx, [[edge + 1, 0], [edge + 1, edge + 4], [0, edge + 4]], light, 1);
+    }
+    if (openNorth && openEast) {
+      rect(ctx, width - edge - 3, 0, edge + 3, edge + 3, dark);
+      line(
+        ctx,
+        [[width - edge - 2, 0], [width - edge - 2, edge + 4], [width, edge + 4]],
+        light,
+        1,
+      );
+    }
+    if (openSouth && openWest) {
+      rect(ctx, 0, height - edge - 3, edge + 3, edge + 3, dark);
+      line(
+        ctx,
+        [[0, height - edge - 4], [edge + 1, height - edge - 4], [edge + 1, height]],
+        light,
+        1,
+      );
+    }
+    if (openSouth && openEast) {
+      rect(ctx, width - edge - 3, height - edge - 3, edge + 3, edge + 3, dark);
+      line(
+        ctx,
+        [
+          [width - edge - 2, height],
+          [width - edge - 2, height - edge - 4],
+          [width, height - edge - 4],
+        ],
+        light,
+        1,
+      );
+    }
+
+    // Concave inner corners: a diagonal hole in otherwise connected grass.
+    const inner = 8;
+    if ((innerCornerMask & NORTH_EAST) !== 0) {
+      rect(ctx, width - inner, 0, inner, inner, dark);
+      line(ctx, [[width - inner, inner], [width - inner, 2], [width - 2, 2]], light, 1);
+    }
+    if ((innerCornerMask & SOUTH_EAST) !== 0) {
+      rect(ctx, width - inner, height - inner, inner, inner, dark);
+      line(
+        ctx,
+        [[width - inner, height - inner], [width - inner, height - 2], [width - 2, height - 2]],
+        light,
+        1,
+      );
+    }
+    if ((innerCornerMask & SOUTH_WEST) !== 0) {
+      rect(ctx, 0, height - inner, inner, inner, dark);
+      line(
+        ctx,
+        [[inner, height - inner], [inner, height - 2], [2, height - 2]],
+        light,
+        1,
+      );
+    }
+    if ((innerCornerMask & NORTH_WEST) !== 0) {
+      rect(ctx, 0, 0, inner, inner, dark);
+      line(ctx, [[inner, inner], [inner, 2], [2, 2]], light, 1);
     }
   }
 
