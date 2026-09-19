@@ -8,10 +8,18 @@ export interface CatalogBase {
   tags: readonly string[];
 }
 
+export type TerrainEdgeStyle = "none" | "soft" | "shore" | "hard";
+
 export interface TerrainDefinition extends CatalogBase {
   layer: "terrain";
   walkable: boolean;
   movementCost: number;
+  /**
+   * Terrains in the same group visually connect for autotiling.
+   * Example: shallow/deep water share the "water" group.
+   */
+  connectGroup: string;
+  edgeStyle: TerrainEdgeStyle;
 }
 
 export interface PropDefinition extends CatalogBase {
@@ -42,7 +50,19 @@ const terrain = (
   category: string,
   walkable: boolean,
   movementCost = 1,
-): TerrainDefinition => ({ id, label, category, layer: "terrain", tags: [], walkable, movementCost });
+  connectGroup = id,
+  edgeStyle: TerrainEdgeStyle = "soft",
+): TerrainDefinition => ({
+  id,
+  label,
+  category,
+  layer: "terrain",
+  tags: [],
+  walkable,
+  movementCost,
+  connectGroup,
+  edgeStyle,
+});
 
 const prop = (
   id: string,
@@ -73,15 +93,15 @@ const actor = (id: string, label: string, category: string, faction: ActorDefini
 });
 
 export const terrains = [
-  terrain("grass", "Meadow Grass", "Nature", true),
-  terrain("grass-dark", "Forest Grass", "Nature", true),
-  terrain("path", "Warm Dirt Path", "Roads", true),
-  terrain("cobble", "Castle Cobble", "Roads", true),
-  terrain("stone-floor", "Stone Floor", "Interior", true),
-  terrain("wood-floor", "Wood Floor", "Interior", true),
-  terrain("water", "River Water", "Water", false, 99),
-  terrain("deep-water", "Deep Water", "Water", false, 99),
-  terrain("soil", "Farm Soil", "Nature", true),
+  terrain("grass", "Meadow Grass", "Nature", true, 1, "grass", "none"),
+  terrain("grass-dark", "Forest Grass", "Nature", true, 1, "grass-dark", "soft"),
+  terrain("path", "Warm Dirt Path", "Roads", true, 1, "path", "soft"),
+  terrain("cobble", "Castle Cobble", "Roads", true, 1, "cobble", "hard"),
+  terrain("stone-floor", "Stone Floor", "Interior", true, 1, "stone-floor", "hard"),
+  terrain("wood-floor", "Wood Floor", "Interior", true, 1, "wood-floor", "hard"),
+  terrain("water", "River Water", "Water", false, 99, "water", "shore"),
+  terrain("deep-water", "Deep Water", "Water", false, 99, "water", "shore"),
+  terrain("soil", "Farm Soil", "Nature", true, 1, "soil", "soft"),
 ] as const satisfies readonly TerrainDefinition[];
 
 export const props = [
