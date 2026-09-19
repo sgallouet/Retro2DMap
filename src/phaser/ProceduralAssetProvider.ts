@@ -505,6 +505,9 @@ export class ProceduralAssetProvider implements IAssetProvider {
       case "castle-wall":
         this.drawWallNetwork(ctx, width, height, networkMask);
         return;
+      case "garden-border":
+        this.drawGardenBorderNetwork(ctx, width, height, networkMask);
+        return;
       case "castle-tower":
         this.drawTower(ctx, width, height);
         return;
@@ -950,6 +953,36 @@ export class ProceduralAssetProvider implements IAssetProvider {
         line(ctx, [[cx - 5, y], [cx + half - 2, y + 4]], dark, 2);
       }
     }
+  }
+
+  private drawGardenBorderNetwork(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    mask: number,
+  ): void {
+    const cx = width / 2;
+    const cy = height / 2;
+    const effectiveMask = mask === 0 ? EAST | WEST : mask;
+    const stone = "#a5a49a";
+    const light = "#c5c1ae";
+    const dark = "#5f625d";
+    const half = 5;
+
+    const branch = (x: number, y: number, w: number, h: number): void => {
+      rect(ctx, x + 1, y + 2, w, h, "rgba(49,52,49,.24)");
+      rect(ctx, x, y, w, h, stone, dark);
+      if (w > h) rect(ctx, x + 1, y + 1, Math.max(1, w - 2), 2, light);
+      else rect(ctx, x + 1, y + 1, 2, Math.max(1, h - 2), light);
+    };
+
+    if ((effectiveMask & NORTH) !== 0) branch(cx - half, 0, half * 2, cy + half);
+    if ((effectiveMask & SOUTH) !== 0) branch(cx - half, cy - half, half * 2, height - cy + half);
+    if ((effectiveMask & WEST) !== 0) branch(0, cy - half, cx + half, half * 2);
+    if ((effectiveMask & EAST) !== 0) branch(cx - half, cy - half, width - cx + half, half * 2);
+    branch(cx - half, cy - half, half * 2, half * 2);
+
+    rect(ctx, cx - 3, cy - 3, 6, 6, "#b9b6a9", dark);
   }
 
   private drawWallNetwork(
