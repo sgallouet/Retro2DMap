@@ -35,6 +35,11 @@ export interface PropDefinition extends CatalogBase {
   blocksMovement: boolean;
   depthBias: number;
   /**
+   * Quarter-turn orientation is semantic only for props where facing matters.
+   * Fixed props ignore stored/requested rotation.
+   */
+  rotatable: boolean;
+  /**
    * Optional logical connectivity. Connected props derive straight/corner/
    * T/cross/end visuals from neighboring instances instead of storing variants.
    */
@@ -85,6 +90,7 @@ const prop = (
   blocksMovement = true,
   depthBias = 0,
   network?: Readonly<PropNetworkDefinition>,
+  rotatable = false,
 ): PropDefinition => ({
   id,
   label,
@@ -94,6 +100,7 @@ const prop = (
   footprint: { width, height },
   blocksMovement,
   depthBias,
+  rotatable: !network && rotatable,
   ...(network ? { network } : {}),
 });
 
@@ -126,27 +133,27 @@ export const props = [
   prop("cliff", "Cliff Edge", "Nature", 1, 1, true, 4, { group: "cliff", kind: "cliff" }),
   prop("fence", "Wood Fence", "Village", 1, 1, true, 0, { group: "fence", kind: "fence" }),
   prop("bridge", "Wood Bridge", "Village", 1, 1, false, 3, { group: "bridge", kind: "bridge" }),
-  prop("house-blue", "Blue Roof House", "Village", 3, 3, true, 8),
-  prop("house-red", "Red Roof House", "Village", 3, 3, true, 8),
+  prop("house-blue", "Blue Roof House", "Village", 3, 3, true, 8, undefined, true),
+  prop("house-red", "Red Roof House", "Village", 3, 3, true, 8, undefined, true),
   prop("shop-sign", "Shop Sign", "Village", 1, 1, false, 9),
   prop("inn-sign", "Inn Sign", "Village", 1, 1, false, 9),
   prop("crops", "Golden Crops", "Village", 1, 1, false, 2),
   prop("sheep", "Sheep", "Village", 1, 1, true, 10),
-  prop("boat", "River Boat", "Village", 2, 1, true, 6),
+  prop("boat", "River Boat", "Village", 2, 1, true, 6, undefined, true),
   prop("castle-wall", "Castle Wall", "Castle", 1, 1, true, 20, { group: "castle-wall", kind: "wall" }),
   prop("castle-tower", "Round Tower", "Castle", 2, 3, true, 30),
-  prop("castle-gate", "Castle Gate", "Castle", 2, 2, true, 24),
-  prop("stairs", "Stone Stairs", "Castle", 2, 1, false, 5),
+  prop("castle-gate", "Castle Gate", "Castle", 2, 2, true, 24, undefined, true),
+  prop("stairs", "Stone Stairs", "Castle", 2, 1, false, 5, undefined, true),
   prop("banner", "Royal Banner", "Castle", 1, 1, false, 22),
   prop("torch", "Wall Torch", "Castle", 1, 1, false, 23),
   prop("fountain", "Blue Fountain", "Castle", 2, 2, true, 8),
   prop("statue", "Lion Statue", "Castle", 1, 1, true, 12),
-  prop("bookshelf", "Bookshelf", "Interior", 2, 1, true, 8),
-  prop("table", "Long Table", "Interior", 3, 1, true, 8),
-  prop("bed-red", "Red Bed", "Interior", 1, 2, true, 8),
-  prop("bed-blue", "Blue Bed", "Interior", 1, 2, true, 8),
-  prop("throne", "Royal Throne", "Interior", 1, 2, true, 14),
-  prop("weapon-rack", "Weapon Rack", "Interior", 2, 1, true, 9),
+  prop("bookshelf", "Bookshelf", "Interior", 2, 1, true, 8, undefined, true),
+  prop("table", "Long Table", "Interior", 3, 1, true, 8, undefined, true),
+  prop("bed-red", "Red Bed", "Interior", 1, 2, true, 8, undefined, true),
+  prop("bed-blue", "Blue Bed", "Interior", 1, 2, true, 8, undefined, true),
+  prop("throne", "Royal Throne", "Interior", 1, 2, true, 14, undefined, true),
+  prop("weapon-rack", "Weapon Rack", "Interior", 2, 1, true, 9, undefined, true),
   prop("barrels", "Barrels", "Interior", 1, 1, true, 7),
   prop("rug-red", "Red Rug", "Interior", 1, 1, false, -1),
 ] as const satisfies readonly PropDefinition[];
