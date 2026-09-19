@@ -1,3 +1,9 @@
+export interface ImageSource {
+  /** Phaser texture key for one loose PNG/WebP sprite. */
+  key: string;
+  imageUrl: string;
+}
+
 export interface AtlasSource {
   /** Phaser texture/atlas key. */
   key: string;
@@ -6,6 +12,12 @@ export interface AtlasSource {
 }
 
 export type FrameChoice = string | readonly string[];
+
+export interface ImageSpriteSpec {
+  kind: "image";
+  /** Texture key declared in manifest.images. */
+  texture: string;
+}
 
 export interface StaticSpriteSpec {
   kind: "static";
@@ -32,9 +44,18 @@ export interface NetworkSpriteSpec {
   topologies: Readonly<Record<string, FrameChoice>>;
 }
 
-export type SpriteSpec = StaticSpriteSpec | TerrainSpriteSpec | NetworkSpriteSpec;
+export type SpriteSpec =
+  | ImageSpriteSpec
+  | StaticSpriteSpec
+  | TerrainSpriteSpec
+  | NetworkSpriteSpec;
 
 export interface SpriteAssetManifest {
+  /**
+   * Loose image sprites are ideal while authoring one asset at a time.
+   * They can later be packed into atlases without changing map semantics.
+   */
+  images?: readonly ImageSource[];
   atlases: readonly AtlasSource[];
   /**
    * Catalog ID -> visual recipe. Missing entries automatically fall back to
