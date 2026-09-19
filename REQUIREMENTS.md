@@ -156,9 +156,9 @@ The topology system must be capable of representing:
 - T junctions
 - four-way junctions
 
-The current four-neighbour system is only a first step.
+The topology contract must support a rich **8-neighbour / Wang-style topology system** for authored sprite atlases and natural-looking transitions.
 
-The intended direction is a richer **8-neighbour / Wang-style topology system** for authored sprite atlases and more natural-looking transitions.
+The current implementation already derives eight-neighbour terrain connectivity, including concave inner corners, while connected prop networks derive straight/corner/T/cross/end roles from semantic neighbors. Future authored sprites must preserve this semantic contract rather than moving variant choice into map data.
 
 This logic should eventually apply to both terrain and connected structures, especially:
 
