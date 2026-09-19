@@ -1,5 +1,6 @@
 import { History } from "../core/History";
 import type { IWorldCatalog } from "../domain/catalog";
+import type { IPrefabCatalog } from "../domain/prefab";
 import {
   cloneMap,
   type BrushSize,
@@ -10,6 +11,7 @@ import {
   type StrokeMode,
 } from "../domain/map";
 import { EntityPlacementService } from "./PlacementService";
+import { PrefabPlacer } from "./PrefabPlacer";
 import { LogicalWorldPainter } from "./WorldPainter";
 
 export interface EditorState {
@@ -17,6 +19,7 @@ export interface EditorState {
   selection: EditorSelection;
   gridVisible: boolean;
   navigationVisible: boolean;
+  selectedPrefabId: string | null;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -27,6 +30,7 @@ export interface IEditorController {
   readonly state: Readonly<EditorState>;
   subscribe(listener: EditorListener): () => void;
   select(layer: LayerKind, catalogId: string): void;
+  selectPrefab(prefabId: string | null): void;
   setTool(tool: EditorSelection["tool"]): void;
   setStrokeMode(mode: StrokeMode): void;
   setBrushSize(size: BrushSize): void;
@@ -53,15 +57,22 @@ export class EditorController implements IEditorController {
   };
   #gridVisible = false;
   #navigationVisible = false;
+  #selectedPrefabId: string | null = null;
   #strokeActive = false;
   readonly #listeners = new Set<EditorListener>();
   readonly #history = new History<MapDocument>(cloneMap);
   readonly #worldPainter = new LogicalWorldPainter();
   readonly #placement: EntityPlacementService;
+  readonly #prefabPlacer?: PrefabPlacer;
 
-  constructor(document: MapDocument, private readonly catalog: IWorldCatalog) {
+  constructor(
+    document: MapDocument,
+    private readonly catalog: IWorldCatalog,
+    private readonly prefabs?: IPrefabCatalog,
+  ) {
     this.#document = cloneMap(document);
     this.#placement = new EntityPlacementService(catalog);
+    if (prefabs) this.#prefabPlacer = new PrefabPlacer(catalog);
   }
 
   get state(): Readonly<EditorState> {
@@ -70,6 +81,7 @@ export class EditorController implements IEditorController {
       selection: this.#selection,
       gridVisible: this.#gridVisible,
       navigationVisible: this.#navigationVisible,
+      selectedPrefabId: this.#selectedPrefabId,
       canUndo: this.#history.canUndo,
       canRedo: this.#history.canRedo,
     };
@@ -97,6 +109,23 @@ export class EditorController implements IEditorController {
       catalogId,
       strokeMode: supportsCurrentMode ? currentMode : "brush",
     };
+    this.#selectedPrefabId = null;
+    this.emit();
+  }
+
+  selectPrefab(prefabId: string | null): void {
+    if (prefabId !== null && !this.prefabs?.get(prefabId)) {
+      throw new Error(`Unknown prefab ${prefabId}.`);
+    }
+
+    this.#selectedPrefabId = prefabId;
+    if (prefabId !== null) {
+      this.#selection = {
+        ...this.#selection,
+        tool: "paint",
+        strokeMode: "brush",
+      };
+    }
     this.emit();
   }
 
@@ -106,6 +135,12 @@ export class EditorController implements IEditorController {
   }
 
   setStrokeMode(mode: StrokeMode): void {
+    if (this.#selectedPrefabId) {
+      this.#selection = { ...this.#selection, strokeMode: "brush" };
+      this.emit();
+      return;
+    }
+
     const selected = this.catalog.get(this.#selection.catalogId);
     const supported =
       mode === "brush" ||
@@ -145,11 +180,22 @@ export class EditorController implements IEditorController {
 
   applyAt(coord: GridCoord, eraseOverride = false): void {
     const erase = eraseOverride || this.#selection.tool === "erase";
+
+    if (this.#selectedPrefabId) {
+      if (erase || !this.#prefabPlacer || !this.prefabs) return;
+      const prefab = this.prefabs.get(this.#selectedPrefabId);
+      if (!prefab) return;
+      const result = this.#prefabPlacer.place(this.#document, prefab, coord);
+      if (result.placed) this.emit();
+      return;
+    }
+
     const changed = erase ? this.eraseAt(coord) : this.paintAt(coord);
     if (changed) this.emit();
   }
 
   applyLine(from: GridCoord, to: GridCoord, eraseOverride = false): void {
+    if (this.#selectedPrefabId) return;
     const erase = eraseOverride || this.#selection.tool === "erase";
     let changed = false;
 
@@ -173,7 +219,7 @@ export class EditorController implements IEditorController {
   }
 
   applyRect(from: GridCoord, to: GridCoord, eraseOverride = false): void {
-    if (this.#selection.layer !== "terrain") return;
+    if (this.#selectedPrefabId || this.#selection.layer !== "terrain") return;
 
     const erase = eraseOverride || this.#selection.tool === "erase";
     const changed = this.#worldPainter.paintTerrainRect(this.#document, {
