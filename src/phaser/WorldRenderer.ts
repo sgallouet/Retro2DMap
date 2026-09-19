@@ -2,12 +2,13 @@ import Phaser from "phaser";
 import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
 import { PropTopologyResolver, TerrainTopologyResolver } from "../domain/autotile";
 import { rasterizeGridLine } from "../domain/grid";
+import { NavigationGridBuilder } from "../domain/navigation";
 import type { EditorSelection, GridCoord, MapDocument } from "../domain/map";
 import { TILE_SIZE } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
 
 export interface IWorldRenderer {
-  render(document: MapDocument, gridVisible: boolean): void;
+  render(document: MapDocument, gridVisible: boolean, navigationVisible: boolean): void;
   setHover(coord: GridCoord | null, selection: EditorSelection): void;
   setLinePreview(from: GridCoord, to: GridCoord, selection: EditorSelection): void;
   clearLinePreview(): void;
@@ -16,11 +17,13 @@ export interface IWorldRenderer {
 
 export class WorldRenderer implements IWorldRenderer {
   readonly #worldObjects: Phaser.GameObjects.GameObject[] = [];
+  readonly #navigationOverlay: Phaser.GameObjects.Graphics;
   readonly #grid: Phaser.GameObjects.Graphics;
   readonly #linePreview: Phaser.GameObjects.Graphics;
   readonly #hover: Phaser.GameObjects.Graphics;
   readonly #terrainTopology: TerrainTopologyResolver;
   readonly #propTopology: PropTopologyResolver;
+  readonly #navigation: NavigationGridBuilder;
   #lastDocument: MapDocument | null = null;
 
   constructor(
@@ -28,14 +31,16 @@ export class WorldRenderer implements IWorldRenderer {
     private readonly catalog: IWorldCatalog,
     private readonly assets: IAssetProvider,
   ) {
+    this.#navigationOverlay = scene.add.graphics().setDepth(99_900);
     this.#grid = scene.add.graphics().setDepth(100_000);
     this.#linePreview = scene.add.graphics().setDepth(100_050);
     this.#hover = scene.add.graphics().setDepth(100_100);
     this.#terrainTopology = new TerrainTopologyResolver(catalog);
     this.#propTopology = new PropTopologyResolver(catalog);
+    this.#navigation = new NavigationGridBuilder(catalog);
   }
 
-  render(document: MapDocument, gridVisible: boolean): void {
+  render(document: MapDocument, gridVisible: boolean, navigationVisible: boolean): void {
     this.#lastDocument = document;
     this.#worldObjects.splice(0).forEach((object) => object.destroy());
 
@@ -90,6 +95,7 @@ export class WorldRenderer implements IWorldRenderer {
       this.#worldObjects.push(image);
     });
 
+    this.drawNavigation(document, navigationVisible);
     this.drawGrid(document, gridVisible);
   }
 
@@ -177,9 +183,40 @@ export class WorldRenderer implements IWorldRenderer {
 
   destroy(): void {
     this.#worldObjects.splice(0).forEach((object) => object.destroy());
+    this.#navigationOverlay.destroy();
     this.#grid.destroy();
     this.#linePreview.destroy();
     this.#hover.destroy();
+  }
+
+  private drawNavigation(document: MapDocument, visible: boolean): void {
+    this.#navigationOverlay.clear();
+    if (!visible) return;
+
+    const navigation = this.#navigation.build(document);
+    this.#navigationOverlay.fillStyle(0xd65353, 0.27);
+    this.#navigationOverlay.lineStyle(1, 0xf18c8c, 0.45);
+
+    for (let y = 0; y < navigation.height; y += 1) {
+      for (let x = 0; x < navigation.width; x += 1) {
+        const cell = navigation.at({ x, y });
+        if (!cell || cell.walkable) continue;
+
+        const inset = 4;
+        this.#navigationOverlay.fillRect(
+          x * TILE_SIZE + inset,
+          y * TILE_SIZE + inset,
+          TILE_SIZE - inset * 2,
+          TILE_SIZE - inset * 2,
+        );
+        this.#navigationOverlay.strokeRect(
+          x * TILE_SIZE + inset,
+          y * TILE_SIZE + inset,
+          TILE_SIZE - inset * 2,
+          TILE_SIZE - inset * 2,
+        );
+      }
+    }
   }
 
   private drawGrid(document: MapDocument, visible: boolean): void {
