@@ -143,6 +143,7 @@ export const props = [
   prop("dock", "Wood Dock", "Village", 2, 2, false, 5, undefined, true),
   prop("waterfall", "Waterfall", "Nature", 2, 2, false, 18),
   prop("castle-wall", "Castle Wall", "Castle", 1, 1, true, 20, { group: "castle-wall", kind: "wall" }),
+  prop("garden-border", "Garden Stone Border", "Castle", 1, 1, false, 4, { group: "garden-border", kind: "fence" }),
   prop("castle-tower", "Round Tower", "Castle", 2, 3, true, 30),
   prop("castle-gate", "Castle Gate", "Castle", 2, 2, true, 24, undefined, true),
   prop("stairs", "Stone Stairs", "Castle", 2, 1, false, 5, undefined, true),
