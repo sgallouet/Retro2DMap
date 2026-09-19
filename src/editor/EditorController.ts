@@ -4,6 +4,7 @@ import type { IPrefabCatalog } from "../domain/prefab";
 import {
   cloneMap,
   type BrushSize,
+  type EditorEntitySelection,
   type EditorSelection,
   type GridCoord,
   type LayerKind,
@@ -20,6 +21,7 @@ export interface EditorState {
   gridVisible: boolean;
   navigationVisible: boolean;
   selectedPrefabId: string | null;
+  entitySelection: EditorEntitySelection | null;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -31,6 +33,10 @@ export interface IEditorController {
   subscribe(listener: EditorListener): () => void;
   select(layer: LayerKind, catalogId: string): void;
   selectPrefab(prefabId: string | null): void;
+  selectEntityAt(coord: GridCoord): void;
+  clearEntitySelection(): void;
+  moveSelectedEntity(coord: GridCoord): void;
+  rotateSelectedEntity(clockwise?: boolean): void;
   setTool(tool: EditorSelection["tool"]): void;
   setStrokeMode(mode: StrokeMode): void;
   setBrushSize(size: BrushSize): void;
@@ -58,6 +64,7 @@ export class EditorController implements IEditorController {
   #gridVisible = false;
   #navigationVisible = false;
   #selectedPrefabId: string | null = null;
+  #entitySelection: EditorEntitySelection | null = null;
   #strokeActive = false;
   readonly #listeners = new Set<EditorListener>();
   readonly #history = new History<MapDocument>(cloneMap);
@@ -82,6 +89,7 @@ export class EditorController implements IEditorController {
       gridVisible: this.#gridVisible,
       navigationVisible: this.#navigationVisible,
       selectedPrefabId: this.#selectedPrefabId,
+      entitySelection: this.#entitySelection,
       canUndo: this.#history.canUndo,
       canRedo: this.#history.canRedo,
     };
@@ -110,6 +118,7 @@ export class EditorController implements IEditorController {
       strokeMode: supportsCurrentMode ? currentMode : "brush",
     };
     this.#selectedPrefabId = null;
+    this.#entitySelection = null;
     this.emit();
   }
 
@@ -119,6 +128,7 @@ export class EditorController implements IEditorController {
     }
 
     this.#selectedPrefabId = prefabId;
+    this.#entitySelection = null;
     if (prefabId !== null) {
       this.#selection = {
         ...this.#selection,
@@ -129,8 +139,72 @@ export class EditorController implements IEditorController {
     this.emit();
   }
 
+  selectEntityAt(coord: GridCoord): void {
+    const actor = [...this.#document.actors]
+      .reverse()
+      .find((candidate) => candidate.x === coord.x && candidate.y === coord.y);
+
+    if (actor) {
+      this.#entitySelection = { kind: "actor", id: actor.id };
+      this.#selectedPrefabId = null;
+      this.#selection = { ...this.#selection, tool: "select", strokeMode: "brush" };
+      this.emit();
+      return;
+    }
+
+    const prop = [...this.#document.props]
+      .reverse()
+      .find((candidate) => this.#placement.propOccupies(candidate, coord));
+
+    this.#entitySelection = prop ? { kind: "prop", id: prop.id } : null;
+    this.#selectedPrefabId = null;
+    this.#selection = { ...this.#selection, tool: "select", strokeMode: "brush" };
+    this.emit();
+  }
+
+  clearEntitySelection(): void {
+    if (!this.#entitySelection) return;
+    this.#entitySelection = null;
+    this.emit();
+  }
+
+  moveSelectedEntity(coord: GridCoord): void {
+    const selected = this.#entitySelection;
+    if (!selected) return;
+
+    const changed =
+      selected.kind === "prop"
+        ? this.#placement.moveProp(this.#document, selected.id, coord, "reject")
+        : this.#placement.moveActor(this.#document, selected.id, coord);
+
+    if (changed) this.emit();
+  }
+
+  rotateSelectedEntity(clockwise = true): void {
+    const selected = this.#entitySelection;
+    if (!selected || selected.kind !== "actor") return;
+
+    const actor = this.#document.actors.find((candidate) => candidate.id === selected.id);
+    if (!actor) return;
+
+    const facings = ["north", "east", "south", "west"] as const;
+    const current = facings.indexOf(actor.facing);
+    const delta = clockwise ? 1 : -1;
+    actor.facing = facings[(current + delta + facings.length) % facings.length] ?? "south";
+    this.emit();
+  }
+
   setTool(tool: EditorSelection["tool"]): void {
     if (this.#selectedPrefabId && tool === "erase") return;
+
+    if (tool === "select") {
+      this.#selectedPrefabId = null;
+      this.#selection = { ...this.#selection, tool, strokeMode: "brush" };
+      this.emit();
+      return;
+    }
+
+    this.#entitySelection = null;
     this.#selection = { ...this.#selection, tool };
     this.emit();
   }
@@ -240,6 +314,7 @@ export class EditorController implements IEditorController {
     const previous = this.#history.undo(this.#document);
     if (!previous) return;
     this.#document = previous;
+    this.reconcileEntitySelection();
     this.emit();
   }
 
@@ -247,6 +322,7 @@ export class EditorController implements IEditorController {
     const next = this.#history.redo(this.#document);
     if (!next) return;
     this.#document = next;
+    this.reconcileEntitySelection();
     this.emit();
   }
 
@@ -254,6 +330,8 @@ export class EditorController implements IEditorController {
     this.#document = cloneMap(document);
     this.#history.clear();
     this.#strokeActive = false;
+    this.#entitySelection = null;
+    this.#selectedPrefabId = null;
     this.emit();
   }
 
@@ -299,6 +377,18 @@ export class EditorController implements IEditorController {
     }
 
     return this.#placement.erasePropsAt(this.#document, coord);
+  }
+
+  private reconcileEntitySelection(): void {
+    const selected = this.#entitySelection;
+    if (!selected) return;
+
+    const exists =
+      selected.kind === "prop"
+        ? this.#document.props.some((prop) => prop.id === selected.id)
+        : this.#document.actors.some((actor) => actor.id === selected.id);
+
+    if (!exists) this.#entitySelection = null;
   }
 
   private emit(): void {
