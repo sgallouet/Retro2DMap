@@ -1,3 +1,4 @@
+import type { QuarterTurn } from "./geometry";
 import type {
   ActorInstance,
   BrushSize,
@@ -23,6 +24,7 @@ export interface PlacePropCommand {
   type: "place-prop";
   catalogId: string;
   coord: GridCoord;
+  rotation?: QuarterTurn;
   overlapPolicy?: OverlapPolicy;
 }
 
