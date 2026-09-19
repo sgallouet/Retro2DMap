@@ -80,10 +80,21 @@ Prefabs are **recipes**, not persistent map entities. A prefab may paint terrain
 
 After placement the map contains only ordinary semantic terrain/props/actors. This keeps gameplay, serialization, topology, navigation and future sprite replacement independent from the prefab that produced the structure.
 
+### 8. Semantic command boundary
+
+`src/domain/commands.ts`, `src/editor/WorldCommandExecutor.ts`, `src/generators`
+
+Generators and future AI tooling emit serializable semantic commands. The executor delegates to the exact same painter, placement and prefab services used by the interactive editor. Atomic batches are staged on a clone and either commit completely or leave the map unchanged.
+
+### 9. Orientation
+
+Non-network props may opt into quarter-turn orientation in the catalog. Rotation is semantic: the effective footprint, collision, navigation, selection overlay and rendering all rotate together. Connected networks never store rotation because their visual orientation is derived from topology.
+
 ## Reference contracts
 
 - [Topology contract](TOPOLOGY.md)
 - [Asset pipeline](ASSET_PIPELINE.md)
+- [Semantic world commands](COMMANDS.md)
 
 ## Coordinate model
 
@@ -105,15 +116,13 @@ Keeping the first renderer sprite-based makes large props, code-generated textur
 
 ## Next strategic milestones
 
-1. **Topology authoring contract** for mapping semantic terrain/network keys onto future atlas frames, including organic authored corner variants.
-2. **Connected-network editor refinement**: live line preview, network-aware erase and richer road/wall/bridge tools.
-3. **SpriteAssetProvider** with atlas metadata and per-catalog fallbacks to procedural art.
-4. **Selection/move/rotate tools** and multi-cell marquee operations.
-5. **Validation + route/pathfinding preview** using the derived navigation model.
-6. **Prefab refinement**: rotation/orientation, authored compound variations and reusable room/building recipes.
-7. **Rule-based generator API** so algorithms or AI can lay out semantic maps through commands rather than drawing pixels.
-8. **Map chunks / streaming** for worlds much larger than one screen.
-9. **Tiled/LDtk adapter** only if interoperability becomes useful; the native JSON remains the clean canonical format.
+1. **Marquee selection** and bulk move/erase/paint operations.
+2. **Semantic room/castle tool** producing floors, connected wall perimeters and deliberate entrances.
+3. **Prefab-level rotation/variation** by transforming prefab recipes before atomic placement.
+4. **Generator refinement** using the shared command boundary, including region planning and validation feedback.
+5. **Map chunks / dirty rendering** for substantially larger worlds.
+6. **Authored atlas rollout** with procedural fallback.
+7. **Tiled/LDtk adapter** only if interoperability becomes useful; native JSON stays canonical.
 
 ## Visual direction
 
