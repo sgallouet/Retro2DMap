@@ -1,0 +1,38 @@
+import Phaser from "phaser";
+import "./styles.css";
+import { worldCatalog } from "./domain/catalog";
+import { EditorController } from "./editor/EditorController";
+import { createSampleKingdom } from "./maps/sampleKingdom";
+import { MapScene } from "./phaser/MapScene";
+import { ProceduralAssetProvider } from "./phaser/ProceduralAssetProvider";
+import { LocalStorageMapStore } from "./storage/LocalStorageMapStore";
+import { EditorShell } from "./ui/EditorShell";
+
+const root = document.querySelector<HTMLElement>("#app");
+if (!root) throw new Error("Missing #app root.");
+
+const editor = new EditorController(createSampleKingdom(), worldCatalog);
+const store = new LocalStorageMapStore();
+const shell = new EditorShell(root, editor, worldCatalog, store, createSampleKingdom);
+shell.mount();
+
+const assets = new ProceduralAssetProvider();
+const scene = new MapScene({ editor, catalog: worldCatalog, assets });
+
+new Phaser.Game({
+  type: Phaser.AUTO,
+  parent: "game-canvas",
+  backgroundColor: "#141b17",
+  scene: [scene],
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: "100%",
+    height: "100%",
+  },
+  render: {
+    antialias: false,
+    pixelArt: true,
+    roundPixels: true,
+  },
+});
