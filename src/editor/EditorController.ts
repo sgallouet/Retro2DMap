@@ -16,6 +16,7 @@ export interface EditorState {
   document: MapDocument;
   selection: EditorSelection;
   gridVisible: boolean;
+  navigationVisible: boolean;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -30,6 +31,7 @@ export interface IEditorController {
   setStrokeMode(mode: StrokeMode): void;
   setBrushSize(size: BrushSize): void;
   setGridVisible(visible: boolean): void;
+  setNavigationVisible(visible: boolean): void;
   beginStroke(): void;
   applyAt(coord: GridCoord, eraseOverride?: boolean): void;
   applyLine(from: GridCoord, to: GridCoord, eraseOverride?: boolean): void;
@@ -49,6 +51,7 @@ export class EditorController implements IEditorController {
     brushSize: 1,
   };
   #gridVisible = false;
+  #navigationVisible = false;
   #strokeActive = false;
   readonly #listeners = new Set<EditorListener>();
   readonly #history = new History<MapDocument>(cloneMap);
@@ -65,6 +68,7 @@ export class EditorController implements IEditorController {
       document: this.#document,
       selection: this.#selection,
       gridVisible: this.#gridVisible,
+      navigationVisible: this.#navigationVisible,
       canUndo: this.#history.canUndo,
       canRedo: this.#history.canRedo,
     };
@@ -114,6 +118,11 @@ export class EditorController implements IEditorController {
 
   setGridVisible(visible: boolean): void {
     this.#gridVisible = visible;
+    this.emit();
+  }
+
+  setNavigationVisible(visible: boolean): void {
+    this.#navigationVisible = visible;
     this.emit();
   }
 
