@@ -1,4 +1,5 @@
 import type { IWorldCatalog, PropDefinition } from "./catalog";
+import { rotatedFootprint } from "./geometry";
 import { tileIndex, type GridCoord, type MapDocument, type PropInstance } from "./map";
 import { NavigationGridBuilder } from "./navigation";
 
@@ -161,11 +162,15 @@ export class MapValidator implements IMapValidator {
     prop: PropInstance,
     definition: PropDefinition,
   ): boolean {
+    const footprint = rotatedFootprint(
+      definition.footprint,
+      definition.network ? 0 : prop.rotation,
+    );
     return (
       prop.x >= 0 &&
       prop.y >= 0 &&
-      prop.x + definition.footprint.width <= document.width &&
-      prop.y + definition.footprint.height <= document.height
+      prop.x + footprint.width <= document.width &&
+      prop.y + footprint.height <= document.height
     );
   }
 
@@ -175,11 +180,20 @@ export class MapValidator implements IMapValidator {
     b: PropInstance,
     bDefinition: PropDefinition,
   ): boolean {
+    const aFootprint = rotatedFootprint(
+      aDefinition.footprint,
+      aDefinition.network ? 0 : a.rotation,
+    );
+    const bFootprint = rotatedFootprint(
+      bDefinition.footprint,
+      bDefinition.network ? 0 : b.rotation,
+    );
+
     return (
-      a.x < b.x + bDefinition.footprint.width &&
-      a.x + aDefinition.footprint.width > b.x &&
-      a.y < b.y + bDefinition.footprint.height &&
-      a.y + aDefinition.footprint.height > b.y
+      a.x < b.x + bFootprint.width &&
+      a.x + aFootprint.width > b.x &&
+      a.y < b.y + bFootprint.height &&
+      a.y + aFootprint.height > b.y
     );
   }
 }
