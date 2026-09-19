@@ -22,11 +22,23 @@ export interface TerrainDefinition extends CatalogBase {
   edgeStyle: TerrainEdgeStyle;
 }
 
+export type PropNetworkKind = "wall" | "fence" | "bridge" | "cliff";
+
+export interface PropNetworkDefinition {
+  group: string;
+  kind: PropNetworkKind;
+}
+
 export interface PropDefinition extends CatalogBase {
   layer: "prop";
   footprint: Readonly<{ width: number; height: number }>;
   blocksMovement: boolean;
   depthBias: number;
+  /**
+   * Optional logical connectivity. Connected props derive straight/corner/
+   * T/cross/end visuals from neighboring instances instead of storing variants.
+   */
+  network?: Readonly<PropNetworkDefinition>;
 }
 
 export interface ActorDefinition extends CatalogBase {
@@ -72,6 +84,7 @@ const prop = (
   height = 1,
   blocksMovement = true,
   depthBias = 0,
+  network?: Readonly<PropNetworkDefinition>,
 ): PropDefinition => ({
   id,
   label,
@@ -81,6 +94,7 @@ const prop = (
   footprint: { width, height },
   blocksMovement,
   depthBias,
+  ...(network ? { network } : {}),
 });
 
 const actor = (id: string, label: string, category: string, faction: ActorDefinition["faction"]): ActorDefinition => ({
@@ -109,9 +123,9 @@ export const props = [
   prop("tree-pine", "Pine Tree", "Nature", 1, 2, true, 12),
   prop("flowers", "Wild Flowers", "Nature", 1, 1, false, -2),
   prop("rock", "Rock", "Nature"),
-  prop("cliff", "Cliff Edge", "Nature", 1, 1, true, 4),
-  prop("fence", "Wood Fence", "Village"),
-  prop("bridge", "Wood Bridge", "Village", 1, 1, false, 3),
+  prop("cliff", "Cliff Edge", "Nature", 1, 1, true, 4, { group: "cliff", kind: "cliff" }),
+  prop("fence", "Wood Fence", "Village", 1, 1, true, 0, { group: "fence", kind: "fence" }),
+  prop("bridge", "Wood Bridge", "Village", 1, 1, false, 3, { group: "bridge", kind: "bridge" }),
   prop("house-blue", "Blue Roof House", "Village", 3, 3, true, 8),
   prop("house-red", "Red Roof House", "Village", 3, 3, true, 8),
   prop("shop-sign", "Shop Sign", "Village", 1, 1, false, 9),
@@ -119,7 +133,7 @@ export const props = [
   prop("crops", "Golden Crops", "Village", 1, 1, false, 2),
   prop("sheep", "Sheep", "Village", 1, 1, true, 10),
   prop("boat", "River Boat", "Village", 2, 1, true, 6),
-  prop("castle-wall", "Castle Wall", "Castle", 1, 1, true, 20),
+  prop("castle-wall", "Castle Wall", "Castle", 1, 1, true, 20, { group: "castle-wall", kind: "wall" }),
   prop("castle-tower", "Round Tower", "Castle", 2, 3, true, 30),
   prop("castle-gate", "Castle Gate", "Castle", 2, 2, true, 24),
   prop("stairs", "Stone Stairs", "Castle", 2, 1, false, 5),
