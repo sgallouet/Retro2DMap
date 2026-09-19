@@ -282,13 +282,47 @@ export class ProceduralAssetProvider implements IAssetProvider {
       return;
     }
 
-    if (entry.id === "cobble" || entry.id === "stone-floor") {
+    if (entry.id === "cobble") {
       rect(ctx, 0, 0, width, height, colors[0]);
-      for (let y = 0; y < height; y += 12) {
-        const shift = (Math.floor(y / 12) % 2) * 7;
-        for (let x = -shift; x < width; x += 14) {
-          rect(ctx, x, y, 13, 11, y % 24 === 0 ? colors[1] : colors[0], colors[2]);
+      for (let y = 0; y < height; y += 11) {
+        const shift = (Math.floor(y / 11) % 2) * 6;
+        for (let x = -shift; x < width; x += 13) {
+          const tone = (x + y + variant) % 3 === 0 ? colors[1] : colors[0];
+          rect(ctx, x, y, 12, 10, tone, colors[2]);
+          if ((x + y) % 4 === 0) {
+            rect(ctx, x + 3, y + 2, 4, 2, "rgba(228,218,190,.12)");
+          }
         }
+      }
+      return;
+    }
+
+    if (entry.id === "stone-floor") {
+      rect(ctx, 0, 0, width, height, colors[0]);
+      const cell = 16;
+      for (let y = 0; y < height; y += cell) {
+        for (let x = 0; x < width; x += cell) {
+          const alternate = ((x / cell) + (y / cell) + variant) % 3 === 0;
+          rect(
+            ctx,
+            x,
+            y,
+            cell - 1,
+            cell - 1,
+            alternate ? colors[1] : colors[0],
+            colors[2],
+          );
+          line(
+            ctx,
+            [[x + 2, y + 2], [x + cell - 4, y + 2]],
+            "rgba(230,230,214,.15)",
+            1,
+          );
+        }
+      }
+
+      if (variant % 2 === 1) {
+        line(ctx, [[30, 4], [27, 9], [31, 13]], "rgba(58,62,60,.35)", 1);
       }
       return;
     }
