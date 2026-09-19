@@ -2,7 +2,7 @@ export const TILE_SIZE = 48;
 export const MAP_FORMAT_VERSION = 1 as const;
 
 export type LayerKind = "terrain" | "prop" | "actor";
-export type ToolKind = "paint" | "erase" | "select";
+export type ToolKind = "paint" | "erase" | "select" | "route";
 export type StrokeMode = "brush" | "line" | "rect";
 export type BrushSize = 1 | 3 | 5;
 export type OverlapPolicy = "replace" | "reject";
