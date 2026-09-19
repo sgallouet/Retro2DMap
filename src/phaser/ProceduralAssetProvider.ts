@@ -712,7 +712,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
       ctx.closePath();
       ctx.fill();
       rect(ctx, cx - 12, 31, 24, 5, dark);
-    } else if (entry.id === "hero") {
+    } else if (entry.id === "hero" && facing !== "north") {
       // Small shoulder cape and sword silhouette.
       rect(ctx, cx - 12, 22, 24, 5, "#8c3f43", "#552a2e");
       line(ctx, [[cx + 12, 29], [cx + 17, 12]], "#c4c8c4", 3);
