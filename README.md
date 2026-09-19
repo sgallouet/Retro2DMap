@@ -1,5 +1,7 @@
 # Retro2DMap
 
+> **Project source of truth:** read [REQUIREMENTS.md](REQUIREMENTS.md) before changing architecture, map semantics, editor behavior, or the asset pipeline.
+
 A **Phaser 3 + Vite + TypeScript** 2D square-tile world-map builder.
 
 The first milestone deliberately uses **code-generated art** so the map/editor architecture can stabilize before committing to a sprite pipeline. Every world cell is one character footprint. Large props (houses, towers, trees, furniture, etc.) are anchored to cells and may visually/collision-wise span several cells.
