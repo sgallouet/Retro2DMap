@@ -226,7 +226,21 @@ export class EditorController implements IEditorController {
 
   rotateSelectedEntity(clockwise = true): void {
     const selected = this.#entitySelection;
-    if (!selected || selected.kind !== "actor") return;
+    if (!selected) return;
+
+    if (selected.kind === "prop") {
+      const changed = this.#placement.rotateProp(
+        this.#document,
+        selected.id,
+        clockwise,
+        "reject",
+      );
+      if (changed) {
+        this.invalidateDiagnostics();
+        this.emit();
+      }
+      return;
+    }
 
     const actor = this.#document.actors.find((candidate) => candidate.id === selected.id);
     if (!actor) return;
