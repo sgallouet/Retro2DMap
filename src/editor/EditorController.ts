@@ -1,5 +1,6 @@
 import { History } from "../core/History";
 import type { IWorldCatalog } from "../domain/catalog";
+import type { CommandBatchResult, WorldCommand } from "../domain/commands";
 import type { IPrefabCatalog } from "../domain/prefab";
 import { NavigationGridBuilder } from "../domain/navigation";
 import { GridPathfinder } from "../domain/pathfinding";
@@ -16,6 +17,7 @@ import {
 } from "../domain/map";
 import { EntityPlacementService } from "./PlacementService";
 import { PrefabPlacer } from "./PrefabPlacer";
+import { WorldCommandExecutor } from "./WorldCommandExecutor";
 import { LogicalWorldPainter } from "./WorldPainter";
 
 export interface EditorRoutePreview {
@@ -54,6 +56,7 @@ export interface IEditorController {
   clearValidation(): void;
   routeClick(coord: GridCoord): void;
   clearRoute(): void;
+  executeCommands(commands: readonly WorldCommand[]): CommandBatchResult;
   setTool(tool: EditorSelection["tool"]): void;
   setStrokeMode(mode: StrokeMode): void;
   setBrushSize(size: BrushSize): void;
@@ -93,6 +96,7 @@ export class EditorController implements IEditorController {
   readonly #validator: MapValidator;
   readonly #navigation: NavigationGridBuilder;
   readonly #pathfinder = new GridPathfinder();
+  readonly #commandExecutor?: WorldCommandExecutor;
 
   constructor(
     document: MapDocument,
@@ -103,7 +107,10 @@ export class EditorController implements IEditorController {
     this.#placement = new EntityPlacementService(catalog);
     this.#validator = new MapValidator(catalog);
     this.#navigation = new NavigationGridBuilder(catalog);
-    if (prefabs) this.#prefabPlacer = new PrefabPlacer(catalog);
+    if (prefabs) {
+      this.#prefabPlacer = new PrefabPlacer(catalog);
+      this.#commandExecutor = new WorldCommandExecutor(catalog, prefabs);
+    }
   }
 
   get state(): Readonly<EditorState> {
@@ -276,6 +283,40 @@ export class EditorController implements IEditorController {
     if (!this.#routePreview) return;
     this.#routePreview = null;
     this.emit();
+  }
+
+  executeCommands(commands: readonly WorldCommand[]): CommandBatchResult {
+    if (!this.#commandExecutor) {
+      return {
+        ok: false,
+        changed: false,
+        results: [
+          {
+            ok: false,
+            changed: false,
+            reason: "World command execution requires a prefab catalog.",
+          },
+        ],
+        failedAt: 0,
+      };
+    }
+
+    if (commands.length === 0) {
+      return { ok: true, changed: false, results: [] };
+    }
+
+    const before = cloneMap(this.#document);
+    const result = this.#commandExecutor.executeAtomic(this.#document, commands);
+
+    if (result.ok && result.changed) {
+      this.#history.checkpoint(before);
+      this.#entitySelection = null;
+      this.#selectedPrefabId = null;
+      this.invalidateDiagnostics();
+      this.emit();
+    }
+
+    return result;
   }
 
   setTool(tool: EditorSelection["tool"]): void {
