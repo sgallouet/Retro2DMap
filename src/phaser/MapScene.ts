@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { IWorldCatalog } from "../domain/catalog";
+import { rotatedFootprint } from "../domain/geometry";
 import type { IPrefabCatalog } from "../domain/prefab";
 import type { IEditorController } from "../editor/EditorController";
 import {
@@ -316,10 +317,10 @@ export class MapScene extends Phaser.Scene {
 
     const definition = this.#catalog.get(prop.catalogId);
     if (!definition || definition.layer !== "prop") return undefined;
-    return {
-      width: definition.footprint.width,
-      height: definition.footprint.height,
-    };
+    return rotatedFootprint(
+      definition.footprint,
+      definition.network ? 0 : prop.rotation,
+    );
   }
 
   private updateCameraBounds(document: MapDocument): void {
