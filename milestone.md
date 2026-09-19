@@ -2,16 +2,15 @@
 
 > Keep this short. [REQUIREMENTS.md](REQUIREMENTS.md) is the project contract.
 
-**Current phase:** editor composition tools
+**Current phase:** reusable world-building commands
 
-- ✅ Semantic grid model; 1 character = 1 tile; multi-tile props first-class.
-- ✅ Smart terrain painting: freehand, 1×1/3×3/5×5, line, rectangle.
-- ✅ 8-neighbour terrain + connected wall/fence/bridge/cliff topology.
-- ✅ Procedural art now; gradual atlas/sprite replacement contract ready.
-- ✅ Navigation/walkability derivation + debug overlay.
-- ✅ **Semantic prefabs:** atomic compound recipes, palette, footprint preview, undo.
+- ✅ Semantic grid + multi-tile props + smart terrain/network topology.
+- ✅ Free/line/rectangle painting + procedural→sprite asset contract.
+- ✅ Semantic prefabs: atomic recipes, palette, footprint preview, undo.
+- ✅ Select + drag-move props/actors; actor facing rotation.
+- ✅ Derived walkability, A* route inspector, map validation overlays.
 - ✅ Automated tests + CI typecheck/test/build.
-- 🚧 **Now:** selection / move / rotate foundations.
-- ⏭ Next: validation + route preview → generator API → large-map chunking → authored art.
+- 🚧 **Now:** rule-based generator/command API shared by editor + future AI.
+- ⏭ Next: prop/prefab orientation → marquee/room tools → chunking → authored art.
 
 **Rule:** map JSON stores world meaning, never sprite-frame or prefab decisions.
