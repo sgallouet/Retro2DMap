@@ -262,6 +262,7 @@ Core editor capabilities:
 - semantic prefab placement for compound terrain/props/networks/actors
 - select and drag-move actors / props
 - actor facing rotation
+- quarter-turn orientation for explicitly rotatable props, including footprint/collision/navigation rotation
 - route/pathfinding inspection using derived navigation
 - semantic validation warnings/errors with map markers
 - zoom
@@ -272,13 +273,12 @@ Core editor capabilities:
 
 Future editor direction:
 
-- prop/prefab orientation and rotation
+- prefab-level orientation / variation tools
 - marquee selection
 - connected-network refinement
-- prefab variation tools
-- room tools
+- semantic room/castle composition tools
 - richer topology/debug overlay
-- procedural generation tools
+- procedural generation refinement
 
 Avoid bloated UI for features that can be inferred automatically.
 
@@ -402,16 +402,14 @@ Do not silently trade long-term map-builder architecture for a short-term visual
 
 In rough order:
 
-1. Robust semantic world painting.
-2. 8-neighbour / Wang-style autotiling.
-3. Connected-network logic for walls, fences, roads, cliffs, and bridges.
-4. Clean asset-provider contract for future sprite atlases.
-5. Better editing operations for multi-tile content.
-6. Collision/pathfinding semantics.
-7. Prefabs for buildings/rooms/compound structures.
-8. Large-map chunking/streaming when needed.
-9. Validation and generator APIs.
-10. Final authored sprite pipeline.
+1. Marquee selection and bulk semantic editing.
+2. Room/castle composition tools built from terrain + connected networks + prefabs.
+3. Prefab-level orientation and reusable structural variations.
+4. Generator refinement on top of the shared serializable world-command API.
+5. Large-map chunking/streaming and dirty-region rendering.
+6. Richer validation for entrances, connectivity and generated layouts.
+7. Progressive authored sprite/atlas replacement while preserving semantic IDs.
+8. Optional Tiled/LDtk interoperability without replacing native JSON.
 
 ---
 
