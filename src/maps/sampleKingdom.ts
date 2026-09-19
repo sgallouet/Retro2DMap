@@ -1,27 +1,93 @@
-import { createBlankMap, type MapDocument, type PropInstance, type ActorInstance } from "../domain/map";
+import {
+  createBlankMap,
+  type ActorInstance,
+  type MapDocument,
+  type PropInstance,
+} from "../domain/map";
 
-const WIDTH = 38;
-const HEIGHT = 26;
+const WIDTH = 40;
+const HEIGHT = 30;
 
+/**
+ * First visual target map.
+ *
+ * This deliberately follows the composition of the supplied reference:
+ * village + farms on the left, a winding river/waterfall through the middle,
+ * and a large cutaway royal castle on the right with throne hall, rooms,
+ * courtyard, gate, moat, dock and boat.
+ *
+ * It still uses semantic IDs only. The goal is to evaluate whether the current
+ * world-building system can reproduce the *structure and readability* of the
+ * target before authored sprite art replaces procedural textures.
+ */
 export function createSampleKingdom(): MapDocument {
   const map = createBlankMap(WIDTH, HEIGHT, "grass");
-  map.id = "sample-kingdom";
-  map.name = "River Crown";
+  map.id = "reference-map-01";
+  map.name = "Reference Map 01 · River Castle";
 
   const setTerrain = (x: number, y: number, terrainId: string): void => {
     if (x < 0 || y < 0 || x >= map.width || y >= map.height) return;
     map.tiles[y * map.width + x] = { terrainId };
   };
 
-  const rect = (x: number, y: number, w: number, h: number, terrainId: string): void => {
-    for (let yy = y; yy < y + h; yy += 1) {
-      for (let xx = x; xx < x + w; xx += 1) setTerrain(xx, yy, terrainId);
+  const rect = (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    terrainId: string,
+  ): void => {
+    for (let yy = y; yy < y + height; yy += 1) {
+      for (let xx = x; xx < x + width; xx += 1) {
+        setTerrain(xx, yy, terrainId);
+      }
     }
   };
 
-  const prop = (catalogId: string, x: number, y: number): void => {
-    const entry: PropInstance = { id: `p-${map.props.length}`, catalogId, x, y };
+  const terrainLine = (
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    terrainId: string,
+  ): void => {
+    const dx = Math.sign(toX - fromX);
+    const dy = Math.sign(toY - fromY);
+    let x = fromX;
+    let y = fromY;
+    setTerrain(x, y, terrainId);
+
+    while (x !== toX || y !== toY) {
+      if (x !== toX) x += dx;
+      if (y !== toY) y += dy;
+      setTerrain(x, y, terrainId);
+    }
+  };
+
+  const prop = (
+    catalogId: string,
+    x: number,
+    y: number,
+    rotation?: PropInstance["rotation"],
+  ): void => {
+    const entry: PropInstance = {
+      id: `p-${map.props.length}`,
+      catalogId,
+      x,
+      y,
+      ...(rotation === undefined ? {} : { rotation }),
+    };
     map.props.push(entry);
+  };
+
+  const networkProp = (catalogId: string, x: number, y: number): void => {
+    const duplicate = map.props.some(
+      (candidate) =>
+        candidate.catalogId === catalogId &&
+        candidate.x === x &&
+        candidate.y === y,
+    );
+    if (!duplicate) prop(catalogId, x, y);
   };
 
   const actor = (
@@ -30,166 +96,272 @@ export function createSampleKingdom(): MapDocument {
     y: number,
     facing: ActorInstance["facing"] = "south",
   ): void => {
-    map.actors.push({ id: `a-${map.actors.length}`, catalogId, x, y, facing });
+    map.actors.push({
+      id: `a-${map.actors.length}`,
+      catalogId,
+      x,
+      y,
+      facing,
+    });
   };
 
-  // River spine with deliberate bends.
-  for (let y = 0; y < HEIGHT; y += 1) {
-    const bend = y < 6 ? 11 : y < 13 ? 12 : y < 19 ? 13 : 12;
-    for (let x = bend; x <= bend + 2; x += 1) setTerrain(x, y, x === bend + 1 ? "deep-water" : "water");
+  // ---------------------------------------------------------------------------
+  // LANDSCAPE: forested north-west ridge, waterfall and winding river.
+  // ---------------------------------------------------------------------------
+
+  rect(0, 0, 10, 4, "grass-dark");
+  rect(0, 22, 15, 8, "grass-dark");
+  rect(31, 23, 9, 7, "grass-dark");
+
+  // River source/pool near the waterfall.
+  rect(11, 0, 3, 5, "water");
+  rect(12, 0, 1, 5, "deep-water");
+
+  // Wider river below the falls, narrowing and bending toward the castle moat.
+  for (let y = 5; y <= 18; y += 1) {
+    const left =
+      y <= 7 ? 10 :
+      y <= 11 ? 11 :
+      y <= 15 ? 12 :
+      13;
+    const width =
+      y <= 7 ? 4 :
+      y <= 11 ? 3 :
+      y <= 15 ? 4 :
+      3;
+
+    for (let x = left; x < left + width; x += 1) {
+      const center = x === left + Math.floor(width / 2);
+      setTerrain(x, y, center ? "deep-water" : "water");
+    }
   }
-  rect(14, 17, 24, 3, "water");
-  rect(16, 18, 22, 2, "deep-water");
 
-  // Village paths.
-  for (let x = 0; x < 14; x += 1) {
-    setTerrain(x, 9, "path");
-    setTerrain(x, 17, "path");
+  // Castle moat / lower river, matching the reference's strong horizontal band.
+  rect(14, 19, 26, 3, "water");
+  rect(15, 20, 25, 2, "deep-water");
+
+  // Waterfall and rocky banks.
+  prop("waterfall", 11, 2);
+  [
+    [9, 1], [10, 2], [10, 3], [9, 4], [9, 5],
+    [14, 1], [14, 2], [14, 3], [14, 4],
+    [10, 7], [10, 8], [11, 12], [11, 13],
+    [12, 16], [13, 17], [14, 18],
+  ].forEach(([x, y]) => networkProp("cliff", x ?? 0, y ?? 0));
+
+  // ---------------------------------------------------------------------------
+  // VILLAGE: compact west-side settlement with roads and riverside crossing.
+  // ---------------------------------------------------------------------------
+
+  terrainLine(0, 10, 10, 10, "path");
+  terrainLine(1, 18, 12, 18, "path");
+  terrainLine(6, 7, 6, 25, "path");
+  terrainLine(2, 23, 13, 23, "path");
+  terrainLine(6, 10, 10, 12, "path");
+  terrainLine(6, 18, 10, 16, "path");
+
+  // Bridge crossing sits at the same visual height as the reference bridge.
+  terrainLine(9, 12, 15, 12, "path");
+  for (let x = 10; x <= 15; x += 1) {
+    networkProp("bridge", x, 12);
   }
-  for (let y = 6; y < 25; y += 1) setTerrain(6, y, "path");
-  for (let x = 1; x < 11; x += 1) setTerrain(x, 21, "path");
-  rect(0, 22, 11, 4, "grass-dark");
 
-  // River crossing.
-  for (let x = 11; x <= 14; x += 1) {
-    setTerrain(x, 9, "path");
-    prop("bridge", x, 9);
+  // Inn / houses / shop stack down the left side.
+  prop("house-blue", 0, 4);
+  prop("inn-sign", 3, 6);
+  prop("house-blue", 0, 11);
+  prop("house-red", 0, 15);
+  prop("shop-sign", 3, 17);
+  prop("house-blue", 5, 2);
+
+  // Fences, flowers and village greenery.
+  [
+    [4, 8], [7, 8], [8, 9], [3, 14], [7, 14], [8, 16],
+    [2, 20], [5, 21], [9, 20], [10, 15],
+  ].forEach(([x, y]) => prop("flowers", x ?? 0, y ?? 0));
+
+  [
+    [0, 0], [2, 0], [4, 0], [7, 0], [9, 1],
+    [3, 8], [8, 6], [9, 9], [1, 20], [4, 20],
+    [8, 19], [10, 21], [12, 22],
+  ].forEach(([x, y], index) =>
+    prop(index % 3 === 0 ? "tree-pine" : "tree-round", x ?? 0, y ?? 0),
+  );
+
+  // ---------------------------------------------------------------------------
+  // CASTLE: large cutaway structure occupying the right half of the map.
+  // ---------------------------------------------------------------------------
+
+  // Castle interior slab.
+  rect(16, 1, 22, 18, "stone-floor");
+
+  // Four side rooms.
+  rect(17, 2, 6, 5, "wood-floor"); // library
+  rect(17, 7, 6, 4, "wood-floor"); // bedroom
+  rect(32, 2, 5, 5, "wood-floor"); // dining
+  rect(32, 7, 5, 4, "stone-floor"); // armory
+
+  // Central throne hall and lower courtyard.
+  rect(24, 2, 7, 10, "stone-floor");
+  rect(21, 12, 13, 6, "cobble");
+
+  // Outer wall. Towers sit *outside* the perimeter so footprints do not overlap.
+  for (let x = 16; x <= 37; x += 1) {
+    networkProp("castle-wall", x, 1);
+    if (x < 26 || x > 27) networkProp("castle-wall", x, 18);
+  }
+  for (let y = 2; y <= 17; y += 1) {
+    networkProp("castle-wall", 16, y);
+    networkProp("castle-wall", 37, y);
   }
 
-  // Castle body and courtyard.
-  rect(17, 1, 20, 16, "stone-floor");
-  rect(18, 2, 5, 4, "wood-floor");
-  rect(31, 2, 5, 4, "wood-floor");
-  rect(18, 7, 5, 4, "wood-floor");
-  rect(31, 7, 5, 4, "stone-floor");
-  rect(24, 2, 6, 9, "stone-floor");
-  rect(23, 12, 9, 4, "cobble");
-  rect(26, 4, 2, 7, "rug-red");
+  prop("castle-tower", 14, 0);
+  prop("castle-tower", 38, 0);
+  prop("castle-tower", 14, 17);
+  prop("castle-tower", 38, 17);
 
-  // Main road into the castle gate.
-  for (let y = 16; y < HEIGHT; y += 1) {
+  // Side-room partitions. Network helper prevents duplicate junction cells.
+  for (let y = 2; y <= 10; y += 1) {
+    if (y !== 5 && y !== 9) {
+      networkProp("castle-wall", 23, y);
+      networkProp("castle-wall", 31, y);
+    }
+  }
+  for (let x = 17; x <= 22; x += 1) {
+    if (x !== 20) networkProp("castle-wall", x, 7);
+  }
+  for (let x = 32; x <= 36; x += 1) {
+    if (x !== 34) networkProp("castle-wall", x, 7);
+  }
+
+  // A strong horizontal architectural band above the courtyard.
+  for (let x = 17; x <= 23; x += 1) {
+    if (x !== 22) networkProp("castle-wall", x, 11);
+  }
+  for (let x = 31; x <= 36; x += 1) {
+    if (x !== 32) networkProp("castle-wall", x, 11);
+  }
+
+  // Throne hall: red axial carpet, throne, banners, candelabra-like torches,
+  // four columns, king, guards and the player character.
+  prop("throne", 27, 2);
+  prop("banner", 25, 2);
+  prop("banner", 30, 2);
+  for (let y = 4; y <= 10; y += 1) {
+    prop("rug-red", 27, y);
+    prop("rug-red", 28, y);
+  }
+
+  prop("pillar", 25, 5);
+  prop("pillar", 30, 5);
+  prop("pillar", 25, 8);
+  prop("pillar", 30, 8);
+  prop("torch", 24, 3);
+  prop("torch", 30, 3);
+  prop("torch", 24, 9);
+  prop("torch", 30, 9);
+
+  actor("king", 27, 4);
+  actor("guard", 25, 4);
+  actor("guard", 30, 4);
+  actor("guard", 25, 10);
+  actor("guard", 30, 10);
+  actor("hero", 28, 10, "north");
+
+  // Library.
+  prop("bookshelf", 17, 2);
+  prop("bookshelf", 20, 2);
+  prop("table", 18, 4);
+  actor("scholar", 21, 5, "west");
+
+  // Bedroom.
+  prop("bed-red", 18, 8);
+  prop("bed-blue", 20, 8);
+  prop("barrels", 22, 9);
+
+  // Dining room.
+  prop("table", 33, 4);
+  prop("torch", 32, 2);
+  prop("torch", 36, 2);
+  actor("villager-f", 35, 3, "south");
+
+  // Armory.
+  prop("weapon-rack", 32, 8);
+  prop("barrels", 36, 9);
+  prop("torch", 35, 8);
+  actor("guard", 34, 9, "west");
+
+  // Courtyard: flower beds, statues and central fountain.
+  prop("fountain", 27, 14);
+  prop("statue", 24, 15);
+  prop("statue", 32, 15);
+  [
+    [22, 13], [23, 13], [22, 16], [23, 16],
+    [33, 13], [34, 13], [33, 16], [34, 16],
+  ].forEach(([x, y]) => prop("flowers", x ?? 0, y ?? 0));
+  prop("tree-pine", 35, 13);
+
+  // Gate, moat bridge and main stone road continuing toward the bottom edge.
+  prop("castle-gate", 26, 17);
+  for (let y = 19; y <= 21; y += 1) {
+    networkProp("bridge", 26, y);
+    networkProp("bridge", 27, y);
+  }
+  prop("stairs", 26, 22);
+
+  for (let y = 22; y < HEIGHT; y += 1) {
+    setTerrain(26, y, "cobble");
     setTerrain(27, y, "cobble");
     setTerrain(28, y, "cobble");
   }
 
-  // Castle outer walls.
-  for (let x = 17; x < 37; x += 1) {
-    prop("castle-wall", x, 1);
-    if (x < 27 || x > 28) prop("castle-wall", x, 16);
-  }
-  for (let y = 2; y < 16; y += 1) {
-    prop("castle-wall", 17, y);
-    prop("castle-wall", 36, y);
-  }
-  prop("castle-tower", 16, 0);
-  prop("castle-tower", 35, 0);
-  prop("castle-tower", 16, 14);
-  prop("castle-tower", 34, 14);
-  prop("castle-gate", 27, 15);
-  prop("stairs", 27, 17);
+  // Dock and boat at the south-east moat edge.
+  prop("dock", 36, 20);
+  prop("boat", 38, 20);
 
-  // Interior partition suggestions.
-  for (let y = 2; y < 11; y += 1) {
-    if (y !== 5 && y !== 9) {
-      prop("castle-wall", 23, y);
-      prop("castle-wall", 30, y);
-    }
-  }
-  for (let x = 18; x <= 22; x += 1) prop("castle-wall", x, 6);
-  for (let x = 31; x <= 35; x += 1) prop("castle-wall", x, 6);
+  // ---------------------------------------------------------------------------
+  // SOUTH-WEST FARM + SHEEP PEN, mirroring the reference lower-left.
+  // ---------------------------------------------------------------------------
 
-  // Throne room.
-  prop("throne", 27, 2);
-  prop("banner", 25, 2);
-  prop("banner", 29, 2);
-  prop("torch", 25, 4);
-  prop("torch", 29, 4);
-  prop("torch", 25, 8);
-  prop("torch", 29, 8);
-  for (let y = 4; y <= 10; y += 1) {
-    prop("rug-red", 26, y);
-    prop("rug-red", 27, y);
-  }
-  actor("king", 27, 3);
-  actor("guard", 25, 4);
-  actor("guard", 29, 4);
-  actor("guard", 25, 9);
-  actor("guard", 29, 9);
-  actor("hero", 27, 9, "north");
-
-  // Library, bedroom, dining room, armory.
-  prop("bookshelf", 18, 2);
-  prop("bookshelf", 20, 2);
-  prop("table", 19, 4);
-  actor("scholar", 21, 4, "west");
-
-  prop("bed-red", 18, 7);
-  prop("bed-blue", 20, 7);
-  prop("barrels", 22, 9);
-
-  prop("table", 32, 3);
-  prop("torch", 31, 2);
-  prop("torch", 35, 2);
-  actor("villager-f", 33, 4);
-
-  prop("weapon-rack", 31, 8);
-  prop("barrels", 34, 9);
-  prop("torch", 35, 8);
-  actor("guard", 34, 8, "west");
-
-  // Courtyard.
-  prop("fountain", 26, 12);
-  prop("statue", 23, 13);
-  prop("statue", 31, 13);
-  prop("flowers", 24, 12);
-  prop("flowers", 30, 12);
-  prop("tree-pine", 33, 12);
-
-  // Village structures.
-  prop("house-blue", 1, 3);
-  prop("inn-sign", 4, 6);
-  prop("house-red", 1, 12);
-  prop("shop-sign", 4, 15);
-  prop("house-blue", 7, 1);
-  prop("house-red", 7, 12);
-
-  // Forest framing and riverside vegetation.
-  [
-    [0, 0], [2, 0], [4, 1], [9, 0], [10, 3], [1, 8], [3, 10], [9, 10],
-    [0, 18], [2, 19], [4, 18], [8, 18], [10, 20], [1, 23], [3, 23], [8, 23],
-    [10, 6], [9, 7], [10, 14], [8, 16], [14, 3], [14, 11], [14, 21],
-    [20, 21], [23, 22], [32, 21], [35, 22],
-  ].forEach(([x, y], index) => prop(index % 3 === 0 ? "tree-pine" : "tree-round", x ?? 0, y ?? 0));
-
-  [[3, 7], [5, 7], [8, 8], [2, 16], [9, 16], [5, 20], [15, 12], [21, 21], [34, 21]]
-    .forEach(([x, y]) => prop("flowers", x ?? 0, y ?? 0));
-
-  // Cliffs hug selected river bends.
-  [[10, 4], [10, 5], [11, 13], [12, 14], [14, 15], [14, 16]]
-    .forEach(([x, y]) => prop("cliff", x ?? 0, y ?? 0));
-
-  // Fences and farm.
-  for (let x = 0; x <= 10; x += 1) {
-    if (x !== 6) prop("fence", x, 22);
-  }
-  rect(1, 23, 4, 3, "soil");
-  rect(7, 23, 3, 2, "soil");
-  for (let y = 23; y < 26; y += 1) {
+  rect(1, 25, 4, 5, "soil");
+  for (let y = 25; y < 30; y += 1) {
     for (let x = 1; x < 5; x += 1) prop("crops", x, y);
   }
-  for (let y = 23; y < 25; y += 1) {
-    for (let x = 7; x < 10; x += 1) prop("crops", x, y);
+
+  // Sheep pen.
+  for (let x = 8; x <= 13; x += 1) {
+    networkProp("fence", x, 24);
+    networkProp("fence", x, 28);
+  }
+  for (let y = 25; y <= 27; y += 1) {
+    networkProp("fence", 8, y);
+    networkProp("fence", 13, y);
+  }
+  prop("sheep", 10, 25);
+  prop("sheep", 12, 26);
+
+  // Farm-side fence and remaining foliage.
+  for (let x = 0; x <= 6; x += 1) {
+    if (x !== 6) networkProp("fence", x, 24);
   }
 
-  // Riverside life.
-  prop("boat", 35, 18);
-  prop("sheep", 8, 20);
-  prop("sheep", 9, 20);
-  actor("farmer", 3, 24, "east");
-  actor("villager-f", 2, 8, "south");
-  actor("villager-m", 8, 10, "west");
-  actor("guard", 14, 15, "north");
-  actor("villager-f", 4, 18, "north");
+  [
+    [0, 22], [2, 22], [4, 22], [6, 26], [6, 28],
+    [15, 23], [17, 24], [20, 24], [22, 26], [24, 28],
+    [30, 24], [32, 25], [34, 24], [36, 25], [38, 24],
+    [31, 27], [33, 28], [35, 27], [37, 28],
+  ].forEach(([x, y], index) =>
+    prop(index % 4 === 0 ? "tree-pine" : "tree-round", x ?? 0, y ?? 0),
+  );
+
+  // Life / scale references.
+  actor("villager-f", 2, 9, "south");
+  actor("villager-m", 8, 11, "west");
+  actor("guard", 10, 17, "north");
+  actor("villager-f", 4, 19, "north");
+  actor("farmer", 3, 27, "east");
+  actor("guard", 25, 20, "south");
+  actor("guard", 29, 20, "south");
 
   return map;
 }
