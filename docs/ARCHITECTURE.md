@@ -26,9 +26,21 @@ No Phaser types belong here.
 
 `EditorController` owns editing state and history. It exposes a small interface used by both the DOM shell and Phaser scene.
 
+`LogicalWorldPainter` is the semantic painting API. The editor, future procedural generators and future AI map builders should all call the same painter instead of selecting visual frames themselves. It currently supports square brushes, rectangular regions and grid-native path strokes.
+
 A stroke creates one history checkpoint, then can mutate many cells. This matters for paint-drag ergonomics and keeps undo meaningful.
 
-### 3. Rendering boundary
+### 3. Topology / smart borders
+
+`src/domain/autotile.ts`
+
+Terrain stores only semantic IDs such as `water`, `path` or `stone-floor`. Border graphics are **not** persisted in the map.
+
+`TerrainTopologyResolver` inspects neighboring logical cells and produces a deterministic N/E/S/W connectivity mask. Terrain definitions declare a `connectGroup`, so related materials can connect even when their exact IDs differ; for example shallow and deep water are both part of the `water` group.
+
+That mask is the contract for both today's procedural renderer and a future sprite atlas. This is the key rule: **the painter decides what the world is; the topology layer decides whether each tile is interior, edge, end-cap or corner.**
+
+### 4. Rendering boundary
 
 `src/phaser/IAssetProvider.ts`
 
@@ -44,13 +56,13 @@ Later:
 
 The map JSON should not change when the art pipeline changes.
 
-### 4. Phaser world renderer
+### 5. Phaser world renderer
 
 `WorldRenderer` turns the document into game objects. Terrain, props and actors share the same square coordinate system. Y-based depth sorting lets characters naturally pass in front of or behind tall props.
 
 The MVP rebuilds the visible world after a document mutation. This keeps the implementation simple and correct while the map is small. The renderer is isolated so it can later switch to dirty-chunk updates without touching domain/editor code.
 
-### 5. DOM editor shell
+### 6. DOM editor shell
 
 `src/ui`
 
@@ -61,7 +73,9 @@ The editor chrome is regular HTML/CSS rather than Phaser UI. This gives us crisp
 - Logical tile = **48 × 48 px**.
 - Actor footprint = exactly **1 × 1 tile**.
 - Props have explicit footprints, e.g. a house can be **3 × 3** while still being anchored to one integer tile coordinate.
+- Terrain painting can affect **1×1, 3×3 or 5×5** regions today; larger semantic region/path tools use the same painter API.
 - Terrain is dense because every cell has exactly one base terrain.
+- Border/corner visuals are derived from neighborhood topology and are never baked into the map JSON.
 - Props and actors are sparse arrays because most cells do not contain them.
 
 That model is suitable for later pathfinding, collision baking, procedural generation, region validation, multiplayer serialization and AI-assisted map building.
@@ -74,15 +88,16 @@ Keeping the first renderer sprite-based makes large props, code-generated textur
 
 ## Next strategic milestones
 
-1. **Autotiling rules** for river banks, paths, cliffs and castle walls.
-2. **SpriteAssetProvider** with atlas metadata and per-catalog fallbacks to procedural art.
-3. **Selection/move/rotate tools** and multi-cell marquee operations.
-4. **Collision/pathfinding preview** using catalog footprints.
-5. **Map chunks / streaming** for worlds much larger than one screen.
-6. **Prefab system** for houses, rooms, castle wings and decorative clusters.
-7. **Rule-based generator API** so algorithms or AI can lay out semantic maps through commands rather than drawing pixels.
-8. **Validation pass**: unreachable doors, blocked roads, overlaps, missing spawn points, water discontinuities.
-9. **Tiled/LDtk adapter** only if interoperability becomes useful; the native JSON remains the clean canonical format.
+1. **8-neighbor / Wang-style refinement** for authored inner corners and more organic diagonal transitions. The current semantic autotiler already handles N/E/S/W borders.
+2. **Logical wall/path networks** so connected castle walls, fences, roads and bridges choose straight/corner/T/cross/end variants exactly like terrain.
+3. **SpriteAssetProvider** with atlas metadata and per-catalog fallbacks to procedural art.
+4. **Selection/move/rotate tools** and multi-cell marquee operations.
+5. **Collision/pathfinding preview** using catalog footprints.
+6. **Map chunks / streaming** for worlds much larger than one screen.
+7. **Prefab system** for houses, rooms, castle wings and decorative clusters.
+8. **Rule-based generator API** so algorithms or AI can lay out semantic maps through commands rather than drawing pixels.
+9. **Validation pass**: unreachable doors, blocked roads, overlaps, missing spawn points, water discontinuities.
+10. **Tiled/LDtk adapter** only if interoperability becomes useful; the native JSON remains the clean canonical format.
 
 ## Visual direction
 
