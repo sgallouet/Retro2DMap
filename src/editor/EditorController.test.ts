@@ -94,5 +94,47 @@ describe("EditorController semantic gestures", () => {
     editor.select("terrain", "water");
     expect(editor.state.selectedPrefabId).toBeNull();
   });
+  it("selects and moves a multi-tile prop with undo", () => {
+    const map = createBlankMap(12, 12, "grass");
+    map.props.push({ id: "house", catalogId: "house-blue", x: 1, y: 1 });
+    const editor = new EditorController(map, worldCatalog);
+
+    editor.setTool("select");
+    editor.selectEntityAt({ x: 2, y: 2 });
+    expect(editor.state.entitySelection).toEqual({ kind: "prop", id: "house" });
+
+    editor.beginStroke();
+    editor.moveSelectedEntity({ x: 6, y: 6 });
+    editor.endStroke();
+
+    const moved = editor.state.document.props.find((prop) => prop.id === "house");
+    expect(moved?.x).toBe(6);
+    expect(moved?.y).toBe(6);
+
+    editor.undo();
+    const restored = editor.state.document.props.find((prop) => prop.id === "house");
+    expect(restored?.x).toBe(1);
+    expect(restored?.y).toBe(1);
+  });
+
+  it("rotates selected actor facing semantically", () => {
+    const map = createBlankMap(5, 5, "grass");
+    map.actors.push({
+      id: "guard-1",
+      catalogId: "guard",
+      x: 2,
+      y: 2,
+      facing: "south",
+    });
+    const editor = new EditorController(map, worldCatalog);
+
+    editor.setTool("select");
+    editor.selectEntityAt({ x: 2, y: 2 });
+    editor.beginStroke();
+    editor.rotateSelectedEntity(true);
+    editor.endStroke();
+
+    expect(editor.state.document.actors[0]?.facing).toBe("west");
+  });
 
 });
