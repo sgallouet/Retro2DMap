@@ -90,6 +90,23 @@ export function createSampleKingdom(): MapDocument {
     if (!duplicate) prop(catalogId, x, y);
   };
 
+  const networkRect = (
+    catalogId: string,
+    left: number,
+    top: number,
+    right: number,
+    bottom: number,
+  ): void => {
+    for (let x = left; x <= right; x += 1) {
+      networkProp(catalogId, x, top);
+      networkProp(catalogId, x, bottom);
+    }
+    for (let y = top + 1; y < bottom; y += 1) {
+      networkProp(catalogId, left, y);
+      networkProp(catalogId, right, y);
+    }
+  };
+
   const actor = (
     catalogId: string,
     x: number,
@@ -321,13 +338,16 @@ export function createSampleKingdom(): MapDocument {
   prop("torch", 35, 8);
   actor("guard", 34, 9, "west");
 
-  // Courtyard: flower beds, statues and central fountain.
+  // Courtyard: two bordered garden beds flank the central fountain.
+  networkRect("garden-border", 21, 13, 24, 16);
+  networkRect("garden-border", 31, 13, 34, 16);
+
   prop("fountain", 27, 14);
-  prop("statue", 24, 15);
+  prop("statue", 23, 15);
   prop("statue", 32, 15);
   [
-    [22, 13], [23, 13], [22, 16], [23, 16],
-    [33, 13], [34, 13], [33, 16], [34, 16],
+    [22, 14], [23, 14], [22, 15],
+    [32, 14], [33, 14], [33, 15],
   ].forEach(([x, y]) => prop("flowers", x ?? 0, y ?? 0));
   prop("tree-pine", 35, 13);
 
