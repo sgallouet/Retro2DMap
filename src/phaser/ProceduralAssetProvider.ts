@@ -729,7 +729,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     // Small masonry highlights make topology visible without baking sprite IDs.
     for (let y = 6; y < height; y += 12) {
       for (let x = (Math.floor(y / 12) % 2) * 8; x < width; x += 16) {
-        if (ctx.getImageData(Math.min(x + 2, width - 1), Math.min(y + 2, height - 1), 1, 1).data[3] > 0) {
+        if ((ctx.getImageData(Math.min(x + 2, width - 1), Math.min(y + 2, height - 1), 1, 1).data[3] ?? 0) > 0) {
           rect(ctx, x, y, 10, 5, stoneLight, mortar);
         }
       }
