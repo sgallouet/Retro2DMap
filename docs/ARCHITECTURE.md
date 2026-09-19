@@ -38,9 +38,11 @@ A stroke creates one history checkpoint, then can mutate many cells. This matter
 
 Terrain stores only semantic IDs such as `water`, `path` or `stone-floor`. Border graphics are **not** persisted in the map.
 
-`TerrainTopologyResolver` inspects neighboring logical cells and produces a deterministic N/E/S/W connectivity mask. Terrain definitions declare a `connectGroup`, so related materials can connect even when their exact IDs differ; for example shallow and deep water are both part of the `water` group.
+`TerrainTopologyResolver` inspects all eight neighboring logical cells. It produces cardinal connectivity plus concave inner-corner information and a stable `topologyKey`. Terrain definitions declare a `connectGroup`, so related materials can connect even when their exact IDs differ; for example shallow and deep water are both part of the `water` group.
 
-That mask is the contract for both today's procedural renderer and a future sprite atlas. This is the key rule: **the painter decides what the world is; the topology layer decides whether each tile is interior, edge, end-cap or corner.**
+`PropTopologyResolver` applies the same principle to connected 1×1 structures. Castle walls, fences, bridges and cliffs are catalogued as semantic networks and derive isolated/end/straight/corner/T/cross roles from neighboring instances.
+
+Those topology results are the contract for both today's procedural renderer and a future sprite atlas. This is the key rule: **the painter decides what the world is; the topology layer decides which visual role each tile plays.**
 
 ### 4. Rendering boundary
 
@@ -90,15 +92,15 @@ Keeping the first renderer sprite-based makes large props, code-generated textur
 
 ## Next strategic milestones
 
-1. **8-neighbor / Wang-style refinement** for authored inner corners and more organic diagonal transitions. The current semantic autotiler already handles N/E/S/W borders.
-2. **Logical wall/path networks** so connected castle walls, fences, roads and bridges choose straight/corner/T/cross/end variants exactly like terrain.
+1. **Topology authoring contract** for mapping semantic terrain/network keys onto future atlas frames, including organic authored corner variants.
+2. **Connected-network editor refinement**: live line preview, network-aware erase and richer road/wall/bridge tools.
 3. **SpriteAssetProvider** with atlas metadata and per-catalog fallbacks to procedural art.
 4. **Selection/move/rotate tools** and multi-cell marquee operations.
 5. **Collision/pathfinding preview** using catalog footprints.
-6. **Map chunks / streaming** for worlds much larger than one screen.
-7. **Prefab system** for houses, rooms, castle wings and decorative clusters.
-8. **Rule-based generator API** so algorithms or AI can lay out semantic maps through commands rather than drawing pixels.
-9. **Validation pass**: unreachable doors, blocked roads, overlaps, missing spawn points, water discontinuities.
+6. **Prefab system** for houses, rooms, castle wings and decorative clusters.
+7. **Rule-based generator API** so algorithms or AI can lay out semantic maps through commands rather than drawing pixels.
+8. **Validation pass**: unreachable doors, blocked roads, overlaps, missing spawn points, water discontinuities.
+9. **Map chunks / streaming** for worlds much larger than one screen.
 10. **Tiled/LDtk adapter** only if interoperability becomes useful; the native JSON remains the clean canonical format.
 
 ## Visual direction
