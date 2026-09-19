@@ -156,6 +156,7 @@ export function createSampleKingdom(): MapDocument {
   terrainLine(0, 10, 10, 10, "path");
   terrainLine(1, 18, 12, 18, "path");
   terrainLine(6, 7, 6, 25, "path");
+  terrainLine(7, 7, 7, 25, "path");
   terrainLine(2, 23, 13, 23, "path");
   terrainLine(6, 10, 10, 12, "path");
   terrainLine(6, 18, 10, 16, "path");
@@ -203,7 +204,12 @@ export function createSampleKingdom(): MapDocument {
 
   // Central throne hall and lower courtyard.
   rect(24, 2, 7, 10, "stone-floor");
-  rect(21, 12, 13, 6, "cobble");
+  rect(21, 12, 14, 6, "cobble");
+
+  // Symmetric garden beds are a major readability cue in the reference.
+  rect(21, 13, 4, 4, "grass");
+  rect(31, 13, 4, 4, "grass");
+  rect(25, 12, 6, 6, "cobble");
 
   // Outer wall. Towers sit *outside* the perimeter so footprints do not overlap.
   for (let x = 16; x <= 37; x += 1) {
