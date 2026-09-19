@@ -83,7 +83,9 @@ describe("EntityPlacementService", () => {
 
     expect(map.props).toHaveLength(8);
     expect(new Set(map.props.map((prop) => prop.catalogId))).toEqual(new Set(["fence"]));
-  });  it("moves a multi-tile prop without changing its identity", () => {
+  });
+
+  it("moves a multi-tile prop without changing its identity", () => {
     const map = createBlankMap(10, 10, "grass");
     const placement = new EntityPlacementService(worldCatalog);
     placement.placeProp(map, {
@@ -122,6 +124,59 @@ describe("EntityPlacementService", () => {
 
     expect(house?.x).toBe(1);
     expect(house?.y).toBe(1);
+  });
+
+  it("rotates a rectangular prop and swaps its occupied footprint", () => {
+    const map = createBlankMap(8, 8, "grass");
+    const placement = new EntityPlacementService(worldCatalog);
+    placement.placeProp(map, {
+      catalogId: "table",
+      coord: { x: 2, y: 2 },
+      overlapPolicy: "reject",
+    });
+    const table = map.props[0];
+    expect(table).toBeTruthy();
+
+    expect(placement.rotateProp(map, table!.id, true, "reject")).toBe(true);
+    expect(table?.rotation).toBe(90);
+    expect(placement.propOccupies(table!, { x: 2, y: 4 })).toBe(true);
+    expect(placement.propOccupies(table!, { x: 4, y: 2 })).toBe(false);
+  });
+
+  it("rejects prop rotation when the rotated footprint would collide", () => {
+    const map = createBlankMap(8, 8, "grass");
+    const placement = new EntityPlacementService(worldCatalog);
+    placement.placeProp(map, {
+      catalogId: "table",
+      coord: { x: 2, y: 2 },
+      overlapPolicy: "reject",
+    });
+    placement.placeProp(map, {
+      catalogId: "rock",
+      coord: { x: 2, y: 4 },
+      overlapPolicy: "reject",
+    });
+
+    const table = map.props.find((prop) => prop.catalogId === "table");
+    expect(table).toBeTruthy();
+    expect(placement.rotateProp(map, table!.id, true, "reject")).toBe(false);
+    expect(table?.rotation ?? 0).toBe(0);
+  });
+
+  it("does not rotate fixed or topology-driven props", () => {
+    const map = createBlankMap(8, 8, "grass");
+    const placement = new EntityPlacementService(worldCatalog);
+    placement.placeProp(map, {
+      catalogId: "tree-round",
+      coord: { x: 2, y: 2 },
+    });
+    placement.placeProp(map, {
+      catalogId: "fence",
+      coord: { x: 5, y: 2 },
+    });
+
+    expect(placement.rotateProp(map, map.props[0]!.id)).toBe(false);
+    expect(placement.rotateProp(map, map.props[1]!.id)).toBe(false);
   });
 
 });
