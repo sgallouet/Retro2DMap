@@ -1,11 +1,12 @@
 import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
 import { rasterizePolyline } from "../domain/grid";
-import type {
-  ActorInstance,
-  GridCoord,
-  MapDocument,
-  OverlapPolicy,
-  PropInstance,
+import {
+  cloneMap,
+  type ActorInstance,
+  type GridCoord,
+  type MapDocument,
+  type OverlapPolicy,
+  type PropInstance,
 } from "../domain/map";
 
 export interface PropPlacementRequest {
@@ -83,15 +84,35 @@ export class EntityPlacementService implements IEntityPlacementService {
     const definition = this.catalog.get(request.catalogId);
     if (!definition || definition.layer !== "prop" || !definition.network) return false;
 
+    const overlapPolicy = request.overlapPolicy ?? "replace";
+    const target = overlapPolicy === "reject" ? cloneMap(document) : document;
     let changed = false;
+
     for (const coord of rasterizePolyline(request.points)) {
-      changed =
-        this.placeProp(document, {
-          catalogId: request.catalogId,
-          coord,
-          overlapPolicy: request.overlapPolicy ?? "replace",
-        }) || changed;
+      const placed = this.placeProp(target, {
+        catalogId: request.catalogId,
+        coord,
+        overlapPolicy,
+      });
+
+      if (!placed) {
+        const same = target.props.some(
+          (prop) =>
+            prop.catalogId === request.catalogId &&
+            prop.x === coord.x &&
+            prop.y === coord.y,
+        );
+
+        if (!same && overlapPolicy === "reject") return false;
+      }
+
+      changed = placed || changed;
     }
+
+    if (overlapPolicy === "reject" && changed) {
+      document.props = target.props;
+    }
+
     return changed;
   }
 
