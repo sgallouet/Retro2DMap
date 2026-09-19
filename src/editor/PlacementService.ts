@@ -59,7 +59,7 @@ export class EntityPlacementService implements IEntityPlacementService {
 
     // Connected networks derive orientation from neighbors; a stored rotation
     // would conflict with semantic topology and is therefore ignored.
-    const rotation: QuarterTurn = definition.network ? 0 : (request.rotation ?? 0);
+    const rotation: QuarterTurn = definition.rotatable ? (request.rotation ?? 0) : 0;
     if (!this.footprintInside(document, request.coord, definition, rotation)) return false;
 
     const same = document.props.some(
@@ -153,7 +153,7 @@ export class EntityPlacementService implements IEntityPlacementService {
 
     const definition = this.catalog.get(prop.catalogId);
     if (!definition || definition.layer !== "prop") return false;
-    const rotation: QuarterTurn = definition.network ? 0 : (prop.rotation ?? 0);
+    const rotation: QuarterTurn = definition.rotatable ? (prop.rotation ?? 0) : 0;
     if (!this.footprintInside(document, coord, definition, rotation)) return false;
     if (prop.x === coord.x && prop.y === coord.y) return false;
 
@@ -187,7 +187,7 @@ export class EntityPlacementService implements IEntityPlacementService {
     if (!prop) return false;
 
     const definition = this.catalog.get(prop.catalogId);
-    if (!definition || definition.layer !== "prop" || definition.network) {
+    if (!definition || definition.layer !== "prop" || !definition.rotatable) {
       return false;
     }
 
@@ -278,7 +278,7 @@ export class EntityPlacementService implements IEntityPlacementService {
 
     const footprint = rotatedFootprint(
       definition.footprint,
-      definition.network ? 0 : prop.rotation,
+      definition.rotatable ? prop.rotation : 0,
     );
 
     return (
@@ -324,7 +324,7 @@ export class EntityPlacementService implements IEntityPlacementService {
 
     const existingFootprint = rotatedFootprint(
       existingDefinition.footprint,
-      existingDefinition.network ? 0 : existing.rotation,
+      existingDefinition.rotatable ? existing.rotation : 0,
     );
     const nextFootprint = rotatedFootprint(nextDefinition.footprint, nextRotation);
 
