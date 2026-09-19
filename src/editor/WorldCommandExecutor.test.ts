@@ -98,6 +98,7 @@ describe("WorldCommandExecutor", () => {
       overlapPolicy: "reject",
     });
 
+    expect(result.ok).toBe(false);
     expect(result.changed).toBe(false);
     expect(map.props.filter((prop) => prop.catalogId === "fence")).toHaveLength(0);
   });
