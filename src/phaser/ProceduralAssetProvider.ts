@@ -246,8 +246,8 @@ export class ProceduralAssetProvider implements IAssetProvider {
       grass: ["#78BE22", "#94D53E", "#639A1E"],
       "grass-dark": ["#29671D", "#39902C", "#053523"],
       path: ["#ECC75E", "#F4DC73", "#A58D35"],
-      cobble: ["#A3A29C", "#C4BFBB", "#656666"],
-      "stone-floor": ["#ACB2A0", "#E5E5DF", "#7B7B7B"],
+      cobble: ["#BCB9B5", "#C4BFBB", "#7B7B7B"],
+      "stone-floor": ["#97999B", "#A3A29C", "#656666"],
       "wood-floor": ["#A87F45", "#C48743", "#614221"],
       water: ["#187cc4", "#2f9ee0", "#0b599e"],
       "deep-water": ["#1265ad", "#2089cc", "#08477f"],
@@ -607,7 +607,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
         return;
       case "bed-red":
       case "bed-blue":
-        this.drawBed(ctx, width, height, entry.id === "bed-red" ? "#a83c3f" : "#3f67a7");
+        this.drawBed(ctx, width, height, entry.id === "bed-red" ? "#B81F25" : "#116ACE");
         return;
       case "throne":
         this.drawThrone(ctx, width, height);
@@ -621,8 +621,10 @@ export class ProceduralAssetProvider implements IAssetProvider {
         line(ctx, [[10, 30], [38, 30]], "#4f4f4d", 3);
         return;
       case "rug-red":
-        rect(ctx, 5, 3, width - 10, height - 6, "#9f2734", "#e1b548");
-        rect(ctx, 10, 8, width - 20, height - 16, "#b9303e");
+        rect(ctx, 5, 3, width - 10, height - 6, "#B81F25", "#F3CF63");
+        rect(ctx, 9, 7, width - 18, height - 14, "#B22022");
+        line(ctx, [[10, 10], [width - 10, 10]], "#ECC75E", 1);
+        line(ctx, [[10, height - 10], [width - 10, height - 10]], "#ECC75E", 1);
         return;
       default:
         rect(ctx, 4, 4, width - 8, height - 8, "#d54f7b", "#6b243e");
