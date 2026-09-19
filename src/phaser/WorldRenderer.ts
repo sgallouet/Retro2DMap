@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
 import { PropTopologyResolver, TerrainTopologyResolver } from "../domain/autotile";
+import { rotatedFootprint } from "../domain/geometry";
 import { rasterizeGridLine } from "../domain/grid";
 import { NavigationGridBuilder } from "../domain/navigation";
 import type { ValidationIssue } from "../domain/validation";
@@ -92,6 +93,8 @@ export class WorldRenderer implements IWorldRenderer {
       if (!definition || definition.layer !== "prop") return;
       const propDefinition = definition as PropDefinition;
       const network = this.#propTopology.resolve(document, prop, propDefinition);
+      const rotation = propDefinition.network ? 0 : (prop.rotation ?? 0);
+      const footprint = rotatedFootprint(propDefinition.footprint, rotation);
       const texture = this.assets.textureRef(
         definition,
         prop.x,
@@ -99,11 +102,17 @@ export class WorldRenderer implements IWorldRenderer {
         network ? { network } : undefined,
       );
       const image = this.scene.add
-        .image(prop.x * TILE_SIZE, prop.y * TILE_SIZE, texture.key, texture.frame)
-        .setOrigin(0, 0)
+        .image(
+          (prop.x + footprint.width / 2) * TILE_SIZE,
+          (prop.y + footprint.height / 2) * TILE_SIZE,
+          texture.key,
+          texture.frame,
+        )
+        .setOrigin(0.5, 0.5)
+        .setAngle(rotation)
         .setDepth(
           1_000 +
-            (prop.y + propDefinition.footprint.height) * TILE_SIZE +
+            (prop.y + footprint.height) * TILE_SIZE +
             propDefinition.depthBias,
         );
       this.#worldObjects.push(image);
@@ -336,8 +345,12 @@ export class WorldRenderer implements IWorldRenderer {
 
       x = prop.x;
       y = prop.y;
-      width = definition.footprint.width;
-      height = definition.footprint.height;
+      const footprint = rotatedFootprint(
+        definition.footprint,
+        definition.network ? 0 : prop.rotation,
+      );
+      width = footprint.width;
+      height = footprint.height;
     }
 
     const inset = 2;
