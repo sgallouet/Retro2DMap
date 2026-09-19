@@ -42,6 +42,7 @@ export class EditorShell {
             <button data-action="undo" title="Undo">↶</button>
             <button data-action="redo" title="Redo">↷</button>
             <button data-action="grid" title="Toggle grid">Grid</button>
+            <button data-action="navigation" title="Toggle walkability overlay">Walk <kbd>N</kbd></button>
             <span class="toolbar-separator"></span>
             <button data-action="save">Save local</button>
             <button data-action="load">Load local</button>
@@ -232,6 +233,7 @@ export class EditorShell {
     this.setPressed("paint", state.selection.tool === "paint");
     this.setPressed("erase", state.selection.tool === "erase");
     this.setPressed("grid", state.gridVisible);
+    this.setPressed("navigation", state.navigationVisible);
 
     const selected = this.catalog.get(state.selection.catalogId);
     const supportsLine =
@@ -278,6 +280,9 @@ export class EditorShell {
     this.root.querySelector('[data-action="redo"]')?.addEventListener("click", () => this.editor.redo());
     this.root.querySelector('[data-action="grid"]')?.addEventListener("click", () => {
       this.editor.setGridVisible(!this.editor.state.gridVisible);
+    });
+    this.root.querySelector('[data-action="navigation"]')?.addEventListener("click", () => {
+      this.editor.setNavigationVisible(!this.editor.state.navigationVisible);
     });
 
     this.root.querySelector('[data-action="save"]')?.addEventListener("click", async () => {
