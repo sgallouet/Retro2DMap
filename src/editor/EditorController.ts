@@ -35,6 +35,7 @@ export interface IEditorController {
   beginStroke(): void;
   applyAt(coord: GridCoord, eraseOverride?: boolean): void;
   applyLine(from: GridCoord, to: GridCoord, eraseOverride?: boolean): void;
+  applyRect(from: GridCoord, to: GridCoord, eraseOverride?: boolean): void;
   endStroke(): void;
   undo(): void;
   redo(): void;
@@ -83,13 +84,18 @@ export class EditorController implements IEditorController {
   select(layer: LayerKind, catalogId: string): void {
     const item = this.catalog.get(catalogId);
     if (!item || item.layer !== layer) throw new Error(`Catalog item ${catalogId} is not on layer ${layer}.`);
-    const supportsLine =
-      layer === "terrain" || (item.layer === "prop" && item.network !== undefined);
+    const currentMode = this.#selection.strokeMode;
+    const supportsCurrentMode =
+      currentMode === "brush" ||
+      (currentMode === "rect" && layer === "terrain") ||
+      (currentMode === "line" &&
+        (layer === "terrain" || (item.layer === "prop" && item.network !== undefined)));
+
     this.#selection = {
       ...this.#selection,
       layer,
       catalogId,
-      strokeMode: supportsLine ? this.#selection.strokeMode : "brush",
+      strokeMode: supportsCurrentMode ? currentMode : "brush",
     };
     this.emit();
   }
@@ -101,12 +107,16 @@ export class EditorController implements IEditorController {
 
   setStrokeMode(mode: StrokeMode): void {
     const selected = this.catalog.get(this.#selection.catalogId);
-    const supportsLine =
-      this.#selection.layer === "terrain" ||
-      (selected?.layer === "prop" && selected.network !== undefined);
+    const supported =
+      mode === "brush" ||
+      (mode === "rect" && this.#selection.layer === "terrain") ||
+      (mode === "line" &&
+        (this.#selection.layer === "terrain" ||
+          (selected?.layer === "prop" && selected.network !== undefined)));
+
     this.#selection = {
       ...this.#selection,
-      strokeMode: supportsLine ? mode : "brush",
+      strokeMode: supported ? mode : "brush",
     };
     this.emit();
   }
@@ -158,6 +168,19 @@ export class EditorController implements IEditorController {
             overlapPolicy: "replace",
           });
     }
+
+    if (changed) this.emit();
+  }
+
+  applyRect(from: GridCoord, to: GridCoord, eraseOverride = false): void {
+    if (this.#selection.layer !== "terrain") return;
+
+    const erase = eraseOverride || this.#selection.tool === "erase";
+    const changed = this.#worldPainter.paintTerrainRect(this.#document, {
+      from,
+      to,
+      terrainId: erase ? "grass" : this.#selection.catalogId,
+    });
 
     if (changed) this.emit();
   }
