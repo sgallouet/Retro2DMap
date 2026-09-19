@@ -3,6 +3,7 @@ export const MAP_FORMAT_VERSION = 1 as const;
 
 export type LayerKind = "terrain" | "prop" | "actor";
 export type ToolKind = "paint" | "erase";
+export type StrokeMode = "brush" | "line";
 export type BrushSize = 1 | 3 | 5;
 
 export interface GridCoord {
@@ -44,6 +45,7 @@ export interface EditorSelection {
   layer: LayerKind;
   catalogId: string;
   tool: ToolKind;
+  strokeMode: StrokeMode;
   brushSize: BrushSize;
 }
 
