@@ -8,7 +8,8 @@
 - ✅ Prefabs, selection/move/rotation, routing, validation, command/generator API.
 - ✅ **Reference Map 01 first structural pass:** village, waterfall/river, bridge, farms, cutaway castle, throne hall, rooms, courtyard, moat, gate, dock/boat.
 - ✅ Map is semantic-validation clean; CI typecheck/test/build passes.
-- 🚧 **Now:** run/compare the actual map against the supplied screenshot and fix the biggest visual gaps first.
-- ⏭ Then: richer procedural art → authored sprite/atlas replacement → room/marquee tools only where they help fidelity.
+- 🚧 **Now:** improve castle cutaway, houses, vegetation, ground, interiors and characters against the screenshot.
+- 🧊 **Water visuals frozen for now:** preserve semantics only; a different water approach comes later.
+- ⏭ Then: authored sprite/atlas replacement where procedural art hits its ceiling → room/marquee tools only where they help fidelity.
 
 **Rule:** stop adding architecture unless it directly improves the reference-map result.
