@@ -50,7 +50,7 @@ export class MapScene extends Phaser.Scene {
 
     this.#unsubscribe = this.#editor.subscribe((state) => {
       this.#selection = state.selection;
-      this.#renderer?.render(state.document, state.gridVisible);
+      this.#renderer?.render(state.document, state.gridVisible, state.navigationVisible);
       this.#renderer?.setHover(this.#lastHover, state.selection);
       this.updateCameraBounds(state.document);
     });
@@ -169,6 +169,10 @@ export class MapScene extends Phaser.Scene {
     keyboard.on("keydown-G", (event: KeyboardEvent) => {
       if (event.repeat) return;
       this.#editor.setGridVisible(!this.#editor.state.gridVisible);
+    });
+    keyboard.on("keydown-N", (event: KeyboardEvent) => {
+      if (event.repeat) return;
+      this.#editor.setNavigationVisible(!this.#editor.state.navigationVisible);
     });
     keyboard.on("keydown-Z", (event: KeyboardEvent) => {
       if (!event.ctrlKey && !event.metaKey) return;
