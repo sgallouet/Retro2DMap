@@ -2,12 +2,13 @@ import { History } from "../core/History";
 import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
 import {
   cloneMap,
+  type BrushSize,
   type EditorSelection,
   type GridCoord,
   type LayerKind,
   type MapDocument,
-  tileAt,
 } from "../domain/map";
+import { LogicalWorldPainter } from "./WorldPainter";
 
 export interface EditorState {
   document: MapDocument;
@@ -24,6 +25,7 @@ export interface IEditorController {
   subscribe(listener: EditorListener): () => void;
   select(layer: LayerKind, catalogId: string): void;
   setTool(tool: EditorSelection["tool"]): void;
+  setBrushSize(size: BrushSize): void;
   setGridVisible(visible: boolean): void;
   beginStroke(): void;
   applyAt(coord: GridCoord, eraseOverride?: boolean): void;
@@ -35,11 +37,17 @@ export interface IEditorController {
 
 export class EditorController implements IEditorController {
   #document: MapDocument;
-  #selection: EditorSelection = { layer: "terrain", catalogId: "grass", tool: "paint" };
+  #selection: EditorSelection = {
+    layer: "terrain",
+    catalogId: "grass",
+    tool: "paint",
+    brushSize: 1,
+  };
   #gridVisible = false;
   #strokeActive = false;
   readonly #listeners = new Set<EditorListener>();
   readonly #history = new History<MapDocument>(cloneMap);
+  readonly #worldPainter = new LogicalWorldPainter();
 
   constructor(document: MapDocument, private readonly catalog: IWorldCatalog) {
     this.#document = cloneMap(document);
@@ -70,6 +78,11 @@ export class EditorController implements IEditorController {
 
   setTool(tool: EditorSelection["tool"]): void {
     this.#selection = { ...this.#selection, tool };
+    this.emit();
+  }
+
+  setBrushSize(size: BrushSize): void {
+    this.#selection = { ...this.#selection, brushSize: size };
     this.emit();
   }
 
@@ -118,10 +131,11 @@ export class EditorController implements IEditorController {
 
   private paintAt(coord: GridCoord): boolean {
     if (this.#selection.layer === "terrain") {
-      const tile = tileAt(this.#document, coord);
-      if (!tile || tile.terrainId === this.#selection.catalogId) return false;
-      tile.terrainId = this.#selection.catalogId;
-      return true;
+      return this.#worldPainter.paintTerrainBrush(this.#document, {
+        center: coord,
+        terrainId: this.#selection.catalogId,
+        size: this.#selection.brushSize,
+      });
     }
 
     if (coord.x < 0 || coord.y < 0 || coord.x >= this.#document.width || coord.y >= this.#document.height) {
@@ -171,10 +185,11 @@ export class EditorController implements IEditorController {
 
   private eraseAt(coord: GridCoord): boolean {
     if (this.#selection.layer === "terrain") {
-      const tile = tileAt(this.#document, coord);
-      if (!tile || tile.terrainId === "grass") return false;
-      tile.terrainId = "grass";
-      return true;
+      return this.#worldPainter.paintTerrainBrush(this.#document, {
+        center: coord,
+        terrainId: "grass",
+        size: this.#selection.brushSize,
+      });
     }
 
     if (this.#selection.layer === "actor") {
