@@ -90,8 +90,8 @@ export class WorldRenderer implements IWorldRenderer {
     if (!coord || !document) return;
     if (coord.x < 0 || coord.y < 0 || coord.x >= document.width || coord.y >= document.height) return;
 
-    let width = selection.layer === "terrain" ? selection.brushSize : 1;
-    let height = selection.layer === "terrain" ? selection.brushSize : 1;
+    let width: number = selection.layer === "terrain" ? selection.brushSize : 1;
+    let height: number = selection.layer === "terrain" ? selection.brushSize : 1;
     let anchorX = coord.x;
     let anchorY = coord.y;
     const definition = this.catalog.get(selection.catalogId);
