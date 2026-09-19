@@ -1,5 +1,7 @@
 # Architecture
 
+> Product intent and non-negotiable design rules live in [../REQUIREMENTS.md](../REQUIREMENTS.md). If this document and the requirements diverge, the requirements win.
+
 Retro2DMap is split so **map semantics do not depend on Phaser or on any specific art pipeline**.
 
 ## Layers
