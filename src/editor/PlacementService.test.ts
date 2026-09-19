@@ -83,5 +83,45 @@ describe("EntityPlacementService", () => {
 
     expect(map.props).toHaveLength(8);
     expect(new Set(map.props.map((prop) => prop.catalogId))).toEqual(new Set(["fence"]));
+  });  it("moves a multi-tile prop without changing its identity", () => {
+    const map = createBlankMap(10, 10, "grass");
+    const placement = new EntityPlacementService(worldCatalog);
+    placement.placeProp(map, {
+      catalogId: "house-blue",
+      coord: { x: 1, y: 1 },
+    });
+    const id = map.props[0]?.id;
+    expect(id).toBeTruthy();
+
+    expect(
+      placement.moveProp(map, id!, { x: 5, y: 5 }, "reject"),
+    ).toBe(true);
+
+    expect(map.props[0]?.id).toBe(id);
+    expect(map.props[0]?.x).toBe(5);
+    expect(map.props[0]?.y).toBe(5);
   });
+
+  it("rejects a move when the full target footprint overlaps another prop", () => {
+    const map = createBlankMap(12, 12, "grass");
+    const placement = new EntityPlacementService(worldCatalog);
+    placement.placeProp(map, {
+      catalogId: "house-blue",
+      coord: { x: 1, y: 1 },
+    });
+    placement.placeProp(map, {
+      catalogId: "rock",
+      coord: { x: 7, y: 7 },
+    });
+    const house = map.props.find((prop) => prop.catalogId === "house-blue");
+    expect(house).toBeTruthy();
+
+    expect(
+      placement.moveProp(map, house!.id, { x: 6, y: 6 }, "reject"),
+    ).toBe(false);
+
+    expect(house?.x).toBe(1);
+    expect(house?.y).toBe(1);
+  });
+
 });
