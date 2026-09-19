@@ -2,7 +2,13 @@ import Phaser from "phaser";
 import type { IWorldCatalog } from "../domain/catalog";
 import type { IPrefabCatalog } from "../domain/prefab";
 import type { IEditorController } from "../editor/EditorController";
-import { TILE_SIZE, type EditorSelection, type GridCoord, type MapDocument } from "../domain/map";
+import {
+  TILE_SIZE,
+  type EditorEntitySelection,
+  type EditorSelection,
+  type GridCoord,
+  type MapDocument,
+} from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
 import { WorldRenderer } from "./WorldRenderer";
 
@@ -28,6 +34,7 @@ export class MapScene extends Phaser.Scene {
   #lastHover: GridCoord | null = null;
   #gestureStart: GridCoord | null = null;
   #selectedPrefabId: string | null = null;
+  #entitySelection: EditorEntitySelection | null = null;
   #selection: EditorSelection = {
     layer: "terrain",
     catalogId: "grass",
@@ -56,12 +63,24 @@ export class MapScene extends Phaser.Scene {
     this.#unsubscribe = this.#editor.subscribe((state) => {
       this.#selection = state.selection;
       this.#selectedPrefabId = state.selectedPrefabId;
-      this.#renderer?.render(state.document, state.gridVisible, state.navigationVisible);
+      this.#entitySelection = state.entitySelection;
+      this.#renderer?.render(
+        state.document,
+        state.gridVisible,
+        state.navigationVisible,
+        state.entitySelection,
+      );
       const prefab = state.selectedPrefabId ? this.#prefabs.get(state.selectedPrefabId) : undefined;
+      const selectedFootprint =
+        state.selection.tool === "select"
+          ? this.entityFootprint(state.document, state.entitySelection)
+          : undefined;
       this.#renderer?.setHover(
         this.#lastHover,
         state.selection,
-        prefab ? { width: prefab.width, height: prefab.height } : undefined,
+        prefab
+          ? { width: prefab.width, height: prefab.height }
+          : selectedFootprint,
       );
       this.updateCameraBounds(state.document);
     });
@@ -89,6 +108,15 @@ export class MapScene extends Phaser.Scene {
       if (!pointer.leftButtonDown() && !pointer.rightButtonDown()) return;
       const coord = this.pointerToGrid(pointer);
       if (!coord) return;
+
+      if (this.#selection.tool === "select") {
+        if (!pointer.leftButtonDown()) return;
+        this.#painting = true;
+        this.#eraseOverride = false;
+        this.#gestureStart = coord;
+        this.#editor.selectEntityAt(coord);
+        return;
+      }
 
       this.#painting = true;
       this.#eraseOverride = pointer.rightButtonDown();
@@ -121,14 +149,25 @@ export class MapScene extends Phaser.Scene {
       if (!this.sameCoord(coord, this.#lastHover)) {
         this.#lastHover = coord;
         const prefab = this.#selectedPrefabId ? this.#prefabs.get(this.#selectedPrefabId) : undefined;
+        const selectedFootprint =
+          this.#selection.tool === "select"
+            ? this.entityFootprint(this.#editor.state.document, this.#entitySelection)
+            : undefined;
         this.#renderer?.setHover(
           coord,
           this.#selection,
-          prefab ? { width: prefab.width, height: prefab.height } : undefined,
+          prefab
+            ? { width: prefab.width, height: prefab.height }
+            : selectedFootprint,
         );
       }
 
-      if (this.#painting && !this.#selectedPrefabId && this.#selection.strokeMode === "brush") {
+      if (
+        this.#painting &&
+        this.#selection.tool !== "select" &&
+        !this.#selectedPrefabId &&
+        this.#selection.strokeMode === "brush"
+      ) {
         this.applyPointer(pointer);
       } else if (
         this.#painting &&
@@ -150,6 +189,27 @@ export class MapScene extends Phaser.Scene {
     });
 
     const finishPointer = (pointer: Phaser.Input.Pointer): void => {
+      if (this.#painting && this.#selection.tool === "select") {
+        const end = this.pointerToGrid(pointer) ?? this.#lastHover ?? this.#gestureStart;
+        if (
+          this.#gestureStart &&
+          end &&
+          this.#entitySelection &&
+          !this.sameCoord(this.#gestureStart, end)
+        ) {
+          this.#editor.beginStroke();
+          this.#editor.moveSelectedEntity(end);
+          this.#editor.endStroke();
+        }
+
+        this.#painting = false;
+        this.#eraseOverride = false;
+        this.#panning = false;
+        this.#gestureStart = null;
+        this.#renderer?.clearLinePreview();
+        return;
+      }
+
       if (this.#painting && !this.#selectedPrefabId && this.#gestureStart) {
         const end = this.pointerToGrid(pointer) ?? this.#lastHover ?? this.#gestureStart;
         if (this.#selection.strokeMode === "line") {
@@ -234,6 +294,24 @@ export class MapScene extends Phaser.Scene {
     const document = this.#editor.state.document;
     if (x < 0 || y < 0 || x >= document.width || y >= document.height) return null;
     return { x, y };
+  }
+
+  private entityFootprint(
+    document: MapDocument,
+    selection: EditorEntitySelection | null,
+  ): Readonly<{ width: number; height: number }> | undefined {
+    if (!selection) return undefined;
+    if (selection.kind === "actor") return { width: 1, height: 1 };
+
+    const prop = document.props.find((candidate) => candidate.id === selection.id);
+    if (!prop) return undefined;
+
+    const definition = this.#catalog.get(prop.catalogId);
+    if (!definition || definition.layer !== "prop") return undefined;
+    return {
+      width: definition.footprint.width,
+      height: definition.footprint.height,
+    };
   }
 
   private updateCameraBounds(document: MapDocument): void {
