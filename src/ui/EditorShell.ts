@@ -1,16 +1,20 @@
 import type { CatalogEntry, IWorldCatalog } from "../domain/catalog";
 import { validateMapDocument, type BrushSize, type LayerKind, type MapDocument } from "../domain/map";
+import type { IPrefabCatalog, PrefabDefinition } from "../domain/prefab";
 import type { IEditorController } from "../editor/EditorController";
 import type { IMapStore } from "../storage/LocalStorageMapStore";
 
+type PaletteMode = LayerKind | "prefab";
+
 export class EditorShell {
-  #activeLayer: LayerKind = "terrain";
+  #activeLayer: PaletteMode = "terrain";
   #toastTimer?: number;
 
   constructor(
     private readonly root: HTMLElement,
     private readonly editor: IEditorController,
     private readonly catalog: IWorldCatalog,
+    private readonly prefabs: IPrefabCatalog,
     private readonly store: IMapStore,
     private readonly createResetMap: () => MapDocument,
   ) {}
@@ -96,9 +100,9 @@ export class EditorShell {
     this.renderLayerTabs();
     this.bindActions();
     this.editor.subscribe((state) => {
-      this.#activeLayer = state.selection.layer;
+      this.#activeLayer = state.selectedPrefabId ? "prefab" : state.selection.layer;
       this.renderLayerTabs();
-      this.renderPalette(state.selection.catalogId);
+      this.renderPalette(state.selectedPrefabId ?? state.selection.catalogId);
       this.renderInspector();
       this.syncToolbar();
       const status = this.root.querySelector<HTMLElement>('[data-role="status-map"]');
@@ -111,30 +115,73 @@ export class EditorShell {
   private renderLayerTabs(): void {
     const container = this.root.querySelector<HTMLElement>('[data-role="layers"]');
     if (!container) return;
-    const labels: ReadonlyArray<[LayerKind, string]> = [
+
+    const labels: ReadonlyArray<[PaletteMode, string]> = [
       ["terrain", "Terrain"],
       ["prop", "Props"],
       ["actor", "Actors"],
+      ["prefab", "Prefabs"],
     ];
+
     container.innerHTML = labels
-      .map(([layer, label]) => `<button data-layer="${layer}" class="${layer === this.#activeLayer ? "active" : ""}">${label}</button>`)
+      .map(
+        ([mode, label]) =>
+          `<button data-palette-mode="${mode}" class="${mode === this.#activeLayer ? "active" : ""}">${label}</button>`,
+      )
       .join("");
 
-    container.querySelectorAll<HTMLButtonElement>("[data-layer]").forEach((button) => {
+    container.querySelectorAll<HTMLButtonElement>("[data-palette-mode]").forEach((button) => {
       button.addEventListener("click", () => {
-        const layer = button.dataset.layer as LayerKind;
+        const mode = button.dataset.paletteMode as PaletteMode;
+
+        if (mode === "prefab") {
+          const first = this.prefabs.all[0];
+          if (first) this.editor.selectPrefab(first.id);
+          return;
+        }
+
         const current = this.editor.state.selection;
-        const entries = this.catalog.forLayer(layer);
-        const preferred = current.layer === layer ? this.catalog.get(current.catalogId) : undefined;
-        const next = preferred?.layer === layer ? preferred : entries[0];
-        if (next) this.editor.select(layer, next.id);
+        const entries = this.catalog.forLayer(mode);
+        const preferred = current.layer === mode ? this.catalog.get(current.catalogId) : undefined;
+        const next = preferred?.layer === mode ? preferred : entries[0];
+        if (next) this.editor.select(mode, next.id);
       });
     });
   }
 
-  private renderPalette(selectedId = this.editor.state.selection.catalogId): void {
+  private renderPalette(selectedId: string): void {
     const container = this.root.querySelector<HTMLElement>('[data-role="palette"]');
     if (!container) return;
+
+    if (this.#activeLayer === "prefab") {
+      const groups = new Map<string, PrefabDefinition[]>();
+      this.prefabs.all.forEach((prefab) => {
+        const group = groups.get(prefab.category) ?? [];
+        group.push(prefab);
+        groups.set(prefab.category, group);
+      });
+
+      container.innerHTML = Array.from(groups.entries())
+        .map(
+          ([category, items]) => `
+            <section class="palette-group">
+              <h3>${category}</h3>
+              <div class="palette-grid">
+                ${items.map((item) => this.prefabButton(item, selectedId === item.id)).join("")}
+              </div>
+            </section>
+          `,
+        )
+        .join("");
+
+      container.querySelectorAll<HTMLButtonElement>("[data-prefab-id]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const id = button.dataset.prefabId;
+          if (id) this.editor.selectPrefab(id);
+        });
+      });
+      return;
+    }
 
     const entries = this.catalog.forLayer(this.#activeLayer);
     const groups = new Map<string, CatalogEntry[]>();
@@ -158,9 +205,18 @@ export class EditorShell {
     container.querySelectorAll<HTMLButtonElement>("[data-catalog-id]").forEach((button) => {
       button.addEventListener("click", () => {
         const id = button.dataset.catalogId;
-        if (id) this.editor.select(this.#activeLayer, id);
+        if (id) this.editor.select(this.#activeLayer as LayerKind, id);
       });
     });
+  }
+
+  private prefabButton(prefab: PrefabDefinition, selected: boolean): string {
+    return `
+      <button class="palette-item ${selected ? "selected" : ""}" data-prefab-id="${prefab.id}">
+        <span class="palette-swatch palette-swatch--prefab">${prefab.width}×${prefab.height}</span>
+        <span>${prefab.label}</span>
+      </button>
+    `;
   }
 
   private paletteButton(entry: CatalogEntry, selected: boolean): string {
