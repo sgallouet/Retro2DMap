@@ -6,9 +6,19 @@ import type {
   PropDefinition,
   TerrainDefinition,
 } from "../domain/catalog";
-import { EAST, NORTH, SOUTH, WEST, type TerrainRenderContext } from "../domain/autotile";
+import {
+  EAST,
+  NORTH,
+  NORTH_EAST,
+  NORTH_WEST,
+  SOUTH,
+  SOUTH_EAST,
+  SOUTH_WEST,
+  WEST,
+  enumerateTerrainTopologies,
+} from "../domain/autotile";
 import { TILE_SIZE } from "../domain/map";
-import type { IAssetProvider } from "./IAssetProvider";
+import type { AssetRenderContext, IAssetProvider } from "./IAssetProvider";
 
 type Draw = (ctx: CanvasRenderingContext2D, width: number, height: number) => void;
 
@@ -90,20 +100,55 @@ const line = (
 
 export class ProceduralAssetProvider implements IAssetProvider {
   prepare(scene: Phaser.Scene, catalog: IWorldCatalog): void {
+    const terrainTopologies = enumerateTerrainTopologies();
+
     catalog.terrains.forEach((entry) => {
-      for (let neighborMask = 0; neighborMask < 16; neighborMask += 1) {
+      terrainTopologies.forEach((topology) => {
         for (let variant = 0; variant < 4; variant += 1) {
-          this.create(scene, this.terrainKey(entry.id, variant, neighborMask), TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
-            this.drawTerrain(ctx, w, h, entry, variant, neighborMask);
-          });
+          this.create(
+            scene,
+            this.terrainKey(entry.id, variant, topology.topologyKey),
+            TILE_SIZE,
+            TILE_SIZE,
+            (ctx, w, h) => {
+              this.drawTerrain(
+                ctx,
+                w,
+                h,
+                entry,
+                variant,
+                topology.cardinalMask,
+                topology.innerCornerMask,
+              );
+            },
+          );
         }
-      }
+      });
     });
 
     catalog.props.forEach((entry) => {
       const width = entry.footprint.width * TILE_SIZE;
       const height = entry.footprint.height * TILE_SIZE;
-      this.create(scene, this.entryKey(entry.id), width, height, (ctx, w, h) => this.drawProp(ctx, w, h, entry));
+
+      if (entry.network) {
+        for (let networkMask = 0; networkMask < 16; networkMask += 1) {
+          this.create(
+            scene,
+            this.networkKey(entry.id, networkMask),
+            width,
+            height,
+            (ctx, w, h) => this.drawProp(ctx, w, h, entry, networkMask),
+          );
+        }
+      } else {
+        this.create(
+          scene,
+          this.entryKey(entry.id),
+          width,
+          height,
+          (ctx, w, h) => this.drawProp(ctx, w, h, entry),
+        );
+      }
     });
 
     catalog.actors.forEach((entry) => {
@@ -115,12 +160,19 @@ export class ProceduralAssetProvider implements IAssetProvider {
     entry: CatalogEntry,
     x: number,
     y: number,
-    terrainContext?: TerrainRenderContext,
+    context?: AssetRenderContext,
   ): string {
-    if (entry.layer !== "terrain") return this.entryKey(entry.id);
-    const variant = terrainContext?.variation ?? hash(`${entry.id}:${x}:${y}`) % 4;
-    const neighborMask = terrainContext?.neighborMask ?? 15;
-    return this.terrainKey(entry.id, variant, neighborMask);
+    if (entry.layer === "terrain") {
+      const variant = context?.terrain?.variation ?? hash(`${entry.id}:${x}:${y}`) % 4;
+      const topologyKey = context?.terrain?.topologyKey ?? "c15-i0";
+      return this.terrainKey(entry.id, variant, topologyKey);
+    }
+
+    if (entry.layer === "prop" && entry.network) {
+      return this.networkKey(entry.id, context?.network?.neighborMask ?? 0);
+    }
+
+    return this.entryKey(entry.id);
   }
 
   private create(scene: Phaser.Scene, key: string, width: number, height: number, draw: Draw): void {
@@ -138,8 +190,12 @@ export class ProceduralAssetProvider implements IAssetProvider {
     return `proc:${id}`;
   }
 
-  private terrainKey(id: string, variant: number, neighborMask: number): string {
-    return `proc:${id}:${variant}:n${neighborMask}`;
+  private terrainKey(id: string, variant: number, topologyKey: string): string {
+    return `proc:${id}:${variant}:${topologyKey}`;
+  }
+
+  private networkKey(id: string, neighborMask: number): string {
+    return `proc:${id}:network-${neighborMask & 15}`;
   }
 
   private drawTerrain(
@@ -148,10 +204,11 @@ export class ProceduralAssetProvider implements IAssetProvider {
     height: number,
     entry: TerrainDefinition,
     variant: number,
-    neighborMask: number,
+    cardinalMask: number,
+    innerCornerMask: number,
   ): void {
     this.drawTerrainBase(ctx, width, height, entry, variant);
-    this.drawTerrainEdges(ctx, width, height, entry, neighborMask);
+    this.drawTerrainEdges(ctx, width, height, entry, cardinalMask, innerCornerMask);
   }
 
   private drawTerrainBase(
@@ -285,6 +342,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     width: number,
     height: number,
     entry: PropDefinition,
+    networkMask = 0,
   ): void {
     switch (entry.id) {
       case "tree-round":
