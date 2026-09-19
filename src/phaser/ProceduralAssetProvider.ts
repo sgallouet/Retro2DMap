@@ -6,6 +6,7 @@ import type {
   PropDefinition,
   TerrainDefinition,
 } from "../domain/catalog";
+import { EAST, NORTH, SOUTH, WEST, type TerrainRenderContext } from "../domain/autotile";
 import { TILE_SIZE } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
 
@@ -90,10 +91,12 @@ const line = (
 export class ProceduralAssetProvider implements IAssetProvider {
   prepare(scene: Phaser.Scene, catalog: IWorldCatalog): void {
     catalog.terrains.forEach((entry) => {
-      for (let variant = 0; variant < 4; variant += 1) {
-        this.create(scene, this.terrainKey(entry.id, variant), TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
-          this.drawTerrain(ctx, w, h, entry, variant);
-        });
+      for (let neighborMask = 0; neighborMask < 16; neighborMask += 1) {
+        for (let variant = 0; variant < 4; variant += 1) {
+          this.create(scene, this.terrainKey(entry.id, variant, neighborMask), TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+            this.drawTerrain(ctx, w, h, entry, variant, neighborMask);
+          });
+        }
       }
     });
 
@@ -108,10 +111,16 @@ export class ProceduralAssetProvider implements IAssetProvider {
     });
   }
 
-  textureKey(entry: CatalogEntry, x: number, y: number): string {
+  textureKey(
+    entry: CatalogEntry,
+    x: number,
+    y: number,
+    terrainContext?: TerrainRenderContext,
+  ): string {
     if (entry.layer !== "terrain") return this.entryKey(entry.id);
-    const variant = hash(`${entry.id}:${x}:${y}`) % 4;
-    return this.terrainKey(entry.id, variant);
+    const variant = terrainContext?.variation ?? hash(`${entry.id}:${x}:${y}`) % 4;
+    const neighborMask = terrainContext?.neighborMask ?? 15;
+    return this.terrainKey(entry.id, variant, neighborMask);
   }
 
   private create(scene: Phaser.Scene, key: string, width: number, height: number, draw: Draw): void {
@@ -129,11 +138,23 @@ export class ProceduralAssetProvider implements IAssetProvider {
     return `proc:${id}`;
   }
 
-  private terrainKey(id: string, variant: number): string {
-    return `proc:${id}:${variant}`;
+  private terrainKey(id: string, variant: number, neighborMask: number): string {
+    return `proc:${id}:${variant}:n${neighborMask}`;
   }
 
   private drawTerrain(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    entry: TerrainDefinition,
+    variant: number,
+    neighborMask: number,
+  ): void {
+    this.drawTerrainBase(ctx, width, height, entry, variant);
+    this.drawTerrainEdges(ctx, width, height, entry, neighborMask);
+  }
+
+  private drawTerrainBase(
     ctx: CanvasRenderingContext2D,
     width: number,
     height: number,
@@ -198,6 +219,64 @@ export class ProceduralAssetProvider implements IAssetProvider {
       const y = Math.floor(random() * height);
       const size = 1 + Math.floor(random() * 3);
       rect(ctx, x, y, size, size, random() > 0.45 ? colors[1] : colors[2]);
+    }
+  }
+
+  private drawTerrainEdges(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    entry: TerrainDefinition,
+    neighborMask: number,
+  ): void {
+    if (entry.edgeStyle === "none") return;
+
+    const missingNorth = (neighborMask & NORTH) === 0;
+    const missingEast = (neighborMask & EAST) === 0;
+    const missingSouth = (neighborMask & SOUTH) === 0;
+    const missingWest = (neighborMask & WEST) === 0;
+
+    if (!missingNorth && !missingEast && !missingSouth && !missingWest) return;
+
+    const thickness = entry.edgeStyle === "shore" ? 6 : entry.edgeStyle === "hard" ? 3 : 4;
+    const edgeColor =
+      entry.edgeStyle === "shore"
+        ? "#d8c27a"
+        : entry.edgeStyle === "hard"
+          ? "rgba(49,57,54,.55)"
+          : "rgba(44,55,42,.24)";
+    const highlight =
+      entry.edgeStyle === "shore"
+        ? "rgba(247,231,165,.72)"
+        : entry.edgeStyle === "hard"
+          ? "rgba(235,238,229,.18)"
+          : "rgba(255,255,255,.10)";
+
+    if (missingNorth) {
+      rect(ctx, 0, 0, width, thickness, edgeColor);
+      rect(ctx, 0, thickness, width, 1, highlight);
+    }
+    if (missingEast) {
+      rect(ctx, width - thickness, 0, thickness, height, edgeColor);
+      rect(ctx, width - thickness - 1, 0, 1, height, highlight);
+    }
+    if (missingSouth) {
+      rect(ctx, 0, height - thickness, width, thickness, edgeColor);
+      rect(ctx, 0, height - thickness - 1, width, 1, highlight);
+    }
+    if (missingWest) {
+      rect(ctx, 0, 0, thickness, height, edgeColor);
+      rect(ctx, thickness, 0, 1, height, highlight);
+    }
+
+    // A tiny corner cap prevents diagonal pinholes without forcing a giant
+    // Wang-tile atlas. A future sprite provider can use the same neighbor mask
+    // to pick authored inner/outer corner frames.
+    if (missingNorth && missingWest) rect(ctx, 0, 0, thickness + 1, thickness + 1, edgeColor);
+    if (missingNorth && missingEast) rect(ctx, width - thickness - 1, 0, thickness + 1, thickness + 1, edgeColor);
+    if (missingSouth && missingWest) rect(ctx, 0, height - thickness - 1, thickness + 1, thickness + 1, edgeColor);
+    if (missingSouth && missingEast) {
+      rect(ctx, width - thickness - 1, height - thickness - 1, thickness + 1, thickness + 1, edgeColor);
     }
   }
 
