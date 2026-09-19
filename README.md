@@ -31,13 +31,14 @@ npm run build
 
 - **Left click / drag**: paint selected item
 - **Right click / drag**: erase on the selected layer
-- **B / L**: freehand brush or semantic straight-line mode
+- **B / L / R**: freehand brush, semantic straight line, or filled terrain rectangle
 - **1 / 3 / 5**: switch terrain brush between 1×1, 3×3 and 5×5
 - **Mouse wheel**: zoom
 - **Middle drag** or **Space + left drag**: pan
 - **Ctrl/Cmd+Z**: undo
 - **Ctrl/Cmd+Shift+Z** or **Ctrl/Cmd+Y**: redo
 - **G**: toggle grid
+- **N**: toggle derived walkability overlay
 
 ## Architecture
 
