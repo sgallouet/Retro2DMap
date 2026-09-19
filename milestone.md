@@ -8,6 +8,7 @@
 - ✅ Prefabs, selection/move/rotation, routing, validation, command/generator API.
 - ✅ Reference Map 01 structural pass is built and validation-clean.
 - ✅ Non-water visual pass: castle walls/towers/gate, houses, trees, ground, floors, interiors, crops/fences, heraldry/signs, directional actors.
+- ✅ Target screenshot palette is now sampled into code and applied across every procedural asset draw path.
 - ✅ Courtyard now uses bordered garden beds; castle front has dedicated gate towers/stairs.
 - 🧊 **Water visuals frozen for now:** keep structure/semantics only; a different water approach comes later.
 - 🚧 **Now:** side-by-side fidelity tuning of castle/village proportions and density; replace the weakest procedural art where needed.
