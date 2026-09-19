@@ -7,6 +7,8 @@ import { createGrassStudy } from "./maps/grassStudy";
 import { MapScene } from "./phaser/MapScene";
 import { prefabCatalog } from "./prefabs/catalog";
 import { ProceduralAssetProvider } from "./phaser/ProceduralAssetProvider";
+import { SpriteAssetProvider } from "./phaser/SpriteAssetProvider";
+import { spriteAssetManifest } from "./assets/spriteManifest";
 import { LocalStorageMapStore } from "./storage/LocalStorageMapStore";
 import { EditorShell } from "./ui/EditorShell";
 
@@ -22,7 +24,10 @@ const store = new LocalStorageMapStore();
 const shell = new EditorShell(root, editor, worldCatalog, prefabCatalog, store, createInitialMap);
 shell.mount();
 
-const assets = new ProceduralAssetProvider();
+const assets = new SpriteAssetProvider(
+  spriteAssetManifest,
+  new ProceduralAssetProvider(),
+);
 const scene = new MapScene({ editor, catalog: worldCatalog, prefabs: prefabCatalog, assets });
 
 new Phaser.Game({
