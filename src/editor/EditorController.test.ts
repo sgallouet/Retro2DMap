@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { worldCatalog } from "../domain/catalog";
 import { createBlankMap } from "../domain/map";
+import { prefabCatalog } from "../prefabs/catalog";
 import { EditorController } from "./EditorController";
 
 describe("EditorController semantic gestures", () => {
@@ -58,5 +59,38 @@ describe("EditorController semantic gestures", () => {
 
     editor.undo();
     expect(editor.state.document.props).toHaveLength(0);
+  });  it("places and undoes a prefab as one semantic editor action", () => {
+    const editor = new EditorController(
+      createBlankMap(20, 20, "grass"),
+      worldCatalog,
+      prefabCatalog,
+    );
+    editor.selectPrefab("village-cottage-yard");
+
+    editor.beginStroke();
+    editor.applyAt({ x: 2, y: 2 });
+    editor.endStroke();
+
+    expect(editor.state.selectedPrefabId).toBe("village-cottage-yard");
+    expect(editor.state.document.props.some((prop) => prop.catalogId === "house-blue")).toBe(true);
+
+    editor.undo();
+    expect(editor.state.document.props).toHaveLength(0);
+    expect(editor.state.document.actors).toHaveLength(0);
   });
+
+  it("returns to normal palette mode when a catalog layer is selected", () => {
+    const editor = new EditorController(
+      createBlankMap(20, 20, "grass"),
+      worldCatalog,
+      prefabCatalog,
+    );
+
+    editor.selectPrefab("castle-guard-room");
+    expect(editor.state.selectedPrefabId).toBe("castle-guard-room");
+
+    editor.select("terrain", "water");
+    expect(editor.state.selectedPrefabId).toBeNull();
+  });
+
 });
