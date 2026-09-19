@@ -1,4 +1,9 @@
 import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
+import {
+  rotateQuarterTurn,
+  rotatedFootprint,
+  type QuarterTurn,
+} from "../domain/geometry";
 import { rasterizePolyline } from "../domain/grid";
 import {
   cloneMap,
@@ -12,6 +17,7 @@ import {
 export interface PropPlacementRequest {
   catalogId: string;
   coord: GridCoord;
+  rotation?: QuarterTurn;
   overlapPolicy?: OverlapPolicy;
 }
 
@@ -32,6 +38,12 @@ export interface IEntityPlacementService {
     coord: GridCoord,
     overlapPolicy?: OverlapPolicy,
   ): boolean;
+  rotateProp(
+    document: MapDocument,
+    propId: string,
+    clockwise?: boolean,
+    overlapPolicy?: OverlapPolicy,
+  ): boolean;
   placeActor(document: MapDocument, catalogId: string, coord: GridCoord): boolean;
   moveActor(document: MapDocument, actorId: string, coord: GridCoord): boolean;
   eraseActorsAt(document: MapDocument, coord: GridCoord): boolean;
@@ -44,18 +56,23 @@ export class EntityPlacementService implements IEntityPlacementService {
   placeProp(document: MapDocument, request: PropPlacementRequest): boolean {
     const definition = this.catalog.get(request.catalogId);
     if (!definition || definition.layer !== "prop") return false;
-    if (!this.footprintInside(document, request.coord, definition)) return false;
+
+    // Connected networks derive orientation from neighbors; a stored rotation
+    // would conflict with semantic topology and is therefore ignored.
+    const rotation: QuarterTurn = definition.network ? 0 : (request.rotation ?? 0);
+    if (!this.footprintInside(document, request.coord, definition, rotation)) return false;
 
     const same = document.props.some(
       (prop) =>
         prop.x === request.coord.x &&
         prop.y === request.coord.y &&
-        prop.catalogId === request.catalogId,
+        prop.catalogId === request.catalogId &&
+        (prop.rotation ?? 0) === rotation,
     );
     if (same) return false;
 
     const overlaps = document.props.filter((prop) =>
-      this.propsOverlap(prop, request.coord, definition),
+      this.propsOverlap(prop, request.coord, definition, rotation),
     );
 
     if ((request.overlapPolicy ?? "replace") === "reject" && overlaps.length > 0) {
@@ -69,6 +86,7 @@ export class EntityPlacementService implements IEntityPlacementService {
       catalogId: request.catalogId,
       x: request.coord.x,
       y: request.coord.y,
+      ...(rotation === 0 ? {} : { rotation }),
     });
     return true;
   }
@@ -135,13 +153,14 @@ export class EntityPlacementService implements IEntityPlacementService {
 
     const definition = this.catalog.get(prop.catalogId);
     if (!definition || definition.layer !== "prop") return false;
-    if (!this.footprintInside(document, coord, definition)) return false;
+    const rotation: QuarterTurn = definition.network ? 0 : (prop.rotation ?? 0);
+    if (!this.footprintInside(document, coord, definition, rotation)) return false;
     if (prop.x === coord.x && prop.y === coord.y) return false;
 
     const overlaps = document.props.filter(
       (candidate) =>
         candidate.id !== propId &&
-        this.propsOverlap(candidate, coord, definition),
+        this.propsOverlap(candidate, coord, definition, rotation),
     );
 
     if (overlapPolicy === "reject" && overlaps.length > 0) return false;
@@ -155,6 +174,45 @@ export class EntityPlacementService implements IEntityPlacementService {
 
     prop.x = coord.x;
     prop.y = coord.y;
+    return true;
+  }
+
+  rotateProp(
+    document: MapDocument,
+    propId: string,
+    clockwise = true,
+    overlapPolicy: OverlapPolicy = "reject",
+  ): boolean {
+    const prop = document.props.find((item) => item.id === propId);
+    if (!prop) return false;
+
+    const definition = this.catalog.get(prop.catalogId);
+    if (!definition || definition.layer !== "prop" || definition.network) {
+      return false;
+    }
+
+    const nextRotation = rotateQuarterTurn(prop.rotation, clockwise);
+    if (!this.footprintInside(document, prop, definition, nextRotation)) {
+      return false;
+    }
+
+    const overlaps = document.props.filter(
+      (candidate) =>
+        candidate.id !== propId &&
+        this.propsOverlap(candidate, prop, definition, nextRotation),
+    );
+
+    if (overlapPolicy === "reject" && overlaps.length > 0) return false;
+
+    if (overlapPolicy === "replace") {
+      const overlapIds = new Set(overlaps.map((candidate) => candidate.id));
+      document.props = document.props.filter(
+        (candidate) => candidate.id === propId || !overlapIds.has(candidate.id),
+      );
+    }
+
+    if (nextRotation === 0) delete prop.rotation;
+    else prop.rotation = nextRotation;
     return true;
   }
 
@@ -218,11 +276,16 @@ export class EntityPlacementService implements IEntityPlacementService {
     const definition = this.catalog.get(prop.catalogId);
     if (!definition || definition.layer !== "prop") return false;
 
+    const footprint = rotatedFootprint(
+      definition.footprint,
+      definition.network ? 0 : prop.rotation,
+    );
+
     return (
       coord.x >= prop.x &&
       coord.y >= prop.y &&
-      coord.x < prop.x + definition.footprint.width &&
-      coord.y < prop.y + definition.footprint.height
+      coord.x < prop.x + footprint.width &&
+      coord.y < prop.y + footprint.height
     );
   }
 
@@ -230,12 +293,14 @@ export class EntityPlacementService implements IEntityPlacementService {
     document: MapDocument,
     coord: GridCoord,
     definition: PropDefinition,
+    rotation: QuarterTurn = 0,
   ): boolean {
+    const footprint = rotatedFootprint(definition.footprint, rotation);
     return (
       coord.x >= 0 &&
       coord.y >= 0 &&
-      coord.x + definition.footprint.width <= document.width &&
-      coord.y + definition.footprint.height <= document.height
+      coord.x + footprint.width <= document.width &&
+      coord.y + footprint.height <= document.height
     );
   }
 
@@ -252,15 +317,22 @@ export class EntityPlacementService implements IEntityPlacementService {
     existing: PropInstance,
     nextCoord: GridCoord,
     nextDefinition: PropDefinition,
+    nextRotation: QuarterTurn = 0,
   ): boolean {
     const existingDefinition = this.catalog.get(existing.catalogId);
     if (!existingDefinition || existingDefinition.layer !== "prop") return false;
 
+    const existingFootprint = rotatedFootprint(
+      existingDefinition.footprint,
+      existingDefinition.network ? 0 : existing.rotation,
+    );
+    const nextFootprint = rotatedFootprint(nextDefinition.footprint, nextRotation);
+
     return (
-      existing.x < nextCoord.x + nextDefinition.footprint.width &&
-      existing.x + existingDefinition.footprint.width > nextCoord.x &&
-      existing.y < nextCoord.y + nextDefinition.footprint.height &&
-      existing.y + existingDefinition.footprint.height > nextCoord.y
+      existing.x < nextCoord.x + nextFootprint.width &&
+      existing.x + existingFootprint.width > nextCoord.x &&
+      existing.y < nextCoord.y + nextFootprint.height &&
+      existing.y + existingFootprint.height > nextCoord.y
     );
   }
 }
