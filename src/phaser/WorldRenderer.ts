@@ -40,14 +40,11 @@ export class WorldRenderer implements IWorldRenderer {
         if (!cell) continue;
         const definition = this.catalog.get(cell.terrainId);
         if (!definition || definition.layer !== "terrain") continue;
+        const texture = this.assets.textureRef(definition, x, y, {
+          terrain: this.#terrainTopology.resolve(document, { x, y }, definition),
+        });
         const image = this.scene.add
-          .image(
-            x * TILE_SIZE,
-            y * TILE_SIZE,
-            this.assets.textureKey(definition, x, y, {
-              terrain: this.#terrainTopology.resolve(document, { x, y }, definition),
-            }),
-          )
+          .image(x * TILE_SIZE, y * TILE_SIZE, texture.key, texture.frame)
           .setOrigin(0, 0)
           .setDepth(0);
         this.#worldObjects.push(image);
@@ -59,17 +56,14 @@ export class WorldRenderer implements IWorldRenderer {
       if (!definition || definition.layer !== "prop") return;
       const propDefinition = definition as PropDefinition;
       const network = this.#propTopology.resolve(document, prop, propDefinition);
+      const texture = this.assets.textureRef(
+        definition,
+        prop.x,
+        prop.y,
+        network ? { network } : undefined,
+      );
       const image = this.scene.add
-        .image(
-          prop.x * TILE_SIZE,
-          prop.y * TILE_SIZE,
-          this.assets.textureKey(
-            definition,
-            prop.x,
-            prop.y,
-            network ? { network } : undefined,
-          ),
-        )
+        .image(prop.x * TILE_SIZE, prop.y * TILE_SIZE, texture.key, texture.frame)
         .setOrigin(0, 0)
         .setDepth(
           1_000 +
@@ -82,8 +76,9 @@ export class WorldRenderer implements IWorldRenderer {
     document.actors.forEach((actor) => {
       const definition = this.catalog.get(actor.catalogId);
       if (!definition || definition.layer !== "actor") return;
+      const texture = this.assets.textureRef(definition, actor.x, actor.y);
       const image = this.scene.add
-        .image(actor.x * TILE_SIZE, actor.y * TILE_SIZE, this.assets.textureKey(definition, actor.x, actor.y))
+        .image(actor.x * TILE_SIZE, actor.y * TILE_SIZE, texture.key, texture.frame)
         .setOrigin(0, 0)
         .setDepth(1_000 + (actor.y + 1) * TILE_SIZE + 10);
       if (actor.facing === "west") image.setFlipX(true);
