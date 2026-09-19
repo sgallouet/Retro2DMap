@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { referenceColor } from "../assets/ReferencePalette";
 import type {
   ActorDefinition,
   CatalogEntry,
@@ -49,10 +50,10 @@ const rect = (
   fill: string,
   stroke?: string,
 ): void => {
-  ctx.fillStyle = fill;
+  ctx.fillStyle = referenceColor(fill);
   ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
   if (stroke) {
-    ctx.strokeStyle = stroke;
+    ctx.strokeStyle = referenceColor(stroke);
     ctx.lineWidth = 2;
     ctx.strokeRect(Math.round(x) + 1, Math.round(y) + 1, Math.max(0, Math.round(w) - 2), Math.max(0, Math.round(h) - 2));
   }
@@ -69,10 +70,10 @@ const ellipse = (
 ): void => {
   ctx.beginPath();
   ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
-  ctx.fillStyle = fill;
+  ctx.fillStyle = referenceColor(fill);
   ctx.fill();
   if (stroke) {
-    ctx.strokeStyle = stroke;
+    ctx.strokeStyle = referenceColor(stroke);
     ctx.lineWidth = 2;
     ctx.stroke();
   }
@@ -93,7 +94,7 @@ const line = (
     const point = points[i];
     if (point) ctx.lineTo(point[0], point[1]);
   }
-  ctx.strokeStyle = stroke;
+  ctx.strokeStyle = referenceColor(stroke);
   ctx.lineWidth = width;
   ctx.stroke();
 };
@@ -542,7 +543,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
       case "banner":
         rect(ctx, 12, 2, 24, 31, "#8e2633", "#5e1d27");
         rect(ctx, 15, 5, 18, 24, "#a92e3c");
-        ctx.fillStyle = "#b8923e";
+        ctx.fillStyle = referenceColor("#b8923e");
         ctx.beginPath();
         ctx.moveTo(12, 33);
         ctx.lineTo(24, 44);
@@ -669,7 +670,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     }
 
     if (entry.id === "hero" && facing === "north") {
-      ctx.fillStyle = "#8c3f43";
+      ctx.fillStyle = referenceColor("#8c3f43");
       ctx.beginPath();
       ctx.moveTo(cx - 11, 24);
       ctx.lineTo(cx + 11, 24);
@@ -687,7 +688,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
       line(ctx, [[cx + 14, 20], [cx + 14, 5]], "#6a4c2e", 2);
     } else if (entry.id === "king") {
       rect(ctx, cx - 9, 24, 18, 4, "#d2a744", "#76591e");
-      ctx.fillStyle = "#d9b348";
+      ctx.fillStyle = referenceColor("#d9b348");
       ctx.beginPath();
       ctx.moveTo(cx - 9, 12);
       ctx.lineTo(cx - 7, 5);
@@ -704,7 +705,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
       rect(ctx, cx - 8, 6, 16, 7, "#c8a45b", "#70562d");
     } else if (entry.id === "scholar") {
       rect(ctx, cx - 10, 8, 20, 5, "#4a395d");
-      ctx.fillStyle = "#6d5688";
+      ctx.fillStyle = referenceColor("#6d5688");
       ctx.beginPath();
       ctx.moveTo(cx - 6, 10);
       ctx.lineTo(cx + 1, 2);
@@ -738,7 +739,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
       ] as const;
 
       for (const [y, half, fill] of layers) {
-        ctx.fillStyle = "#2d4d35";
+        ctx.fillStyle = referenceColor("#2d4d35");
         ctx.beginPath();
         ctx.moveTo(cx + 2, y - 13);
         ctx.lineTo(cx - half - 2, y + 18);
@@ -746,7 +747,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
         ctx.closePath();
         ctx.fill();
 
-        ctx.fillStyle = fill;
+        ctx.fillStyle = referenceColor(fill);
         ctx.beginPath();
         ctx.moveTo(cx, y - 12);
         ctx.lineTo(cx - half, y + 15);
@@ -807,7 +808,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     line(ctx, [[width - 37, 80], [width - 37, 95]], "rgba(232,235,198,.5)", 2);
 
     // Deep roof eaves first, then roof plane.
-    ctx.fillStyle = "#49352e";
+    ctx.fillStyle = referenceColor("#49352e");
     ctx.beginPath();
     ctx.moveTo(3, 67);
     ctx.lineTo(cx, 15);
@@ -818,7 +819,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = roof;
+    ctx.fillStyle = referenceColor(roof);
     ctx.beginPath();
     ctx.moveTo(8, 62);
     ctx.lineTo(cx, 18);
@@ -857,12 +858,12 @@ export class ProceduralAssetProvider implements IAssetProvider {
     ctx.font = "bold 10px Georgia, serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "#f1dfb0";
+    ctx.fillStyle = referenceColor("#f1dfb0");
     ctx.fillText(text, 24, 17);
   }
 
   private drawBoat(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    ctx.fillStyle = "#8a542f";
+    ctx.fillStyle = referenceColor("#8a542f");
     ctx.beginPath();
     ctx.moveTo(6, 13);
     ctx.lineTo(width - 6, 13);
@@ -870,7 +871,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     ctx.lineTo(22, height - 7);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "#4e3523";
+    ctx.strokeStyle = referenceColor("#4e3523");
     ctx.lineWidth = 3;
     ctx.stroke();
     line(ctx, [[width / 2, 4], [width / 2, height - 8]], "#d3a064", 3);
@@ -965,7 +966,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     // Chunky post with a pointed cap like the target farm/village fences.
     rect(ctx, cx - 6, cy - 11, 12, 23, "#855a3c", railDark);
     rect(ctx, cx - 4, cy - 9, 8, 18, "#a16f47");
-    ctx.fillStyle = "#b07c4f";
+    ctx.fillStyle = referenceColor("#b07c4f");
     ctx.beginPath();
     ctx.moveTo(cx - 6, cy - 11);
     ctx.lineTo(cx, cy - 17);
@@ -1180,7 +1181,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
 
     // Dark arch with warm wooden portcullis.
     const cx = width / 2;
-    ctx.fillStyle = "#302d2a";
+    ctx.fillStyle = referenceColor("#302d2a");
     ctx.beginPath();
     ctx.arc(cx, height - 30, 29, Math.PI, 0);
     ctx.lineTo(cx + 29, height);
@@ -1190,7 +1191,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
 
     for (let x = cx - 22; x <= cx + 22; x += 9) {
       line(ctx, [[x, height - 51], [x, height]], "#8d683c", 5);
-      ctx.fillStyle = "#8d683c";
+      ctx.fillStyle = referenceColor("#8d683c");
       ctx.beginPath();
       ctx.moveTo(x - 3, height - 2);
       ctx.lineTo(x + 3, height - 2);
@@ -1254,7 +1255,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     rect(ctx, 10, 10, width - 20, height - 20, "#9f8254", "#d1b06e");
     rect(ctx, 13, 13, width - 26, height - 26, "#6f9a99");
     rect(ctx, 13, height * 0.55, width - 26, height * 0.20, "#65855a");
-    ctx.fillStyle = "#66785c";
+    ctx.fillStyle = referenceColor("#66785c");
     ctx.beginPath();
     ctx.moveTo(16, height * 0.58);
     ctx.lineTo(width * 0.42, 18);
@@ -1320,7 +1321,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     rect(ctx, width - 12, 44, 8, 38, "#b9903c", "#675022");
     rect(ctx, 8, 7, width - 16, 8, "#c5a04a", "#675022");
 
-    ctx.fillStyle = "#d0a949";
+    ctx.fillStyle = referenceColor("#d0a949");
     ctx.beginPath();
     ctx.moveTo(10, 12);
     ctx.lineTo(14, 2);
