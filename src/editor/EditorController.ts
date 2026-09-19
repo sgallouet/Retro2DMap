@@ -7,6 +7,7 @@ import {
   type GridCoord,
   type LayerKind,
   type MapDocument,
+  type StrokeMode,
 } from "../domain/map";
 import { EntityPlacementService } from "./PlacementService";
 import { LogicalWorldPainter } from "./WorldPainter";
@@ -26,10 +27,12 @@ export interface IEditorController {
   subscribe(listener: EditorListener): () => void;
   select(layer: LayerKind, catalogId: string): void;
   setTool(tool: EditorSelection["tool"]): void;
+  setStrokeMode(mode: StrokeMode): void;
   setBrushSize(size: BrushSize): void;
   setGridVisible(visible: boolean): void;
   beginStroke(): void;
   applyAt(coord: GridCoord, eraseOverride?: boolean): void;
+  applyLine(from: GridCoord, to: GridCoord, eraseOverride?: boolean): void;
   endStroke(): void;
   undo(): void;
   redo(): void;
@@ -42,6 +45,7 @@ export class EditorController implements IEditorController {
     layer: "terrain",
     catalogId: "grass",
     tool: "paint",
+    strokeMode: "brush",
     brushSize: 1,
   };
   #gridVisible = false;
@@ -75,12 +79,31 @@ export class EditorController implements IEditorController {
   select(layer: LayerKind, catalogId: string): void {
     const item = this.catalog.get(catalogId);
     if (!item || item.layer !== layer) throw new Error(`Catalog item ${catalogId} is not on layer ${layer}.`);
-    this.#selection = { ...this.#selection, layer, catalogId };
+    const supportsLine =
+      layer === "terrain" || (item.layer === "prop" && item.network !== undefined);
+    this.#selection = {
+      ...this.#selection,
+      layer,
+      catalogId,
+      strokeMode: supportsLine ? this.#selection.strokeMode : "brush",
+    };
     this.emit();
   }
 
   setTool(tool: EditorSelection["tool"]): void {
     this.#selection = { ...this.#selection, tool };
+    this.emit();
+  }
+
+  setStrokeMode(mode: StrokeMode): void {
+    const selected = this.catalog.get(this.#selection.catalogId);
+    const supportsLine =
+      this.#selection.layer === "terrain" ||
+      (selected?.layer === "prop" && selected.network !== undefined);
+    this.#selection = {
+      ...this.#selection,
+      strokeMode: supportsLine ? mode : "brush",
+    };
     this.emit();
   }
 
@@ -104,6 +127,29 @@ export class EditorController implements IEditorController {
   applyAt(coord: GridCoord, eraseOverride = false): void {
     const erase = eraseOverride || this.#selection.tool === "erase";
     const changed = erase ? this.eraseAt(coord) : this.paintAt(coord);
+    if (changed) this.emit();
+  }
+
+  applyLine(from: GridCoord, to: GridCoord, eraseOverride = false): void {
+    const erase = eraseOverride || this.#selection.tool === "erase";
+    let changed = false;
+
+    if (this.#selection.layer === "terrain") {
+      changed = this.#worldPainter.paintTerrainPath(this.#document, {
+        points: [from, to],
+        terrainId: erase ? "grass" : this.#selection.catalogId,
+        width: this.#selection.brushSize,
+      });
+    } else if (this.#selection.layer === "prop") {
+      changed = erase
+        ? this.#placement.erasePropsPath(this.#document, [from, to])
+        : this.#placement.paintNetworkPath(this.#document, {
+            catalogId: this.#selection.catalogId,
+            points: [from, to],
+            overlapPolicy: "replace",
+          });
+    }
+
     if (changed) this.emit();
   }
 
