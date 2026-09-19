@@ -2,17 +2,16 @@
 
 > Keep this short. [REQUIREMENTS.md](REQUIREMENTS.md) is the project contract.
 
-**Current phase:** Reference Map 01 fidelity loop
+**Current phase:** bottom-right grass tile mapping study
 
 - ✅ Semantic grid + multi-tile props + smart terrain/network topology.
-- ✅ Prefabs, selection/move/rotation, routing, validation, command/generator API.
-- ✅ Reference Map 01 structural pass is built and validation-clean.
-- ✅ Non-water visual pass: castle walls/towers/gate, houses, trees, ground, floors, interiors, crops/fences, heraldry/signs, directional actors.
-- ✅ Target screenshot palette is now sampled into code and applied across every procedural asset draw path.
-- ✅ Courtyard now uses bordered garden beds; castle front has dedicated gate towers/stairs.
-- 🧊 **Water visuals frozen for now:** keep structure/semantics only; a different water approach comes later.
-- ✅ Fidelity pass: major asset silhouettes redrawn (trees, houses, castle walls/towers/gate, actors, fountain), castle floors softened, village/forest density increased, village path made less rigid, and courtyard gardens enlarged with trees/statues.
-- 🚧 **Now:** continue side-by-side refinement of the biggest remaining shape-language gaps; avoid water polish.
-- ⏭ Then: authored sprite/atlas rollout for the assets where procedural drawing has clearly hit its ceiling.
+- ✅ Reference Map 01 structural pass exists and remains the long-term visual acceptance map.
+- ✅ Water visuals remain intentionally deferred.
+- ✅ Terrain topology now exposes explicit open-edge mapping (N/E/S/W) plus concave inner-corner bits.
+- ✅ Meadow grass now has a dedicated procedural center/edge/outer-corner/inner-corner renderer.
+- ✅ Added a focused bottom-right study map with cobble road, dirt paths, terrace cut-outs and a deliberate inner-corner test.
+- ✅ Automated topology tests cover straight edge, outer corner and inner corner mapping.
+- 🚧 **Now:** inspect the rendered grass study and refine this one simple green tile family until the mapping and material both look right.
+- ⏭ Only after grass is convincing: reuse the proven mapping approach for path/cliff/stairs in the same bottom-right section.
 
-**Rule:** stop adding architecture unless it directly improves the reference-map result.
+**Rule:** do not spread effort across the whole map while the base terrain tile language is still weak.
