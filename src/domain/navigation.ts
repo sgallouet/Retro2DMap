@@ -1,4 +1,5 @@
 import type { IWorldCatalog } from "./catalog";
+import { rotatedFootprint } from "./geometry";
 import { tileIndex, type GridCoord, type MapDocument } from "./map";
 
 export interface NavigationCell {
@@ -61,7 +62,11 @@ export class NavigationGridBuilder {
         continue;
       }
 
-      this.forEachFootprintCell(document, prop.x, prop.y, definition.footprint, (index) => {
+      const footprint = rotatedFootprint(
+        definition.footprint,
+        definition.network ? 0 : prop.rotation,
+      );
+      this.forEachFootprintCell(document, prop.x, prop.y, footprint, (index) => {
         mutable[index] = {
           walkable: true,
           movementCost: 1,
@@ -78,7 +83,11 @@ export class NavigationGridBuilder {
         continue;
       }
 
-      this.forEachFootprintCell(document, prop.x, prop.y, definition.footprint, (index) => {
+      const footprint = rotatedFootprint(
+        definition.footprint,
+        definition.network ? 0 : prop.rotation,
+      );
+      this.forEachFootprintCell(document, prop.x, prop.y, footprint, (index) => {
         const current = mutable[index];
         if (!current) return;
         mutable[index] = {
