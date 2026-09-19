@@ -144,9 +144,9 @@ export function createSampleKingdom(): MapDocument {
   prop("waterfall", 11, 2);
   [
     [9, 1], [10, 2], [10, 3], [9, 4], [9, 5],
-    [14, 1], [14, 2], [14, 3], [14, 4],
-    [10, 7], [10, 8], [11, 12], [11, 13],
-    [12, 16], [13, 17], [14, 18],
+    [14, 3], [14, 4],
+    [10, 7], [10, 8], [11, 13],
+    [12, 16], [13, 17],
   ].forEach(([x, y]) => networkProp("cliff", x ?? 0, y ?? 0));
 
   // ---------------------------------------------------------------------------
@@ -181,7 +181,7 @@ export function createSampleKingdom(): MapDocument {
   ].forEach(([x, y]) => prop("flowers", x ?? 0, y ?? 0));
 
   [
-    [0, 0], [2, 0], [4, 0], [7, 0], [9, 1],
+    [0, 0], [2, 0], [4, 0], [7, 0], [8, 2],
     [3, 8], [8, 6], [9, 9], [1, 20], [4, 20],
     [8, 19], [10, 21], [12, 22],
   ].forEach(([x, y], index) =>
@@ -259,7 +259,7 @@ export function createSampleKingdom(): MapDocument {
   prop("torch", 24, 3);
   prop("torch", 30, 3);
   prop("torch", 24, 9);
-  prop("torch", 30, 9);
+  prop("torch", 29, 9);
 
   actor("king", 27, 4);
   actor("guard", 25, 4);
