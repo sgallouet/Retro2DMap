@@ -2,7 +2,7 @@ export const TILE_SIZE = 48;
 export const MAP_FORMAT_VERSION = 1 as const;
 
 export type LayerKind = "terrain" | "prop" | "actor";
-export type ToolKind = "paint" | "erase";
+export type ToolKind = "paint" | "erase" | "select";
 export type StrokeMode = "brush" | "line" | "rect";
 export type BrushSize = 1 | 3 | 5;
 export type OverlapPolicy = "replace" | "reject";
@@ -29,6 +29,11 @@ export interface ActorInstance {
   x: number;
   y: number;
   facing: "north" | "east" | "south" | "west";
+}
+
+export interface EditorEntitySelection {
+  kind: "prop" | "actor";
+  id: string;
 }
 
 export interface MapDocument {
