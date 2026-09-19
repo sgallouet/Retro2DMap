@@ -1,6 +1,6 @@
 # Retro2DMap
 
-> **Project source of truth:** read [REQUIREMENTS.md](REQUIREMENTS.md) before changing architecture, map semantics, editor behavior, or the asset pipeline.
+> **Project source of truth:** read [REQUIREMENTS.md](REQUIREMENTS.md) before changing architecture, map semantics, editor behavior, or the asset pipeline. Progress stays intentionally short in [milestone.md](milestone.md).
 
 A **Phaser 3 + Vite + TypeScript** 2D square-tile world-map builder.
 
@@ -31,6 +31,8 @@ npm run build
 
 - **Left click / drag**: paint selected item
 - **Right click / drag**: erase on the selected layer
+- **S**: select; drag an actor/prop to move it
+- **F**: route inspector; click start then goal, right-click clears
 - **B / L / R**: freehand brush, semantic straight line, or filled terrain rectangle
 - **1 / 3 / 5**: switch terrain brush between 1×1, 3×3 and 5×5
 - **Mouse wheel**: zoom
@@ -39,6 +41,7 @@ npm run build
 - **Ctrl/Cmd+Shift+Z** or **Ctrl/Cmd+Y**: redo
 - **G**: toggle grid
 - **N**: toggle derived walkability overlay
+- **Validate**: run semantic map checks and show issue markers
 
 ## Architecture
 
