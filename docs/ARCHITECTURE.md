@@ -72,6 +72,11 @@ The MVP rebuilds the visible world after a document mutation. This keeps the imp
 
 The editor chrome is regular HTML/CSS rather than Phaser UI. This gives us crisp controls, accessibility, responsive layout and simpler file import/export.
 
+## Reference contracts
+
+- [Topology contract](TOPOLOGY.md)
+- [Asset pipeline](ASSET_PIPELINE.md)
+
 ## Coordinate model
 
 - Logical tile = **48 × 48 px**.
