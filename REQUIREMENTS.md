@@ -259,6 +259,7 @@ Core editor capabilities:
 - grid visualization
 - footprint / gesture preview
 - derived walkability debug overlay
+- semantic prefab placement for compound terrain/props/networks/actors
 - zoom
 - pan
 - undo / redo
@@ -269,8 +270,8 @@ Future editor direction:
 
 - select / move / rotate
 - marquee selection
-- connected-network drawing
-- prefab placement
+- connected-network refinement
+- prefab rotation / variation tools
 - room tools
 - route/pathfinding preview
 - richer topology/debug overlay
