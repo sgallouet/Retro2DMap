@@ -1,16 +1,17 @@
 # Milestones — TL;DR
 
-> Keep this file short. Read [REQUIREMENTS.md](REQUIREMENTS.md) for the full project contract.
+> Keep this short. [REQUIREMENTS.md](REQUIREMENTS.md) is the project contract.
 
-**Current phase:** semantic world builder foundation
+**Current phase:** editor composition tools
 
-- ✅ Square-grid map model; 1 character = 1 tile; multi-tile props first-class.
-- ✅ Semantic terrain painter: freehand, 1×1/3×3/5×5, line, rectangle.
-- ✅ 8-neighbour terrain topology + smart connected walls/fences/bridges/cliffs.
-- ✅ Procedural art now; atlas/sprite provider contract ready for gradual replacement.
-- ✅ Undo/redo, zoom/pan, JSON import/export, local save, walkability overlay.
+- ✅ Semantic grid model; 1 character = 1 tile; multi-tile props first-class.
+- ✅ Smart terrain painting: freehand, 1×1/3×3/5×5, line, rectangle.
+- ✅ 8-neighbour terrain + connected wall/fence/bridge/cliff topology.
+- ✅ Procedural art now; gradual atlas/sprite replacement contract ready.
+- ✅ Navigation/walkability derivation + debug overlay.
+- ✅ **Semantic prefabs:** atomic compound recipes, palette, footprint preview, undo.
 - ✅ Automated tests + CI typecheck/test/build.
-- 🚧 **Now:** semantic prefabs / compound buildings and rooms.
-- ⏭ Next: prefab editor placement → selection/move/rotate → validation/path preview → generator API → large-map chunking.
+- 🚧 **Now:** selection / move / rotate foundations.
+- ⏭ Next: validation + route preview → generator API → large-map chunking → authored art.
 
-**Rule:** map JSON stores world meaning, never sprite-frame decisions.
+**Rule:** map JSON stores world meaning, never sprite-frame or prefab decisions.
