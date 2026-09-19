@@ -58,13 +58,17 @@ export class WorldRenderer implements IWorldRenderer {
       const definition = this.catalog.get(prop.catalogId);
       if (!definition || definition.layer !== "prop") return;
       const propDefinition = definition as PropDefinition;
+      const network = this.#propTopology.resolve(document, prop, propDefinition);
       const image = this.scene.add
         .image(
           prop.x * TILE_SIZE,
           prop.y * TILE_SIZE,
-          this.assets.textureKey(definition, prop.x, prop.y, {
-            network: this.#propTopology.resolve(document, prop, propDefinition),
-          }),
+          this.assets.textureKey(
+            definition,
+            prop.x,
+            prop.y,
+            network ? { network } : undefined,
+          ),
         )
         .setOrigin(0, 0)
         .setDepth(
