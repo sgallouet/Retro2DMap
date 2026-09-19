@@ -121,7 +121,9 @@ export class WorldRenderer implements IWorldRenderer {
     document.actors.forEach((actor) => {
       const definition = this.catalog.get(actor.catalogId);
       if (!definition || definition.layer !== "actor") return;
-      const texture = this.assets.textureRef(definition, actor.x, actor.y);
+      const texture = this.assets.textureRef(definition, actor.x, actor.y, {
+        actor: { facing: actor.facing },
+      });
       const image = this.scene.add
         .image(actor.x * TILE_SIZE, actor.y * TILE_SIZE, texture.key, texture.frame)
         .setOrigin(0, 0)
