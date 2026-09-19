@@ -1,4 +1,5 @@
 import type { IWorldCatalog } from "../domain/catalog";
+import { rotatedFootprint } from "../domain/geometry";
 import { rasterizePolyline } from "../domain/grid";
 import { cloneMap, type GridCoord, type MapDocument } from "../domain/map";
 import type { PrefabDefinition } from "../domain/prefab";
@@ -68,6 +69,7 @@ export class PrefabPlacer implements IPrefabPlacer {
       const placed = this.#placement.placeProp(candidate, {
         catalogId: stamp.catalogId,
         coord,
+        ...(stamp.rotation === undefined ? {} : { rotation: stamp.rotation }),
         overlapPolicy: prefab.overlapPolicy,
       });
 
@@ -157,11 +159,15 @@ export class PrefabPlacer implements IPrefabPlacer {
     for (const prop of prefab.props) {
       const definition = this.catalog.get(prop.catalogId);
       if (!definition || definition.layer !== "prop") return `Unknown prop ${prop.catalogId}.`;
+      const footprint = rotatedFootprint(
+        definition.footprint,
+        definition.network ? 0 : prop.rotation,
+      );
       if (
         prop.x < 0 ||
         prop.y < 0 ||
-        prop.x + definition.footprint.width > prefab.width ||
-        prop.y + definition.footprint.height > prefab.height
+        prop.x + footprint.width > prefab.width ||
+        prop.y + footprint.height > prefab.height
       ) {
         return `Prop ${prop.catalogId} is outside prefab bounds.`;
       }
