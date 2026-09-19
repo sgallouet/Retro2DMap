@@ -223,7 +223,12 @@ export function createSampleKingdom(): MapDocument {
 
   terrainLine(0, 10, 10, 10, "path");
   terrainLine(1, 18, 12, 18, "path");
-  terrainLine(6, 7, 6, 25, "path");
+  terrainLine(6, 7, 6, 11, "path");
+  terrainLine(6, 11, 5, 13, "path");
+  terrainLine(5, 13, 5, 17, "path");
+  terrainLine(5, 17, 6, 19, "path");
+  terrainLine(6, 19, 6, 23, "path");
+  terrainLine(6, 23, 7, 25, "path");
   terrainLine(2, 23, 13, 23, "path");
   terrainLine(6, 10, 10, 12, "path");
   terrainLine(6, 18, 10, 16, "path");
@@ -274,8 +279,8 @@ export function createSampleKingdom(): MapDocument {
   rect(21, 12, 14, 6, "cobble");
 
   // Symmetric garden beds are a major readability cue in the reference.
-  rect(21, 13, 4, 4, "grass");
-  rect(31, 13, 4, 4, "grass");
+  rect(20, 13, 5, 5, "grass");
+  rect(31, 13, 5, 5, "grass");
   rect(25, 12, 6, 6, "cobble");
 
   // Outer wall. Towers sit *outside* the perimeter so footprints do not overlap.
@@ -388,18 +393,25 @@ export function createSampleKingdom(): MapDocument {
   prop("torch", 35, 8);
   actor("guard", 34, 9, "west");
 
-  // Courtyard: two bordered garden beds flank the central fountain.
-  networkRect("garden-border", 21, 13, 24, 16);
-  networkRect("garden-border", 31, 13, 34, 16);
+  // Courtyard: larger garden beds with trees/statues like the target.
+  networkRect("garden-border", 20, 13, 24, 17);
+  networkRect("garden-border", 31, 13, 35, 17);
 
   prop("fountain", 27, 14);
+
+  // Left garden interior.
+  prop("tree-pine", 21, 14);
   prop("statue", 23, 15);
+  prop("flowers", 22, 14);
+  prop("flowers", 22, 16);
+  prop("flowers", 23, 14);
+
+  // Right garden interior.
+  prop("tree-pine", 34, 14);
   prop("statue", 32, 15);
-  [
-    [22, 14], [23, 14], [22, 15],
-    [32, 14], [33, 14], [33, 15],
-  ].forEach(([x, y]) => prop("flowers", x ?? 0, y ?? 0));
-  prop("tree-pine", 35, 13);
+  prop("flowers", 32, 14);
+  prop("flowers", 33, 14);
+  prop("flowers", 33, 16);
 
   // Gate, moat bridge and main stone road continuing toward the bottom edge.
   prop("castle-gate", 26, 17);
