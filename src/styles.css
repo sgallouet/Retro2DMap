@@ -163,6 +163,14 @@ kbd {
   flex: 0 0 auto;
 }
 
+.brush-label {
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+}
+
 .danger-soft {
   color: #efb6b6;
   border-color: #5f4040;
