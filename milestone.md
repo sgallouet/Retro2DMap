@@ -2,16 +2,13 @@
 
 > Keep this short. [REQUIREMENTS.md](REQUIREMENTS.md) is the project contract.
 
-**Current phase:** spatial composition tools
+**Current phase:** Reference Map 01 fidelity loop
 
 - ✅ Semantic grid + multi-tile props + smart terrain/network topology.
-- ✅ Free/line/rectangle painting + procedural→sprite asset contract.
-- ✅ Semantic prefabs + atomic placement + undo.
-- ✅ Select/move + actor facing + safe quarter-turn prop orientation.
-- ✅ Walkability + A* route inspector + semantic validation overlays.
-- ✅ Serializable world-command API + deterministic generator example.
-- ✅ Automated tests + CI typecheck/test/build.
-- 🚧 **Now:** marquee selection + semantic room/castle composition tools.
-- ⏭ Next: generator refinement → large-map chunking → authored art.
+- ✅ Prefabs, selection/move/rotation, routing, validation, command/generator API.
+- ✅ **Reference Map 01 first structural pass:** village, waterfall/river, bridge, farms, cutaway castle, throne hall, rooms, courtyard, moat, gate, dock/boat.
+- ✅ Map is semantic-validation clean; CI typecheck/test/build passes.
+- 🚧 **Now:** run/compare the actual map against the supplied screenshot and fix the biggest visual gaps first.
+- ⏭ Then: richer procedural art → authored sprite/atlas replacement → room/marquee tools only where they help fidelity.
 
-**Rule:** map JSON stores world meaning, never sprite-frame or prefab decisions.
+**Rule:** stop adding architecture unless it directly improves the reference-map result.
