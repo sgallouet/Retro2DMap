@@ -33,6 +33,7 @@ export class EditorShell {
           <div class="topbar-actions">
             <button data-action="paint" class="tool-button">Paint <kbd>P</kbd></button>
             <button data-action="erase" class="tool-button">Erase <kbd>E</kbd></button>
+            <button data-action="select" class="tool-button">Select <kbd>S</kbd></button>
             <span class="toolbar-separator"></span>
             <span class="brush-label">Stroke</span>
             <button data-stroke-mode="brush" title="Free paint stroke">Free <kbd>B</kbd></button>
@@ -48,6 +49,7 @@ export class EditorShell {
             <button data-action="redo" title="Redo">↷</button>
             <button data-action="grid" title="Toggle grid">Grid</button>
             <button data-action="navigation" title="Toggle walkability overlay">Walk <kbd>N</kbd></button>
+            <button data-action="rotate-entity" title="Rotate selected actor clockwise">Turn ↻</button>
             <span class="toolbar-separator"></span>
             <button data-action="save">Save local</button>
             <button data-action="load">Load local</button>
@@ -70,7 +72,7 @@ export class EditorShell {
         <main class="viewport-panel">
           <div id="game-canvas" class="game-canvas"></div>
           <div class="viewport-help">
-            LMB paint · RMB erase · B free · L line · R rect · wheel zoom · middle/Space drag pan
+            LMB paint/select · drag selected entity to move · RMB erase · B free · L line · R rect · wheel zoom · middle/Space drag pan
           </div>
         </main>
 
@@ -267,6 +269,50 @@ export class EditorShell {
       return;
     }
 
+    if (state.entitySelection) {
+      if (state.entitySelection.kind === "actor") {
+        const actor = state.document.actors.find((candidate) => candidate.id === state.entitySelection?.id);
+        const definition = actor ? this.catalog.get(actor.catalogId) : undefined;
+        container.innerHTML = `
+          <div class="selection-card">
+            <span class="eyebrow">selected actor</span>
+            <h2>${definition?.label ?? actor?.catalogId ?? "Actor"}</h2>
+            <code>${actor?.id ?? "—"}</code>
+          </div>
+          <dl class="property-grid">
+            <dt>Cell</dt><dd>${actor ? `${actor.x}, ${actor.y}` : "—"}</dd>
+            <dt>Facing</dt><dd>${actor?.facing ?? "—"}</dd>
+            <dt>Footprint</dt><dd>1×1</dd>
+          </dl>
+          <div class="tip-card">
+            <strong>Selection</strong>
+            <span>Drag the actor to move it. Use Turn ↻ to change facing. Movement stays grid-aligned.</span>
+          </div>
+        `;
+        return;
+      }
+
+      const prop = state.document.props.find((candidate) => candidate.id === state.entitySelection?.id);
+      const definition = prop ? this.catalog.get(prop.catalogId) : undefined;
+      const footprint = definition?.layer === "prop" ? definition.footprint : undefined;
+      container.innerHTML = `
+        <div class="selection-card">
+          <span class="eyebrow">selected prop</span>
+          <h2>${definition?.label ?? prop?.catalogId ?? "Prop"}</h2>
+          <code>${prop?.id ?? "—"}</code>
+        </div>
+        <dl class="property-grid">
+          <dt>Anchor</dt><dd>${prop ? `${prop.x}, ${prop.y}` : "—"}</dd>
+          <dt>Footprint</dt><dd>${footprint ? `${footprint.width}×${footprint.height}` : "—"}</dd>
+        </dl>
+        <div class="tip-card">
+          <strong>Selection</strong>
+          <span>Drag the prop by its grid anchor. Move validation respects the full multi-tile footprint.</span>
+        </div>
+      `;
+      return;
+    }
+
     const entry = this.catalog.get(state.selection.catalogId);
     let details = "";
 
@@ -315,29 +361,37 @@ export class EditorShell {
   private syncToolbar(): void {
     const state = this.editor.state;
     const prefabMode = state.selectedPrefabId !== null;
+    const selectMode = state.selection.tool === "select";
 
     this.setPressed("paint", state.selection.tool === "paint");
     this.setPressed("erase", state.selection.tool === "erase");
+    this.setPressed("select", state.selection.tool === "select");
     this.setPressed("grid", state.gridVisible);
     this.setPressed("navigation", state.navigationVisible);
 
     const paint = this.root.querySelector<HTMLButtonElement>('[data-action="paint"]');
     const erase = this.root.querySelector<HTMLButtonElement>('[data-action="erase"]');
+    const select = this.root.querySelector<HTMLButtonElement>('[data-action="select"]');
+    const rotate = this.root.querySelector<HTMLButtonElement>('[data-action="rotate-entity"]');
     if (paint) paint.disabled = false;
     if (erase) erase.disabled = prefabMode;
+    if (select) select.disabled = false;
+    if (rotate) rotate.disabled = state.entitySelection?.kind !== "actor";
 
     const selected = this.catalog.get(state.selection.catalogId);
     const supportsLine =
       !prefabMode &&
+      !selectMode &&
       (state.selection.layer === "terrain" ||
         (selected?.layer === "prop" && selected.network !== undefined));
-    const supportsRect = !prefabMode && state.selection.layer === "terrain";
+    const supportsRect = !prefabMode && !selectMode && state.selection.layer === "terrain";
 
     this.root.querySelectorAll<HTMLButtonElement>("[data-stroke-mode]").forEach((button) => {
       const mode = button.dataset.strokeMode;
       button.classList.toggle("active", !prefabMode && mode === state.selection.strokeMode);
       button.disabled =
         prefabMode ||
+        selectMode ||
         (mode === "line" && !supportsLine) ||
         (mode === "rect" && !supportsRect);
     });
@@ -347,7 +401,7 @@ export class EditorShell {
         "active",
         !prefabMode && Number(button.dataset.brushSize) === state.selection.brushSize,
       );
-      button.disabled = prefabMode || state.selection.layer !== "terrain";
+      button.disabled = prefabMode || selectMode || state.selection.layer !== "terrain";
     });
 
     const undo = this.root.querySelector<HTMLButtonElement>('[data-action="undo"]');
@@ -363,6 +417,12 @@ export class EditorShell {
   private bindActions(): void {
     this.root.querySelector('[data-action="paint"]')?.addEventListener("click", () => this.editor.setTool("paint"));
     this.root.querySelector('[data-action="erase"]')?.addEventListener("click", () => this.editor.setTool("erase"));
+    this.root.querySelector('[data-action="select"]')?.addEventListener("click", () => this.editor.setTool("select"));
+    this.root.querySelector('[data-action="rotate-entity"]')?.addEventListener("click", () => {
+      this.editor.beginStroke();
+      this.editor.rotateSelectedEntity(true);
+      this.editor.endStroke();
+    });
     this.root.querySelectorAll<HTMLButtonElement>("[data-stroke-mode]").forEach((button) => {
       button.addEventListener("click", () => {
         const mode = button.dataset.strokeMode;
@@ -430,6 +490,7 @@ export class EditorShell {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
       if (event.key.toLowerCase() === "p") this.editor.setTool("paint");
       if (event.key.toLowerCase() === "e") this.editor.setTool("erase");
+      if (event.key.toLowerCase() === "s") this.editor.setTool("select");
       if (event.key.toLowerCase() === "b") this.editor.setStrokeMode("brush");
       if (event.key.toLowerCase() === "l") this.editor.setStrokeMode("line");
       if (event.key.toLowerCase() === "r") this.editor.setStrokeMode("rect");
