@@ -208,7 +208,15 @@ export function createSampleKingdom(): MapDocument {
   // Outer wall. Towers sit *outside* the perimeter so footprints do not overlap.
   for (let x = 16; x <= 37; x += 1) {
     networkProp("castle-wall", x, 1);
-    if (x < 26 || x > 27) networkProp("castle-wall", x, 18);
+
+    const reservedForFrontArchitecture =
+      x === 23 ||
+      x === 24 ||
+      x === 26 ||
+      x === 27 ||
+      x === 30 ||
+      x === 31;
+    if (!reservedForFrontArchitecture) networkProp("castle-wall", x, 18);
   }
   for (let y = 2; y <= 17; y += 1) {
     networkProp("castle-wall", 16, y);
@@ -219,6 +227,10 @@ export function createSampleKingdom(): MapDocument {
   prop("castle-tower", 38, 0);
   prop("castle-tower", 14, 17);
   prop("castle-tower", 38, 17);
+
+  // Two gate towers reproduce the strong fortified front silhouette.
+  prop("castle-tower", 23, 17);
+  prop("castle-tower", 30, 17);
 
   // Side-room partitions. Network helper prevents duplicate junction cells.
   for (let y = 2; y <= 10; y += 1) {
@@ -241,6 +253,12 @@ export function createSampleKingdom(): MapDocument {
   for (let x = 31; x <= 36; x += 1) {
     if (x !== 32) networkProp("castle-wall", x, 11);
   }
+
+  // Broad stair between the audience hall and courtyard.
+  prop("stairs", 26, 11);
+  prop("stairs", 28, 11);
+  prop("banner", 22, 12);
+  prop("banner", 33, 12);
 
   // Throne hall: red axial carpet, throne, banners, candelabra-like torches,
   // four columns, king, guards and the player character.
@@ -324,8 +342,12 @@ export function createSampleKingdom(): MapDocument {
   // ---------------------------------------------------------------------------
 
   rect(1, 25, 4, 5, "soil");
+  rect(5, 26, 2, 4, "soil");
   for (let y = 25; y < 30; y += 1) {
     for (let x = 1; x < 5; x += 1) prop("crops", x, y);
+  }
+  for (let y = 26; y < 30; y += 1) {
+    for (let x = 5; x < 7; x += 1) prop("crops", x, y);
   }
 
   // Sheep pen.
@@ -346,7 +368,7 @@ export function createSampleKingdom(): MapDocument {
   }
 
   [
-    [0, 22], [2, 22], [4, 22], [6, 26], [6, 28],
+    [0, 22], [2, 22], [4, 22],
     [15, 23], [17, 24], [20, 24], [22, 26], [24, 28],
     [30, 24], [32, 25], [34, 24], [36, 25], [38, 24],
     [31, 27], [33, 28], [35, 27], [37, 28],
