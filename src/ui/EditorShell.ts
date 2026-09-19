@@ -30,7 +30,11 @@ export class EditorShell {
             <button data-action="paint" class="tool-button">Paint <kbd>P</kbd></button>
             <button data-action="erase" class="tool-button">Erase <kbd>E</kbd></button>
             <span class="toolbar-separator"></span>
-            <span class="brush-label">Brush</span>
+            <span class="brush-label">Stroke</span>
+            <button data-stroke-mode="brush" title="Free paint stroke">Free <kbd>B</kbd></button>
+            <button data-stroke-mode="line" title="Straight semantic line">Line <kbd>L</kbd></button>
+            <span class="toolbar-separator"></span>
+            <span class="brush-label">Size</span>
             <button data-brush-size="1" title="1×1 terrain brush">1</button>
             <button data-brush-size="3" title="3×3 terrain brush">3</button>
             <button data-brush-size="5" title="5×5 terrain brush">5</button>
@@ -60,7 +64,7 @@ export class EditorShell {
         <main class="viewport-panel">
           <div id="game-canvas" class="game-canvas"></div>
           <div class="viewport-help">
-            LMB paint · RMB erase · wheel zoom · middle/Space drag pan
+            LMB paint · RMB erase · B free · L line · wheel zoom · middle/Space drag pan
           </div>
         </main>
 
@@ -203,6 +207,7 @@ export class EditorShell {
       </div>
       <dl class="property-grid">
         <dt>Tool</dt><dd>${state.selection.tool}</dd>
+        <dt>Stroke</dt><dd>${state.selection.strokeMode}</dd>
         <dt>Brush</dt><dd>${state.selection.layer === "terrain" ? `${state.selection.brushSize}×${state.selection.brushSize}` : "n/a"}</dd>
         <dt>Category</dt><dd>${entry?.category ?? "—"}</dd>
         ${details}
@@ -228,6 +233,17 @@ export class EditorShell {
     this.setPressed("erase", state.selection.tool === "erase");
     this.setPressed("grid", state.gridVisible);
 
+    const selected = this.catalog.get(state.selection.catalogId);
+    const supportsLine =
+      state.selection.layer === "terrain" ||
+      (selected?.layer === "prop" && selected.network !== undefined);
+
+    this.root.querySelectorAll<HTMLButtonElement>("[data-stroke-mode]").forEach((button) => {
+      const mode = button.dataset.strokeMode;
+      button.classList.toggle("active", mode === state.selection.strokeMode);
+      button.disabled = mode === "line" && !supportsLine;
+    });
+
     this.root.querySelectorAll<HTMLButtonElement>("[data-brush-size]").forEach((button) => {
       button.classList.toggle("active", Number(button.dataset.brushSize) === state.selection.brushSize);
       button.disabled = state.selection.layer !== "terrain";
@@ -246,6 +262,12 @@ export class EditorShell {
   private bindActions(): void {
     this.root.querySelector('[data-action="paint"]')?.addEventListener("click", () => this.editor.setTool("paint"));
     this.root.querySelector('[data-action="erase"]')?.addEventListener("click", () => this.editor.setTool("erase"));
+    this.root.querySelectorAll<HTMLButtonElement>("[data-stroke-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const mode = button.dataset.strokeMode;
+        if (mode === "brush" || mode === "line") this.editor.setStrokeMode(mode);
+      });
+    });
     this.root.querySelectorAll<HTMLButtonElement>("[data-brush-size]").forEach((button) => {
       button.addEventListener("click", () => {
         const size = Number(button.dataset.brushSize) as BrushSize;
@@ -302,6 +324,8 @@ export class EditorShell {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
       if (event.key.toLowerCase() === "p") this.editor.setTool("paint");
       if (event.key.toLowerCase() === "e") this.editor.setTool("erase");
+      if (event.key.toLowerCase() === "b") this.editor.setStrokeMode("brush");
+      if (event.key.toLowerCase() === "l") this.editor.setStrokeMode("line");
       if (event.key === "1") this.editor.setBrushSize(1);
       if (event.key === "3") this.editor.setBrushSize(3);
       if (event.key === "5") this.editor.setBrushSize(5);
