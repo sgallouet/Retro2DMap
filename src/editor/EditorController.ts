@@ -1,6 +1,9 @@
 import { History } from "../core/History";
 import type { IWorldCatalog } from "../domain/catalog";
 import type { IPrefabCatalog } from "../domain/prefab";
+import { NavigationGridBuilder } from "../domain/navigation";
+import { GridPathfinder } from "../domain/pathfinding";
+import { MapValidator, type ValidationIssue } from "../domain/validation";
 import {
   cloneMap,
   type BrushSize,
@@ -15,6 +18,14 @@ import { EntityPlacementService } from "./PlacementService";
 import { PrefabPlacer } from "./PrefabPlacer";
 import { LogicalWorldPainter } from "./WorldPainter";
 
+export interface EditorRoutePreview {
+  start: GridCoord;
+  goal: GridCoord | null;
+  path: readonly GridCoord[];
+  found: boolean | null;
+  cost: number | null;
+}
+
 export interface EditorState {
   document: MapDocument;
   selection: EditorSelection;
@@ -22,6 +33,8 @@ export interface EditorState {
   navigationVisible: boolean;
   selectedPrefabId: string | null;
   entitySelection: EditorEntitySelection | null;
+  validationIssues: readonly ValidationIssue[];
+  routePreview: EditorRoutePreview | null;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -37,6 +50,10 @@ export interface IEditorController {
   clearEntitySelection(): void;
   moveSelectedEntity(coord: GridCoord): void;
   rotateSelectedEntity(clockwise?: boolean): void;
+  validateMap(): readonly ValidationIssue[];
+  clearValidation(): void;
+  routeClick(coord: GridCoord): void;
+  clearRoute(): void;
   setTool(tool: EditorSelection["tool"]): void;
   setStrokeMode(mode: StrokeMode): void;
   setBrushSize(size: BrushSize): void;
@@ -65,12 +82,17 @@ export class EditorController implements IEditorController {
   #navigationVisible = false;
   #selectedPrefabId: string | null = null;
   #entitySelection: EditorEntitySelection | null = null;
+  #validationIssues: readonly ValidationIssue[] = [];
+  #routePreview: EditorRoutePreview | null = null;
   #strokeActive = false;
   readonly #listeners = new Set<EditorListener>();
   readonly #history = new History<MapDocument>(cloneMap);
   readonly #worldPainter = new LogicalWorldPainter();
   readonly #placement: EntityPlacementService;
   readonly #prefabPlacer?: PrefabPlacer;
+  readonly #validator: MapValidator;
+  readonly #navigation: NavigationGridBuilder;
+  readonly #pathfinder = new GridPathfinder();
 
   constructor(
     document: MapDocument,
@@ -79,6 +101,8 @@ export class EditorController implements IEditorController {
   ) {
     this.#document = cloneMap(document);
     this.#placement = new EntityPlacementService(catalog);
+    this.#validator = new MapValidator(catalog);
+    this.#navigation = new NavigationGridBuilder(catalog);
     if (prefabs) this.#prefabPlacer = new PrefabPlacer(catalog);
   }
 
@@ -90,6 +114,8 @@ export class EditorController implements IEditorController {
       navigationVisible: this.#navigationVisible,
       selectedPrefabId: this.#selectedPrefabId,
       entitySelection: this.#entitySelection,
+      validationIssues: this.#validationIssues,
+      routePreview: this.#routePreview,
       canUndo: this.#history.canUndo,
       canRedo: this.#history.canRedo,
     };
@@ -177,7 +203,10 @@ export class EditorController implements IEditorController {
         ? this.#placement.moveProp(this.#document, selected.id, coord, "reject")
         : this.#placement.moveActor(this.#document, selected.id, coord);
 
-    if (changed) this.emit();
+    if (changed) {
+      this.invalidateDiagnostics();
+      this.emit();
+    }
   }
 
   rotateSelectedEntity(clockwise = true): void {
@@ -191,11 +220,66 @@ export class EditorController implements IEditorController {
     const current = facings.indexOf(actor.facing);
     const delta = clockwise ? 1 : -1;
     actor.facing = facings[(current + delta + facings.length) % facings.length] ?? "south";
+    this.invalidateDiagnostics();
+    this.emit();
+  }
+
+  validateMap(): readonly ValidationIssue[] {
+    this.#validationIssues = this.#validator.validate(this.#document);
+    this.emit();
+    return this.#validationIssues;
+  }
+
+  clearValidation(): void {
+    if (this.#validationIssues.length === 0) return;
+    this.#validationIssues = [];
+    this.emit();
+  }
+
+  routeClick(coord: GridCoord): void {
+    const navigation = this.#navigation.build(this.#document);
+    const cell = navigation.at(coord);
+
+    if (!this.#routePreview || this.#routePreview.goal !== null) {
+      this.#routePreview = {
+        start: { ...coord },
+        goal: null,
+        path: cell?.walkable ? [{ ...coord }] : [],
+        found: cell?.walkable ? true : false,
+        cost: cell?.walkable ? 0 : null,
+      };
+      this.emit();
+      return;
+    }
+
+    const start = this.#routePreview.start;
+    const result = this.#pathfinder.findPath(navigation, start, coord);
+    this.#routePreview = {
+      start,
+      goal: { ...coord },
+      path: result.path,
+      found: result.found,
+      cost: result.found ? result.cost : null,
+    };
+    this.emit();
+  }
+
+  clearRoute(): void {
+    if (!this.#routePreview) return;
+    this.#routePreview = null;
     this.emit();
   }
 
   setTool(tool: EditorSelection["tool"]): void {
     if (this.#selectedPrefabId && tool === "erase") return;
+
+    if (tool === "route") {
+      this.#selectedPrefabId = null;
+      this.#entitySelection = null;
+      this.#selection = { ...this.#selection, tool, strokeMode: "brush" };
+      this.emit();
+      return;
+    }
 
     if (tool === "select") {
       this.#selectedPrefabId = null;
@@ -205,6 +289,7 @@ export class EditorController implements IEditorController {
     }
 
     this.#entitySelection = null;
+    this.#routePreview = null;
     this.#selection = { ...this.#selection, tool };
     this.emit();
   }
@@ -254,6 +339,11 @@ export class EditorController implements IEditorController {
   }
 
   applyAt(coord: GridCoord, eraseOverride = false): void {
+    if (this.#selection.tool === "route") {
+      this.routeClick(coord);
+      return;
+    }
+
     if (this.#selection.tool === "select") {
       this.selectEntityAt(coord);
       return;
@@ -266,12 +356,18 @@ export class EditorController implements IEditorController {
       const prefab = this.prefabs.get(this.#selectedPrefabId);
       if (!prefab) return;
       const result = this.#prefabPlacer.place(this.#document, prefab, coord);
-      if (result.placed) this.emit();
+      if (result.placed) {
+        this.invalidateDiagnostics();
+        this.emit();
+      }
       return;
     }
 
     const changed = erase ? this.eraseAt(coord) : this.paintAt(coord);
-    if (changed) this.emit();
+    if (changed) {
+      this.invalidateDiagnostics();
+      this.emit();
+    }
   }
 
   applyLine(from: GridCoord, to: GridCoord, eraseOverride = false): void {
@@ -295,7 +391,10 @@ export class EditorController implements IEditorController {
           });
     }
 
-    if (changed) this.emit();
+    if (changed) {
+      this.invalidateDiagnostics();
+      this.emit();
+    }
   }
 
   applyRect(from: GridCoord, to: GridCoord, eraseOverride = false): void {
@@ -308,7 +407,10 @@ export class EditorController implements IEditorController {
       terrainId: erase ? "grass" : this.#selection.catalogId,
     });
 
-    if (changed) this.emit();
+    if (changed) {
+      this.invalidateDiagnostics();
+      this.emit();
+    }
   }
 
   endStroke(): void {
@@ -320,6 +422,7 @@ export class EditorController implements IEditorController {
     if (!previous) return;
     this.#document = previous;
     this.reconcileEntitySelection();
+    this.invalidateDiagnostics();
     this.emit();
   }
 
@@ -328,6 +431,7 @@ export class EditorController implements IEditorController {
     if (!next) return;
     this.#document = next;
     this.reconcileEntitySelection();
+    this.invalidateDiagnostics();
     this.emit();
   }
 
@@ -337,6 +441,7 @@ export class EditorController implements IEditorController {
     this.#strokeActive = false;
     this.#entitySelection = null;
     this.#selectedPrefabId = null;
+    this.invalidateDiagnostics();
     this.emit();
   }
 
@@ -382,6 +487,11 @@ export class EditorController implements IEditorController {
     }
 
     return this.#placement.erasePropsAt(this.#document, coord);
+  }
+
+  private invalidateDiagnostics(): void {
+    this.#validationIssues = [];
+    this.#routePreview = null;
   }
 
   private reconcileEntitySelection(): void {
