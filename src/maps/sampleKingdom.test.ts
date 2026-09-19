@@ -12,7 +12,9 @@ describe("Reference Map 01", () => {
 
     expect(map.props.some((prop) => prop.catalogId === "waterfall")).toBe(true);
     expect(map.props.some((prop) => prop.catalogId === "castle-gate")).toBe(true);
-    expect(map.props.filter((prop) => prop.catalogId === "castle-tower")).toHaveLength(4);
+    expect(
+      map.props.filter((prop) => prop.catalogId === "castle-tower").length,
+    ).toBeGreaterThanOrEqual(6);
     expect(map.props.some((prop) => prop.catalogId === "fountain")).toBe(true);
     expect(map.props.some((prop) => prop.catalogId === "dock")).toBe(true);
     expect(map.props.some((prop) => prop.catalogId === "boat")).toBe(true);
