@@ -169,7 +169,7 @@ export class PrefabPlacer implements IPrefabPlacer {
       if (!definition || definition.layer !== "prop") return `Unknown prop ${prop.catalogId}.`;
       const footprint = rotatedFootprint(
         definition.footprint,
-        definition.network ? 0 : prop.rotation,
+        definition.rotatable ? prop.rotation : 0,
       );
       if (
         prop.x < 0 ||
