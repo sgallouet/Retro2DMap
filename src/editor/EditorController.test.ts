@@ -179,4 +179,21 @@ describe("EditorController semantic gestures", () => {
     expect(editor.validateMap()).toEqual([]);
   });
 
+  it("rotates a selected prop as one undoable semantic action", () => {
+    const map = createBlankMap(8, 8, "grass");
+    map.props.push({ id: "table", catalogId: "table", x: 2, y: 2 });
+    const editor = new EditorController(map, worldCatalog);
+
+    editor.setTool("select");
+    editor.selectEntityAt({ x: 2, y: 2 });
+    editor.beginStroke();
+    editor.rotateSelectedEntity(true);
+    editor.endStroke();
+
+    expect(editor.state.document.props[0]?.rotation).toBe(90);
+
+    editor.undo();
+    expect(editor.state.document.props[0]?.rotation ?? 0).toBe(0);
+  });
+
 });
