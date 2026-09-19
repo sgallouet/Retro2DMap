@@ -323,6 +323,22 @@ The system should support maps with combinations such as:
 
 Do not optimize the architecture around a visually trivial tile map.
 
+### 9.1 Water visual work is intentionally deferred
+
+For the current reference-map fidelity loop, **do not spend meaningful iteration time on water rendering, river-bank polish, waterfall polish, or water animation**.
+
+Water will use a substantially different approach later. Keep its semantic/topology hooks intact, but prioritize visual fidelity elsewhere:
+
+- castle silhouette and cutaway readability
+- village buildings
+- vegetation
+- roads / ground texture
+- castle rooms and props
+- characters / NPC readability
+- overall color harmony and density
+
+Do not let temporary water art drive architecture or consume polish time.
+
 ---
 
 ## 10. Map format principles
