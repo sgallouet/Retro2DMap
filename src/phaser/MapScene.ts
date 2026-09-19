@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { IWorldCatalog } from "../domain/catalog";
+import type { IPrefabCatalog } from "../domain/prefab";
 import type { IEditorController } from "../editor/EditorController";
 import { TILE_SIZE, type EditorSelection, type GridCoord, type MapDocument } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
@@ -8,12 +9,14 @@ import { WorldRenderer } from "./WorldRenderer";
 export interface MapSceneDependencies {
   editor: IEditorController;
   catalog: IWorldCatalog;
+  prefabs: IPrefabCatalog;
   assets: IAssetProvider;
 }
 
 export class MapScene extends Phaser.Scene {
   readonly #editor: IEditorController;
   readonly #catalog: IWorldCatalog;
+  readonly #prefabs: IPrefabCatalog;
   readonly #assets: IAssetProvider;
 
   #renderer?: WorldRenderer;
@@ -24,6 +27,7 @@ export class MapScene extends Phaser.Scene {
   #spaceDown = false;
   #lastHover: GridCoord | null = null;
   #gestureStart: GridCoord | null = null;
+  #selectedPrefabId: string | null = null;
   #selection: EditorSelection = {
     layer: "terrain",
     catalogId: "grass",
@@ -36,6 +40,7 @@ export class MapScene extends Phaser.Scene {
     super({ key: "MapScene" });
     this.#editor = dependencies.editor;
     this.#catalog = dependencies.catalog;
+    this.#prefabs = dependencies.prefabs;
     this.#assets = dependencies.assets;
   }
 
@@ -50,8 +55,14 @@ export class MapScene extends Phaser.Scene {
 
     this.#unsubscribe = this.#editor.subscribe((state) => {
       this.#selection = state.selection;
+      this.#selectedPrefabId = state.selectedPrefabId;
       this.#renderer?.render(state.document, state.gridVisible, state.navigationVisible);
-      this.#renderer?.setHover(this.#lastHover, state.selection);
+      const prefab = state.selectedPrefabId ? this.#prefabs.get(state.selectedPrefabId) : undefined;
+      this.#renderer?.setHover(
+        this.#lastHover,
+        state.selection,
+        prefab ? { width: prefab.width, height: prefab.height } : undefined,
+      );
       this.updateCameraBounds(state.document);
     });
 
@@ -83,7 +94,9 @@ export class MapScene extends Phaser.Scene {
       this.#eraseOverride = pointer.rightButtonDown();
       this.#editor.beginStroke();
 
-      if (this.#selection.strokeMode === "line") {
+      if (this.#selectedPrefabId) {
+        this.#editor.applyAt(coord, this.#eraseOverride);
+      } else if (this.#selection.strokeMode === "line") {
         this.#gestureStart = coord;
         this.#renderer?.setLinePreview(coord, coord, this.#selection);
       } else if (this.#selection.strokeMode === "rect") {
@@ -107,13 +120,19 @@ export class MapScene extends Phaser.Scene {
       const coord = this.pointerToGrid(pointer);
       if (!this.sameCoord(coord, this.#lastHover)) {
         this.#lastHover = coord;
-        this.#renderer?.setHover(coord, this.#selection);
+        const prefab = this.#selectedPrefabId ? this.#prefabs.get(this.#selectedPrefabId) : undefined;
+        this.#renderer?.setHover(
+          coord,
+          this.#selection,
+          prefab ? { width: prefab.width, height: prefab.height } : undefined,
+        );
       }
 
-      if (this.#painting && this.#selection.strokeMode === "brush") {
+      if (this.#painting && !this.#selectedPrefabId && this.#selection.strokeMode === "brush") {
         this.applyPointer(pointer);
       } else if (
         this.#painting &&
+        !this.#selectedPrefabId &&
         this.#selection.strokeMode === "line" &&
         this.#gestureStart &&
         coord
@@ -121,6 +140,7 @@ export class MapScene extends Phaser.Scene {
         this.#renderer?.setLinePreview(this.#gestureStart, coord, this.#selection);
       } else if (
         this.#painting &&
+        !this.#selectedPrefabId &&
         this.#selection.strokeMode === "rect" &&
         this.#gestureStart &&
         coord
@@ -130,7 +150,7 @@ export class MapScene extends Phaser.Scene {
     });
 
     const finishPointer = (pointer: Phaser.Input.Pointer): void => {
-      if (this.#painting && this.#gestureStart) {
+      if (this.#painting && !this.#selectedPrefabId && this.#gestureStart) {
         const end = this.pointerToGrid(pointer) ?? this.#lastHover ?? this.#gestureStart;
         if (this.#selection.strokeMode === "line") {
           this.#editor.applyLine(this.#gestureStart, end, this.#eraseOverride);
