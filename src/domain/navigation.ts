@@ -64,7 +64,7 @@ export class NavigationGridBuilder {
 
       const footprint = rotatedFootprint(
         definition.footprint,
-        definition.network ? 0 : prop.rotation,
+        definition.rotatable ? prop.rotation : 0,
       );
       this.forEachFootprintCell(document, prop.x, prop.y, footprint, (index) => {
         mutable[index] = {
@@ -85,7 +85,7 @@ export class NavigationGridBuilder {
 
       const footprint = rotatedFootprint(
         definition.footprint,
-        definition.network ? 0 : prop.rotation,
+        definition.rotatable ? prop.rotation : 0,
       );
       this.forEachFootprintCell(document, prop.x, prop.y, footprint, (index) => {
         const current = mutable[index];
