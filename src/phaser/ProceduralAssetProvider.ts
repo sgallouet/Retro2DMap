@@ -522,19 +522,31 @@ export class ProceduralAssetProvider implements IAssetProvider {
         for (let y = 8; y < height; y += 7) rect(ctx, 2, y, width - 4, 6, "#a8aaa5", "#6a6e6b");
         return;
       case "banner":
-        rect(ctx, 13, 2, 22, 31, "#b7202f", "#7a1520");
-        ctx.fillStyle = "#e1b846";
+        rect(ctx, 12, 2, 24, 31, "#8e2633", "#5e1d27");
+        rect(ctx, 15, 5, 18, 24, "#a92e3c");
+        ctx.fillStyle = "#b8923e";
         ctx.beginPath();
-        ctx.moveTo(13, 33);
-        ctx.lineTo(24, 43);
-        ctx.lineTo(35, 33);
+        ctx.moveTo(12, 33);
+        ctx.lineTo(24, 44);
+        ctx.lineTo(36, 33);
+        ctx.closePath();
         ctx.fill();
-        ellipse(ctx, 24, 17, 5, 6, "#e4c14f");
+        line(ctx, [[13, 3], [35, 3]], "#d4ae51", 3);
+
+        // Tiny heraldic beast mark; deliberately abstract at one-tile scale.
+        ellipse(ctx, 24, 15, 5, 5, "#d7b44f");
+        rect(ctx, 22, 18, 5, 8, "#d7b44f");
+        line(ctx, [[22, 20], [17, 24]], "#d7b44f", 2);
+        line(ctx, [[27, 20], [31, 16]], "#d7b44f", 2);
+        line(ctx, [[23, 26], [20, 29]], "#d7b44f", 2);
+        line(ctx, [[26, 26], [29, 29]], "#d7b44f", 2);
         return;
       case "torch":
-        rect(ctx, 22, 16, 4, 25, "#6c4327");
-        ellipse(ctx, 24, 13, 7, 10, "#f4a72d");
-        ellipse(ctx, 24, 12, 3, 6, "#fff0a1");
+        rect(ctx, 21, 18, 6, 22, "#6b4930", "#3d3026");
+        rect(ctx, 17, 18, 14, 5, "#9b7242", "#4d3828");
+        ellipse(ctx, 24, 13, 8, 11, "#d96d24");
+        ellipse(ctx, 24, 11, 5, 8, "#f3a333");
+        ellipse(ctx, 24, 9, 2.5, 5, "#fff0a2");
         return;
       case "fountain":
         this.drawFountain(ctx, width, height);
@@ -796,12 +808,15 @@ export class ProceduralAssetProvider implements IAssetProvider {
   }
 
   private drawSign(ctx: CanvasRenderingContext2D, width: number, height: number, text: string): void {
-    rect(ctx, 20, 22, 6, 24, "#6a4228");
-    rect(ctx, 3, 3, 42, 27, "#8b5a32", "#4b301f");
-    ctx.font = "bold 11px monospace";
+    ellipse(ctx, width / 2 + 2, height - 4, 11, 3, "rgba(49,36,24,.25)");
+    rect(ctx, 21, 20, 6, 27, "#69472f", "#3f2d23");
+    rect(ctx, 2, 3, 44, 27, "#755035", "#3c2a21");
+    rect(ctx, 5, 6, 38, 21, "#8e6340", "#b88953");
+    line(ctx, [[6, 8], [42, 8]], "rgba(235,204,146,.22)", 1);
+    ctx.font = "bold 10px Georgia, serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "#f5e7b3";
+    ctx.fillStyle = "#f1dfb0";
     ctx.fillText(text, 24, 17);
   }
 
