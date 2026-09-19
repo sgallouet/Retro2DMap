@@ -102,4 +102,20 @@ describe("WorldCommandExecutor", () => {
     expect(result.changed).toBe(false);
     expect(map.props.filter((prop) => prop.catalogId === "fence")).toHaveLength(0);
   });
+  it("places oriented props through the semantic command boundary", () => {
+    const map = createBlankMap(8, 8, "grass");
+    const executor = new WorldCommandExecutor(worldCatalog, prefabCatalog);
+
+    const result = executor.execute(map, {
+      type: "place-prop",
+      catalogId: "table",
+      coord: { x: 2, y: 2 },
+      rotation: 90,
+      overlapPolicy: "reject",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(map.props[0]?.rotation).toBe(90);
+  });
+
 });
