@@ -51,7 +51,7 @@ export class EditorShell {
             <button data-action="redo" title="Redo">↷</button>
             <button data-action="grid" title="Toggle grid">Grid</button>
             <button data-action="navigation" title="Toggle walkability overlay">Walk <kbd>N</kbd></button>
-            <button data-action="rotate-entity" title="Rotate selected actor clockwise">Turn ↻</button>
+            <button data-action="rotate-entity" title="Rotate selected actor/prop clockwise">Turn ↻</button>
             <button data-action="validate" title="Validate semantic map structure">Validate</button>
             <span class="toolbar-separator"></span>
             <button data-action="save">Save local</button>
@@ -344,11 +344,12 @@ export class EditorShell {
         </div>
         <dl class="property-grid">
           <dt>Anchor</dt><dd>${prop ? `${prop.x}, ${prop.y}` : "—"}</dd>
+          <dt>Rotation</dt><dd>${prop?.rotation ?? 0}°</dd>
           <dt>Footprint</dt><dd>${footprint ? `${footprint.width}×${footprint.height}` : "—"}</dd>
         </dl>
         <div class="tip-card">
           <strong>Selection</strong>
-          <span>Drag the prop by its grid anchor. Move validation respects the full multi-tile footprint.</span>
+          <span>Drag the prop by its grid anchor. Turn ↻ rotates non-network props; footprint, collision and navigation rotate with it.</span>
         </div>
         ${validationCard}
       `;
@@ -442,7 +443,16 @@ export class EditorShell {
     if (erase) erase.disabled = prefabMode;
     if (select) select.disabled = false;
     if (route) route.disabled = false;
-    if (rotate) rotate.disabled = state.entitySelection?.kind !== "actor";
+
+    let canRotateEntity = state.entitySelection?.kind === "actor";
+    if (state.entitySelection?.kind === "prop") {
+      const prop = state.document.props.find(
+        (candidate) => candidate.id === state.entitySelection?.id,
+      );
+      const definition = prop ? this.catalog.get(prop.catalogId) : undefined;
+      canRotateEntity = definition?.layer === "prop" && !definition.network;
+    }
+    if (rotate) rotate.disabled = !canRotateEntity;
 
     const selected = this.catalog.get(state.selection.catalogId);
     const supportsLine =
