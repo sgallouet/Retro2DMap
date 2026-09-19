@@ -93,7 +93,7 @@ export class WorldRenderer implements IWorldRenderer {
       if (!definition || definition.layer !== "prop") return;
       const propDefinition = definition as PropDefinition;
       const network = this.#propTopology.resolve(document, prop, propDefinition);
-      const rotation = propDefinition.network ? 0 : (prop.rotation ?? 0);
+      const rotation = propDefinition.rotatable ? (prop.rotation ?? 0) : 0;
       const footprint = rotatedFootprint(propDefinition.footprint, rotation);
       const texture = this.assets.textureRef(
         definition,
@@ -347,7 +347,7 @@ export class WorldRenderer implements IWorldRenderer {
       y = prop.y;
       const footprint = rotatedFootprint(
         definition.footprint,
-        definition.network ? 0 : prop.rotation,
+        definition.rotatable ? prop.rotation : 0,
       );
       width = footprint.width;
       height = footprint.height;
