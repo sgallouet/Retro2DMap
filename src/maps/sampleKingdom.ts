@@ -279,8 +279,8 @@ export function createSampleKingdom(): MapDocument {
   rect(21, 12, 14, 6, "cobble");
 
   // Symmetric garden beds are a major readability cue in the reference.
-  rect(20, 13, 5, 5, "grass");
-  rect(31, 13, 5, 5, "grass");
+  rect(20, 13, 5, 4, "grass");
+  rect(31, 13, 5, 4, "grass");
   rect(25, 12, 6, 6, "cobble");
 
   // Outer wall. Towers sit *outside* the perimeter so footprints do not overlap.
@@ -394,8 +394,8 @@ export function createSampleKingdom(): MapDocument {
   actor("guard", 34, 9, "west");
 
   // Courtyard: larger garden beds with trees/statues like the target.
-  networkRect("garden-border", 20, 13, 24, 17);
-  networkRect("garden-border", 31, 13, 35, 17);
+  networkRect("garden-border", 20, 13, 24, 16);
+  networkRect("garden-border", 31, 13, 35, 16);
 
   prop("fountain", 27, 14);
 
@@ -403,7 +403,7 @@ export function createSampleKingdom(): MapDocument {
   prop("tree-pine", 21, 14);
   prop("statue", 23, 15);
   prop("flowers", 22, 14);
-  prop("flowers", 22, 16);
+  prop("flowers", 22, 15);
   prop("flowers", 23, 14);
 
   // Right garden interior.
@@ -411,7 +411,7 @@ export function createSampleKingdom(): MapDocument {
   prop("statue", 32, 15);
   prop("flowers", 32, 14);
   prop("flowers", 33, 14);
-  prop("flowers", 33, 16);
+  prop("flowers", 33, 15);
 
   // Gate, moat bridge and main stone road continuing toward the bottom edge.
   prop("castle-gate", 26, 17);
