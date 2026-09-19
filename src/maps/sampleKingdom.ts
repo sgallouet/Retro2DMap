@@ -278,6 +278,8 @@ export function createSampleKingdom(): MapDocument {
   prop("torch", 30, 3);
   prop("torch", 24, 9);
   prop("torch", 29, 9);
+  prop("candelabra", 26, 6);
+  prop("candelabra", 29, 6);
 
   actor("king", 27, 4);
   actor("guard", 25, 4);
@@ -290,15 +292,19 @@ export function createSampleKingdom(): MapDocument {
   prop("bookshelf", 17, 2);
   prop("bookshelf", 20, 2);
   prop("table", 18, 4);
+  prop("potted-flowers", 17, 5);
   actor("scholar", 21, 5, "west");
 
   // Bedroom.
   prop("bed-red", 18, 8);
   prop("bed-blue", 20, 8);
+  prop("potted-flowers", 22, 8);
   prop("barrels", 22, 9);
 
   // Dining room.
+  prop("painting", 33, 2);
   prop("table", 33, 4);
+  prop("candelabra", 34, 5);
   prop("torch", 32, 2);
   prop("torch", 36, 2);
   actor("villager-f", 35, 3, "south");
