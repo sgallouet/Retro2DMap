@@ -254,8 +254,11 @@ Core editor capabilities:
 - paint
 - erase
 - multi-tile brushes
+- semantic straight-line painting for terrain and connected networks
+- filled rectangle terrain painting
 - grid visualization
-- footprint preview
+- footprint / gesture preview
+- derived walkability debug overlay
 - zoom
 - pan
 - undo / redo
@@ -269,8 +272,8 @@ Future editor direction:
 - connected-network drawing
 - prefab placement
 - room tools
-- collision/pathfinding preview
-- topology/debug overlay
+- route/pathfinding preview
+- richer topology/debug overlay
 - validation warnings
 - procedural generation tools
 
