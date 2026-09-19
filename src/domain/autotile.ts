@@ -33,6 +33,13 @@ export interface TerrainRenderContext {
   /** Fast four-direction subset used for edges and corridor-like topology. */
   cardinalMask: CardinalMask;
   /**
+   * Cardinal sides where this terrain is exposed to a different terrain.
+   * Uses the same N/E/S/W bits as cardinalMask. This is the direct tile-art
+   * mapping contract: 0 = interior, NORTH = north edge, NORTH|WEST = NW outer
+   * corner, etc.
+   */
+  openMask: CardinalMask;
+  /**
    * Diagonal bits representing concave/inner corners:
    * both adjacent cardinal neighbours connect, but the diagonal does not.
    */
@@ -201,6 +208,7 @@ export class TerrainTopologyResolver implements ITerrainTopologyResolver {
     return {
       neighborMask,
       cardinalMask: cardinalMaskOf(neighborMask),
+      openMask: ALL_CARDINAL ^ cardinalMaskOf(neighborMask),
       innerCornerMask: innerCornerMaskOf(neighborMask),
       topologyKey: terrainTopologyKey(neighborMask),
       variation: hash(`${terrain.id}:${coord.x}:${coord.y}`) % 4,
