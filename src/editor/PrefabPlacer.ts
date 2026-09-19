@@ -73,7 +73,15 @@ export class PrefabPlacer implements IPrefabPlacer {
         overlapPolicy: prefab.overlapPolicy,
       });
 
-      if (!placed && !this.samePropExists(candidate, stamp.catalogId, coord)) {
+      if (
+        !placed &&
+        !this.samePropExists(
+          candidate,
+          stamp.catalogId,
+          coord,
+          stamp.rotation,
+        )
+      ) {
         return {
           placed: false,
           reason: `Could not place prop ${stamp.catalogId} at ${coord.x},${coord.y}.`,
@@ -210,9 +218,18 @@ export class PrefabPlacer implements IPrefabPlacer {
     return undefined;
   }
 
-  private samePropExists(document: MapDocument, catalogId: string, coord: GridCoord): boolean {
+  private samePropExists(
+    document: MapDocument,
+    catalogId: string,
+    coord: GridCoord,
+    rotation?: 0 | 90 | 180 | 270,
+  ): boolean {
     return document.props.some(
-      (prop) => prop.catalogId === catalogId && prop.x === coord.x && prop.y === coord.y,
+      (prop) =>
+        prop.catalogId === catalogId &&
+        prop.x === coord.x &&
+        prop.y === coord.y &&
+        (rotation === undefined || (prop.rotation ?? 0) === rotation),
     );
   }
 
