@@ -424,6 +424,12 @@ export class ProceduralAssetProvider implements IAssetProvider {
       case "boat":
         this.drawBoat(ctx, width, height);
         return;
+      case "dock":
+        this.drawDock(ctx, width, height);
+        return;
+      case "waterfall":
+        this.drawWaterfall(ctx, width, height);
+        return;
       case "castle-wall":
         this.drawWallNetwork(ctx, width, height, networkMask);
         return;
@@ -459,6 +465,9 @@ export class ProceduralAssetProvider implements IAssetProvider {
         ellipse(ctx, 24, 23, 12, 14, "#a9afac", "#676d6a");
         ellipse(ctx, 20, 20, 3, 3, "#5d6360");
         ellipse(ctx, 29, 20, 3, 3, "#5d6360");
+        return;
+      case "pillar":
+        this.drawPillar(ctx, width, height);
         return;
       case "bookshelf":
         this.drawBookshelf(ctx, width, height);
@@ -615,6 +624,52 @@ export class ProceduralAssetProvider implements IAssetProvider {
     ctx.lineWidth = 3;
     ctx.stroke();
     line(ctx, [[width / 2, 4], [width / 2, height - 8]], "#d3a064", 3);
+  }
+
+  private drawDock(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+    rect(ctx, 4, 4, width - 8, height - 8, "#8d5d35", "#543722");
+    for (let y = 8; y < height - 6; y += 12) {
+      line(ctx, [[6, y], [width - 6, y]], "#c1884f", 2);
+      line(ctx, [[6, y + 5], [width - 6, y + 5]], "#5d3d27", 1);
+    }
+    for (let x = 9; x < width - 4; x += 22) {
+      rect(ctx, x, 0, 5, height, "#6a452b", "#422c1e");
+    }
+  }
+
+  private drawWaterfall(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+  ): void {
+    rect(ctx, 4, 0, width - 8, height, "#2b91d3", "#0a568d");
+    for (let x = 9; x < width - 8; x += 13) {
+      line(ctx, [[x, 2], [x - 3, height - 7]], "rgba(196,238,255,.72)", 3);
+    }
+    for (let y = 16; y < height - 8; y += 22) {
+      line(
+        ctx,
+        [[6, y], [width * 0.28, y - 5], [width * 0.52, y + 2], [width - 6, y - 4]],
+        "#e9fbff",
+        3,
+      );
+    }
+    ellipse(ctx, width / 2, height - 9, width * 0.43, 8, "rgba(220,250,255,.9)");
+    ellipse(ctx, width / 2, height - 5, width * 0.34, 5, "rgba(120,220,255,.72)");
+  }
+
+  private drawPillar(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+  ): void {
+    ellipse(ctx, width / 2, height - 7, 18, 7, "rgba(38,43,43,.28)");
+    rect(ctx, 13, 14, width - 26, height - 26, "#a4aaa8", "#5b6261");
+    rect(ctx, 8, 8, width - 16, 13, "#c2c6c2", "#646b69");
+    rect(ctx, 8, height - 22, width - 16, 13, "#8b9290", "#565d5c");
+    for (let y = 28; y < height - 26; y += 14) {
+      line(ctx, [[17, y], [width - 17, y]], "rgba(255,255,255,.22)", 2);
+    }
   }
 
   private drawFenceNetwork(
