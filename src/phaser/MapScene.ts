@@ -23,7 +23,7 @@ export class MapScene extends Phaser.Scene {
   #panning = false;
   #spaceDown = false;
   #lastHover: GridCoord | null = null;
-  #selection: EditorSelection = { layer: "terrain", catalogId: "grass", tool: "paint" };
+  #selection: EditorSelection = { layer: "terrain", catalogId: "grass", tool: "paint", brushSize: 1 };
 
   constructor(dependencies: MapSceneDependencies) {
     super({ key: "MapScene" });
