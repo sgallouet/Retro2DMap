@@ -59,7 +59,9 @@ describe("EditorController semantic gestures", () => {
 
     editor.undo();
     expect(editor.state.document.props).toHaveLength(0);
-  });  it("places and undoes a prefab as one semantic editor action", () => {
+  });
+
+  it("places and undoes a prefab as one semantic editor action", () => {
     const editor = new EditorController(
       createBlankMap(20, 20, "grass"),
       worldCatalog,
