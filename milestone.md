@@ -6,10 +6,11 @@
 
 - ✅ Semantic grid + multi-tile props + smart terrain/network topology.
 - ✅ Prefabs, selection/move/rotation, routing, validation, command/generator API.
-- ✅ **Reference Map 01 first structural pass:** village, waterfall/river, bridge, farms, cutaway castle, throne hall, rooms, courtyard, moat, gate, dock/boat.
-- ✅ Map is semantic-validation clean; CI typecheck/test/build passes.
-- 🚧 **Now:** improve castle cutaway, houses, vegetation, ground, interiors and characters against the screenshot.
-- 🧊 **Water visuals frozen for now:** preserve semantics only; a different water approach comes later.
-- ⏭ Then: authored sprite/atlas replacement where procedural art hits its ceiling → room/marquee tools only where they help fidelity.
+- ✅ Reference Map 01 structural pass is built and validation-clean.
+- ✅ Non-water visual pass: castle walls/towers/gate, houses, trees, ground, floors, interiors, crops/fences, heraldry/signs, directional actors.
+- ✅ Courtyard now uses bordered garden beds; castle front has dedicated gate towers/stairs.
+- 🧊 **Water visuals frozen for now:** keep structure/semantics only; a different water approach comes later.
+- 🚧 **Now:** side-by-side fidelity tuning of castle/village proportions and density; replace the weakest procedural art where needed.
+- ⏭ Then: authored sprite/atlas rollout → room/marquee tools only where they help the target.
 
 **Rule:** stop adding architecture unless it directly improves the reference-map result.
