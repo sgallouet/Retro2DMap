@@ -1,5 +1,5 @@
 import type { CatalogEntry, IWorldCatalog } from "../domain/catalog";
-import { validateMapDocument, type LayerKind, type MapDocument } from "../domain/map";
+import { validateMapDocument, type BrushSize, type LayerKind, type MapDocument } from "../domain/map";
 import type { IEditorController } from "../editor/EditorController";
 import type { IMapStore } from "../storage/LocalStorageMapStore";
 
@@ -29,6 +29,11 @@ export class EditorShell {
           <div class="topbar-actions">
             <button data-action="paint" class="tool-button">Paint <kbd>P</kbd></button>
             <button data-action="erase" class="tool-button">Erase <kbd>E</kbd></button>
+            <span class="toolbar-separator"></span>
+            <span class="brush-label">Brush</span>
+            <button data-brush-size="1" title="1×1 terrain brush">1</button>
+            <button data-brush-size="3" title="3×3 terrain brush">3</button>
+            <button data-brush-size="5" title="5×5 terrain brush">5</button>
             <span class="toolbar-separator"></span>
             <button data-action="undo" title="Undo">↶</button>
             <button data-action="redo" title="Redo">↷</button>
@@ -198,6 +203,7 @@ export class EditorShell {
       </div>
       <dl class="property-grid">
         <dt>Tool</dt><dd>${state.selection.tool}</dd>
+        <dt>Brush</dt><dd>${state.selection.layer === "terrain" ? `${state.selection.brushSize}×${state.selection.brushSize}` : "n/a"}</dd>
         <dt>Category</dt><dd>${entry?.category ?? "—"}</dd>
         ${details}
       </dl>
@@ -222,6 +228,11 @@ export class EditorShell {
     this.setPressed("erase", state.selection.tool === "erase");
     this.setPressed("grid", state.gridVisible);
 
+    this.root.querySelectorAll<HTMLButtonElement>("[data-brush-size]").forEach((button) => {
+      button.classList.toggle("active", Number(button.dataset.brushSize) === state.selection.brushSize);
+      button.disabled = state.selection.layer !== "terrain";
+    });
+
     const undo = this.root.querySelector<HTMLButtonElement>('[data-action="undo"]');
     const redo = this.root.querySelector<HTMLButtonElement>('[data-action="redo"]');
     if (undo) undo.disabled = !state.canUndo;
@@ -235,6 +246,12 @@ export class EditorShell {
   private bindActions(): void {
     this.root.querySelector('[data-action="paint"]')?.addEventListener("click", () => this.editor.setTool("paint"));
     this.root.querySelector('[data-action="erase"]')?.addEventListener("click", () => this.editor.setTool("erase"));
+    this.root.querySelectorAll<HTMLButtonElement>("[data-brush-size]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const size = Number(button.dataset.brushSize) as BrushSize;
+        if (size === 1 || size === 3 || size === 5) this.editor.setBrushSize(size);
+      });
+    });
     this.root.querySelector('[data-action="undo"]')?.addEventListener("click", () => this.editor.undo());
     this.root.querySelector('[data-action="redo"]')?.addEventListener("click", () => this.editor.redo());
     this.root.querySelector('[data-action="grid"]')?.addEventListener("click", () => {
@@ -285,6 +302,9 @@ export class EditorShell {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
       if (event.key.toLowerCase() === "p") this.editor.setTool("paint");
       if (event.key.toLowerCase() === "e") this.editor.setTool("erase");
+      if (event.key === "1") this.editor.setBrushSize(1);
+      if (event.key === "3") this.editor.setBrushSize(3);
+      if (event.key === "5") this.editor.setBrushSize(5);
     });
   }
 
