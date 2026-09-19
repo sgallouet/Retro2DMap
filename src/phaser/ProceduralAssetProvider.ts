@@ -284,16 +284,25 @@ export class ProceduralAssetProvider implements IAssetProvider {
     width: number,
     height: number,
     entry: TerrainDefinition,
-    neighborMask: number,
+    cardinalMask: number,
+    innerCornerMask: number,
   ): void {
     if (entry.edgeStyle === "none") return;
 
-    const missingNorth = (neighborMask & NORTH) === 0;
-    const missingEast = (neighborMask & EAST) === 0;
-    const missingSouth = (neighborMask & SOUTH) === 0;
-    const missingWest = (neighborMask & WEST) === 0;
+    const missingNorth = (cardinalMask & NORTH) === 0;
+    const missingEast = (cardinalMask & EAST) === 0;
+    const missingSouth = (cardinalMask & SOUTH) === 0;
+    const missingWest = (cardinalMask & WEST) === 0;
 
-    if (!missingNorth && !missingEast && !missingSouth && !missingWest) return;
+    if (
+      !missingNorth &&
+      !missingEast &&
+      !missingSouth &&
+      !missingWest &&
+      innerCornerMask === 0
+    ) {
+      return;
+    }
 
     const thickness = entry.edgeStyle === "shore" ? 6 : entry.edgeStyle === "hard" ? 3 : 4;
     const edgeColor =
@@ -326,14 +335,32 @@ export class ProceduralAssetProvider implements IAssetProvider {
       rect(ctx, thickness, 0, 1, height, highlight);
     }
 
-    // A tiny corner cap prevents diagonal pinholes without forcing a giant
-    // Wang-tile atlas. A future sprite provider can use the same neighbor mask
-    // to pick authored inner/outer corner frames.
+    // Convex outer corners are determined by missing cardinal neighbours.
     if (missingNorth && missingWest) rect(ctx, 0, 0, thickness + 1, thickness + 1, edgeColor);
     if (missingNorth && missingEast) rect(ctx, width - thickness - 1, 0, thickness + 1, thickness + 1, edgeColor);
     if (missingSouth && missingWest) rect(ctx, 0, height - thickness - 1, thickness + 1, thickness + 1, edgeColor);
     if (missingSouth && missingEast) {
       rect(ctx, width - thickness - 1, height - thickness - 1, thickness + 1, thickness + 1, edgeColor);
+    }
+
+    // Concave inner corners require diagonal knowledge. These tiny cut-ins are
+    // deliberately derived here rather than encoded in map data.
+    const innerSize = thickness + 3;
+    if ((innerCornerMask & NORTH_EAST) !== 0) {
+      rect(ctx, width - innerSize, 0, innerSize, innerSize, edgeColor);
+      rect(ctx, width - innerSize - 1, innerSize, innerSize + 1, 1, highlight);
+    }
+    if ((innerCornerMask & SOUTH_EAST) !== 0) {
+      rect(ctx, width - innerSize, height - innerSize, innerSize, innerSize, edgeColor);
+      rect(ctx, width - innerSize - 1, height - innerSize - 1, innerSize + 1, 1, highlight);
+    }
+    if ((innerCornerMask & SOUTH_WEST) !== 0) {
+      rect(ctx, 0, height - innerSize, innerSize, innerSize, edgeColor);
+      rect(ctx, 0, height - innerSize - 1, innerSize + 1, 1, highlight);
+    }
+    if ((innerCornerMask & NORTH_WEST) !== 0) {
+      rect(ctx, 0, 0, innerSize, innerSize, edgeColor);
+      rect(ctx, 0, innerSize, innerSize + 1, 1, highlight);
     }
   }
 
@@ -359,20 +386,13 @@ export class ProceduralAssetProvider implements IAssetProvider {
         ellipse(ctx, width / 2 - 4, height * 0.58, 8, 5, "#aab0a4");
         return;
       case "cliff":
-        rect(ctx, 0, 3, width, height - 3, "#8b6644");
-        for (let x = 0; x < width; x += 12) {
-          line(ctx, [[x, 7], [x + 5, 19], [x + 2, height]], "#5f4837", 2);
-        }
-        rect(ctx, 0, 0, width, 9, "#68b653");
+        this.drawCliffNetwork(ctx, width, height, networkMask);
         return;
       case "fence":
-        rect(ctx, 4, 19, width - 8, 7, "#70452a", "#4d321f");
-        rect(ctx, 8, 9, 6, 27, "#98613a", "#4d321f");
-        rect(ctx, width - 14, 9, 6, 27, "#98613a", "#4d321f");
+        this.drawFenceNetwork(ctx, width, height, networkMask);
         return;
       case "bridge":
-        rect(ctx, 0, 7, width, height - 14, "#9a6338", "#5b3b28");
-        for (let x = 4; x < width; x += 8) line(ctx, [[x, 8], [x, height - 8]], "#5b3b28", 1);
+        this.drawBridgeNetwork(ctx, width, height, networkMask);
         return;
       case "house-blue":
       case "house-red":
@@ -401,7 +421,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
         this.drawBoat(ctx, width, height);
         return;
       case "castle-wall":
-        this.drawWall(ctx, width, height);
+        this.drawWallNetwork(ctx, width, height, networkMask);
         return;
       case "castle-tower":
         this.drawTower(ctx, width, height);
@@ -591,6 +611,129 @@ export class ProceduralAssetProvider implements IAssetProvider {
     ctx.lineWidth = 3;
     ctx.stroke();
     line(ctx, [[width / 2, 4], [width / 2, height - 8]], "#d3a064", 3);
+  }
+
+  private drawFenceNetwork(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    mask: number,
+  ): void {
+    const cx = width / 2;
+    const cy = height / 2;
+    const rail = "#7b4b2b";
+    const railDark = "#4e321f";
+    const post = "#9b6238";
+
+    const effectiveMask = mask === 0 ? EAST | WEST : mask;
+
+    if ((effectiveMask & NORTH) !== 0) rect(ctx, cx - 3, 0, 6, cy, rail, railDark);
+    if ((effectiveMask & SOUTH) !== 0) rect(ctx, cx - 3, cy, 6, height - cy, rail, railDark);
+    if ((effectiveMask & WEST) !== 0) rect(ctx, 0, cy - 3, cx, 6, rail, railDark);
+    if ((effectiveMask & EAST) !== 0) rect(ctx, cx, cy - 3, width - cx, 6, rail, railDark);
+
+    rect(ctx, cx - 5, cy - 7, 10, 14, post, railDark);
+    rect(ctx, cx - 3, cy - 10, 6, 5, "#b67b48", railDark);
+  }
+
+  private drawBridgeNetwork(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    mask: number,
+  ): void {
+    const cx = width / 2;
+    const cy = height / 2;
+    const wood = "#9a6338";
+    const dark = "#5b3b28";
+    const light = "#c18a52";
+    const effectiveMask = mask === 0 ? EAST | WEST : mask;
+    const halfDeck = 13;
+
+    if ((effectiveMask & NORTH) !== 0) rect(ctx, cx - halfDeck, 0, halfDeck * 2, cy + halfDeck, wood, dark);
+    if ((effectiveMask & SOUTH) !== 0) rect(ctx, cx - halfDeck, cy - halfDeck, halfDeck * 2, height - cy + halfDeck, wood, dark);
+    if ((effectiveMask & WEST) !== 0) rect(ctx, 0, cy - halfDeck, cx + halfDeck, halfDeck * 2, wood, dark);
+    if ((effectiveMask & EAST) !== 0) rect(ctx, cx - halfDeck, cy - halfDeck, width - cx + halfDeck, halfDeck * 2, wood, dark);
+
+    rect(ctx, cx - halfDeck, cy - halfDeck, halfDeck * 2, halfDeck * 2, wood, dark);
+
+    if ((effectiveMask & (EAST | WEST)) !== 0) {
+      for (let x = 3; x < width; x += 8) {
+        line(ctx, [[x, cy - halfDeck + 2], [x, cy + halfDeck - 2]], dark, 1);
+      }
+      line(ctx, [[0, cy - halfDeck + 4], [width, cy - halfDeck + 4]], light, 2);
+    }
+    if ((effectiveMask & (NORTH | SOUTH)) !== 0) {
+      for (let y = 3; y < height; y += 8) {
+        line(ctx, [[cx - halfDeck + 2, y], [cx + halfDeck - 2, y]], dark, 1);
+      }
+      line(ctx, [[cx - halfDeck + 4, 0], [cx - halfDeck + 4, height]], light, 2);
+    }
+  }
+
+  private drawCliffNetwork(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    mask: number,
+  ): void {
+    const cx = width / 2;
+    const cy = height / 2;
+    const rock = "#8b6644";
+    const dark = "#5f4837";
+    const grass = "#68b653";
+    const effectiveMask = mask === 0 ? EAST | WEST : mask;
+    const half = 12;
+
+    if ((effectiveMask & NORTH) !== 0) rect(ctx, cx - half, 0, half * 2, cy + half, rock, dark);
+    if ((effectiveMask & SOUTH) !== 0) rect(ctx, cx - half, cy - half, half * 2, height - cy + half, rock, dark);
+    if ((effectiveMask & WEST) !== 0) rect(ctx, 0, cy - half, cx + half, half * 2, rock, dark);
+    if ((effectiveMask & EAST) !== 0) rect(ctx, cx - half, cy - half, width - cx + half, half * 2, rock, dark);
+    rect(ctx, cx - half, cy - half, half * 2, half * 2, rock, dark);
+
+    // Green lip and rock striations keep the generated placeholder readable.
+    if ((effectiveMask & (EAST | WEST)) !== 0) {
+      rect(ctx, 0, cy - half, width, 5, grass);
+      for (let x = 4; x < width; x += 12) {
+        line(ctx, [[x, cy - 5], [x + 4, cy + half - 2]], dark, 2);
+      }
+    }
+    if ((effectiveMask & (NORTH | SOUTH)) !== 0) {
+      rect(ctx, cx - half, 0, 5, height, grass);
+      for (let y = 4; y < height; y += 12) {
+        line(ctx, [[cx - 5, y], [cx + half - 2, y + 4]], dark, 2);
+      }
+    }
+  }
+
+  private drawWallNetwork(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    mask: number,
+  ): void {
+    const cx = width / 2;
+    const cy = height / 2;
+    const stone = "#979d9c";
+    const stoneLight = "#b4b9b6";
+    const mortar = "#555e60";
+    const effectiveMask = mask === 0 ? EAST | WEST : mask;
+    const half = 15;
+
+    if ((effectiveMask & NORTH) !== 0) rect(ctx, cx - half, 0, half * 2, cy + half, stone, mortar);
+    if ((effectiveMask & SOUTH) !== 0) rect(ctx, cx - half, cy - half, half * 2, height - cy + half, stone, mortar);
+    if ((effectiveMask & WEST) !== 0) rect(ctx, 0, cy - half, cx + half, half * 2, stone, mortar);
+    if ((effectiveMask & EAST) !== 0) rect(ctx, cx - half, cy - half, width - cx + half, half * 2, stone, mortar);
+    rect(ctx, cx - half, cy - half, half * 2, half * 2, stone, mortar);
+
+    // Small masonry highlights make topology visible without baking sprite IDs.
+    for (let y = 6; y < height; y += 12) {
+      for (let x = (Math.floor(y / 12) % 2) * 8; x < width; x += 16) {
+        if (ctx.getImageData(Math.min(x + 2, width - 1), Math.min(y + 2, height - 1), 1, 1).data[3] > 0) {
+          rect(ctx, x, y, 10, 5, stoneLight, mortar);
+        }
+      }
+    }
   }
 
   private drawWall(ctx: CanvasRenderingContext2D, width: number, height: number): void {
