@@ -85,11 +85,19 @@ export class WorldCommandExecutor implements IWorldCommandExecutor {
         const changed = this.#placement.placeProp(document, {
           catalogId: command.catalogId,
           coord: command.coord,
+          ...(command.rotation === undefined ? {} : { rotation: command.rotation }),
           overlapPolicy: command.overlapPolicy ?? "reject",
         });
 
         if (changed) return { ok: true, changed: true };
-        if (this.samePropExists(document, command.catalogId, command.coord)) {
+        if (
+          this.samePropExists(
+            document,
+            command.catalogId,
+            command.coord,
+            command.rotation,
+          )
+        ) {
           return { ok: true, changed: false };
         }
         return this.failure(`Could not place prop '${command.catalogId}'.`);
@@ -202,12 +210,14 @@ export class WorldCommandExecutor implements IWorldCommandExecutor {
     document: MapDocument,
     catalogId: string,
     coord: GridCoord,
+    rotation?: 0 | 90 | 180 | 270,
   ): boolean {
     return document.props.some(
       (prop) =>
         prop.catalogId === catalogId &&
         prop.x === coord.x &&
-        prop.y === coord.y,
+        prop.y === coord.y &&
+        (rotation === undefined || (prop.rotation ?? 0) === rotation),
     );
   }
 
