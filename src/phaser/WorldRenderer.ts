@@ -3,6 +3,7 @@ import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
 import { PropTopologyResolver, TerrainTopologyResolver } from "../domain/autotile";
 import { rasterizeGridLine } from "../domain/grid";
 import { NavigationGridBuilder } from "../domain/navigation";
+import type { ValidationIssue } from "../domain/validation";
 import type { EditorEntitySelection, EditorSelection, GridCoord, MapDocument } from "../domain/map";
 import { TILE_SIZE } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
@@ -13,6 +14,8 @@ export interface IWorldRenderer {
     gridVisible: boolean,
     navigationVisible: boolean,
     entitySelection: EditorEntitySelection | null,
+    validationIssues: readonly ValidationIssue[],
+    routePath: readonly GridCoord[],
   ): void;
   setHover(
     coord: GridCoord | null,
@@ -28,6 +31,8 @@ export interface IWorldRenderer {
 export class WorldRenderer implements IWorldRenderer {
   readonly #worldObjects: Phaser.GameObjects.GameObject[] = [];
   readonly #navigationOverlay: Phaser.GameObjects.Graphics;
+  readonly #validationOverlay: Phaser.GameObjects.Graphics;
+  readonly #routeOverlay: Phaser.GameObjects.Graphics;
   readonly #entitySelectionOverlay: Phaser.GameObjects.Graphics;
   readonly #grid: Phaser.GameObjects.Graphics;
   readonly #linePreview: Phaser.GameObjects.Graphics;
@@ -43,6 +48,8 @@ export class WorldRenderer implements IWorldRenderer {
     private readonly assets: IAssetProvider,
   ) {
     this.#navigationOverlay = scene.add.graphics().setDepth(99_900);
+    this.#validationOverlay = scene.add.graphics().setDepth(99_930);
+    this.#routeOverlay = scene.add.graphics().setDepth(99_940);
     this.#entitySelectionOverlay = scene.add.graphics().setDepth(99_950);
     this.#grid = scene.add.graphics().setDepth(100_000);
     this.#linePreview = scene.add.graphics().setDepth(100_050);
@@ -57,6 +64,8 @@ export class WorldRenderer implements IWorldRenderer {
     gridVisible: boolean,
     navigationVisible: boolean,
     entitySelection: EditorEntitySelection | null,
+    validationIssues: readonly ValidationIssue[],
+    routePath: readonly GridCoord[],
   ): void {
     this.#lastDocument = document;
     this.#worldObjects.splice(0).forEach((object) => object.destroy());
@@ -113,6 +122,8 @@ export class WorldRenderer implements IWorldRenderer {
     });
 
     this.drawNavigation(document, navigationVisible);
+    this.drawValidation(validationIssues);
+    this.drawRoute(routePath);
     this.drawEntitySelection(document, entitySelection);
     this.drawGrid(document, gridVisible);
   }
@@ -238,10 +249,66 @@ export class WorldRenderer implements IWorldRenderer {
   destroy(): void {
     this.#worldObjects.splice(0).forEach((object) => object.destroy());
     this.#navigationOverlay.destroy();
+    this.#validationOverlay.destroy();
+    this.#routeOverlay.destroy();
     this.#entitySelectionOverlay.destroy();
     this.#grid.destroy();
     this.#linePreview.destroy();
     this.#hover.destroy();
+  }
+
+  private drawValidation(issues: readonly ValidationIssue[]): void {
+    this.#validationOverlay.clear();
+    if (issues.length === 0) return;
+
+    for (const issue of issues) {
+      if (!issue.coord) continue;
+      const color = issue.severity === "error" ? 0xe45c5c : 0xe2b74e;
+      const inset = issue.severity === "error" ? 5 : 9;
+
+      this.#validationOverlay.fillStyle(color, 0.22);
+      this.#validationOverlay.lineStyle(2, color, 0.9);
+      this.#validationOverlay.fillRect(
+        issue.coord.x * TILE_SIZE + inset,
+        issue.coord.y * TILE_SIZE + inset,
+        TILE_SIZE - inset * 2,
+        TILE_SIZE - inset * 2,
+      );
+      this.#validationOverlay.strokeRect(
+        issue.coord.x * TILE_SIZE + inset,
+        issue.coord.y * TILE_SIZE + inset,
+        TILE_SIZE - inset * 2,
+        TILE_SIZE - inset * 2,
+      );
+    }
+  }
+
+  private drawRoute(path: readonly GridCoord[]): void {
+    this.#routeOverlay.clear();
+    if (path.length === 0) return;
+
+    this.#routeOverlay.lineStyle(5, 0x62d0de, 0.9);
+    for (let i = 0; i < path.length - 1; i += 1) {
+      const from = path[i];
+      const to = path[i + 1];
+      if (!from || !to) continue;
+      this.#routeOverlay.lineBetween(
+        from.x * TILE_SIZE + TILE_SIZE / 2,
+        from.y * TILE_SIZE + TILE_SIZE / 2,
+        to.x * TILE_SIZE + TILE_SIZE / 2,
+        to.y * TILE_SIZE + TILE_SIZE / 2,
+      );
+    }
+
+    path.forEach((coord, index) => {
+      const radius = index === 0 || index === path.length - 1 ? 7 : 4;
+      this.#routeOverlay.fillStyle(0xb8f2f6, 0.95);
+      this.#routeOverlay.fillCircle(
+        coord.x * TILE_SIZE + TILE_SIZE / 2,
+        coord.y * TILE_SIZE + TILE_SIZE / 2,
+        radius,
+      );
+    });
   }
 
   private drawEntitySelection(
