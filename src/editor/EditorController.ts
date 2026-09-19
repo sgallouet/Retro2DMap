@@ -149,6 +149,7 @@ export class EditorController implements IEditorController {
     };
     this.#selectedPrefabId = null;
     this.#entitySelection = null;
+    this.#routePreview = null;
     this.emit();
   }
 
@@ -159,6 +160,7 @@ export class EditorController implements IEditorController {
 
     this.#selectedPrefabId = prefabId;
     this.#entitySelection = null;
+    this.#routePreview = null;
     if (prefabId !== null) {
       this.#selection = {
         ...this.#selection,
@@ -177,6 +179,7 @@ export class EditorController implements IEditorController {
     if (actor) {
       this.#entitySelection = { kind: "actor", id: actor.id };
       this.#selectedPrefabId = null;
+      this.#routePreview = null;
       this.#selection = { ...this.#selection, tool: "select", strokeMode: "brush" };
       this.emit();
       return;
@@ -188,6 +191,7 @@ export class EditorController implements IEditorController {
 
     this.#entitySelection = prop ? { kind: "prop", id: prop.id } : null;
     this.#selectedPrefabId = null;
+    this.#routePreview = null;
     this.#selection = { ...this.#selection, tool: "select", strokeMode: "brush" };
     this.emit();
   }
@@ -287,6 +291,7 @@ export class EditorController implements IEditorController {
 
     if (tool === "select") {
       this.#selectedPrefabId = null;
+      this.#routePreview = null;
       this.#selection = { ...this.#selection, tool, strokeMode: "brush" };
       this.emit();
       return;
