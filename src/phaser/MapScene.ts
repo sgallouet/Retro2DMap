@@ -39,6 +39,10 @@ export class MapScene extends Phaser.Scene {
     this.#assets = dependencies.assets;
   }
 
+  preload(): void {
+    this.#assets.preload(this, this.#catalog);
+  }
+
   create(): void {
     this.#assets.prepare(this, this.#catalog);
     this.#renderer = new WorldRenderer(this, this.#catalog, this.#assets);
