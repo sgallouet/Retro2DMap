@@ -224,15 +224,15 @@ export class ProceduralAssetProvider implements IAssetProvider {
   ): void {
     const random = rng(hash(entry.id) + variant * 997);
     const palette: Record<string, readonly [string, string, string]> = {
-      grass: ["#5ebf55", "#70d363", "#388c45"],
-      "grass-dark": ["#3e9950", "#53ad57", "#2f743e"],
-      path: ["#d9b66b", "#efcf83", "#a67e42"],
-      cobble: ["#a9aaa1", "#c4c3b8", "#777c77"],
-      "stone-floor": ["#9a9d99", "#b3b5af", "#696e6d"],
-      "wood-floor": ["#ad7740", "#c69055", "#6f482c"],
+      grass: ["#6f9f59", "#86b56a", "#4c7543"],
+      "grass-dark": ["#496e48", "#5d8353", "#35563a"],
+      path: ["#b99b6b", "#d1b681", "#866c4c"],
+      cobble: ["#96958b", "#aaa89b", "#666861"],
+      "stone-floor": ["#858a87", "#9ca19b", "#5b615f"],
+      "wood-floor": ["#93663f", "#aa794b", "#60442f"],
       water: ["#187cc4", "#2f9ee0", "#0b599e"],
       "deep-water": ["#1265ad", "#2089cc", "#08477f"],
-      soil: ["#8a5c35", "#a87342", "#5d3d29"],
+      soil: ["#76543a", "#906748", "#4f3a2e"],
     };
     const colors = palette[entry.id] ?? ["#777", "#999", "#555"];
     rect(ctx, 0, 0, width, height, colors[0]);
@@ -245,6 +245,40 @@ export class ProceduralAssetProvider implements IAssetProvider {
         }
       }
       rect(ctx, 0, height - 3, width, 3, colors[2]);
+      return;
+    }
+
+    if (entry.id === "grass" || entry.id === "grass-dark") {
+      const tuftCount = entry.id === "grass" ? 11 : 15;
+      for (let i = 0; i < tuftCount; i += 1) {
+        const x = 3 + Math.floor(random() * Math.max(1, width - 7));
+        const y = 6 + Math.floor(random() * Math.max(1, height - 12));
+        const shade = random() > 0.42 ? colors[1] : colors[2];
+        line(ctx, [[x, y + 4], [x + 1, y]], shade, 1);
+        line(ctx, [[x + 2, y + 4], [x + 4, y + 1]], shade, 1);
+        if (random() > 0.6) rect(ctx, x + 5, y + 3, 2, 2, shade);
+      }
+
+      // Large, faint tonal patches keep grass from reading as noisy confetti.
+      for (let i = 0; i < 3; i += 1) {
+        const x = Math.floor(random() * width);
+        const y = Math.floor(random() * height);
+        ellipse(ctx, x, y, 7 + random() * 5, 3 + random() * 3, "rgba(255,255,220,.035)");
+      }
+      return;
+    }
+
+    if (entry.id === "path") {
+      for (let i = 0; i < 13; i += 1) {
+        const x = Math.floor(random() * width);
+        const y = Math.floor(random() * height);
+        const pebble = random() > 0.52 ? colors[1] : colors[2];
+        ellipse(ctx, x, y, 1 + random() * 2, 1 + random() * 1.2, pebble);
+      }
+
+      // Two soft travel tracks make roads feel used rather than painted.
+      line(ctx, [[4, 14], [width - 5, 12]], "rgba(94,72,48,.13)", 2);
+      line(ctx, [[4, height - 13], [width - 5, height - 15]], "rgba(94,72,48,.13)", 2);
       return;
     }
 
@@ -271,10 +305,14 @@ export class ProceduralAssetProvider implements IAssetProvider {
     }
 
     if (entry.id === "soil") {
-      for (let x = 4; x < width; x += 8) line(ctx, [[x, 0], [x - 2, height]], colors[2], 1);
+      for (let x = 3; x < width; x += 7) {
+        line(ctx, [[x, 0], [x - 3, height]], colors[2], 1);
+        line(ctx, [[x + 2, 0], [x - 1, height]], "rgba(210,166,112,.12)", 1);
+      }
+      return;
     }
 
-    const count = entry.id === "path" ? 18 : 25;
+    const count = 18;
     for (let i = 0; i < count; i += 1) {
       const x = Math.floor(random() * width);
       const y = Math.floor(random() * height);
