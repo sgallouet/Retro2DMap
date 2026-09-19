@@ -11,6 +11,7 @@ export interface IWorldRenderer {
   render(document: MapDocument, gridVisible: boolean, navigationVisible: boolean): void;
   setHover(coord: GridCoord | null, selection: EditorSelection): void;
   setLinePreview(from: GridCoord, to: GridCoord, selection: EditorSelection): void;
+  setRectPreview(from: GridCoord, to: GridCoord, selection: EditorSelection): void;
   clearLinePreview(): void;
   destroy(): void;
 }
@@ -174,6 +175,37 @@ export class WorldRenderer implements IWorldRenderer {
         TILE_SIZE - 2,
         TILE_SIZE - 2,
       );
+    }
+  }
+
+  setRectPreview(
+    from: GridCoord,
+    to: GridCoord,
+    selection: EditorSelection,
+  ): void {
+    this.#linePreview.clear();
+    const document = this.#lastDocument;
+    if (!document) return;
+
+    const fill = selection.tool === "erase" ? 0xd14747 : 0xf5e09b;
+    const minX = Math.max(0, Math.min(from.x, to.x));
+    const maxX = Math.min(document.width - 1, Math.max(from.x, to.x));
+    const minY = Math.max(0, Math.min(from.y, to.y));
+    const maxY = Math.min(document.height - 1, Math.max(from.y, to.y));
+
+    this.#linePreview.fillStyle(fill, 0.18);
+    this.#linePreview.lineStyle(1, fill, 0.65);
+
+    for (let y = minY; y <= maxY; y += 1) {
+      for (let x = minX; x <= maxX; x += 1) {
+        this.#linePreview.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        this.#linePreview.strokeRect(
+          x * TILE_SIZE + 1,
+          y * TILE_SIZE + 1,
+          TILE_SIZE - 2,
+          TILE_SIZE - 2,
+        );
+      }
     }
   }
 
