@@ -4,10 +4,9 @@ import type {
   ActorInstance,
   GridCoord,
   MapDocument,
+  OverlapPolicy,
   PropInstance,
 } from "../domain/map";
-
-export type OverlapPolicy = "replace" | "reject";
 
 export interface PropPlacementRequest {
   catalogId: string;
