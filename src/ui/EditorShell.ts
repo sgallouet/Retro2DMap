@@ -1,6 +1,7 @@
 import type { CatalogEntry, IWorldCatalog } from "../domain/catalog";
 import { validateMapDocument, type BrushSize, type LayerKind, type MapDocument } from "../domain/map";
 import type { IPrefabCatalog, PrefabDefinition } from "../domain/prefab";
+import type { ValidationIssue } from "../domain/validation";
 import type { IEditorController } from "../editor/EditorController";
 import type { IMapStore } from "../storage/LocalStorageMapStore";
 
@@ -34,6 +35,7 @@ export class EditorShell {
             <button data-action="paint" class="tool-button">Paint <kbd>P</kbd></button>
             <button data-action="erase" class="tool-button">Erase <kbd>E</kbd></button>
             <button data-action="select" class="tool-button">Select <kbd>S</kbd></button>
+            <button data-action="route" class="tool-button">Route <kbd>F</kbd></button>
             <span class="toolbar-separator"></span>
             <span class="brush-label">Stroke</span>
             <button data-stroke-mode="brush" title="Free paint stroke">Free <kbd>B</kbd></button>
@@ -50,6 +52,7 @@ export class EditorShell {
             <button data-action="grid" title="Toggle grid">Grid</button>
             <button data-action="navigation" title="Toggle walkability overlay">Walk <kbd>N</kbd></button>
             <button data-action="rotate-entity" title="Rotate selected actor clockwise">Turn ↻</button>
+            <button data-action="validate" title="Validate semantic map structure">Validate</button>
             <span class="toolbar-separator"></span>
             <button data-action="save">Save local</button>
             <button data-action="load">Load local</button>
@@ -72,7 +75,7 @@ export class EditorShell {
         <main class="viewport-panel">
           <div id="game-canvas" class="game-canvas"></div>
           <div class="viewport-help">
-            LMB paint/select · drag selected entity to move · RMB erase · B free · L line · R rect · wheel zoom · middle/Space drag pan
+            LMB paint/select · drag selected entity · Route: click start then goal, RMB clears · wheel zoom · middle/Space drag pan
           </div>
         </main>
 
@@ -109,7 +112,10 @@ export class EditorShell {
       this.syncToolbar();
       const status = this.root.querySelector<HTMLElement>('[data-role="status-map"]');
       if (status) {
-        status.textContent = `${state.document.name} · ${state.document.width}×${state.document.height} · ${state.document.props.length} props · ${state.document.actors.length} actors`;
+        const errors = state.validationIssues.filter((issue) => issue.severity === "error").length;
+        const warnings = state.validationIssues.filter((issue) => issue.severity === "warning").length;
+        const validation = errors + warnings > 0 ? ` · ${errors}E/${warnings}W` : "";
+        status.textContent = `${state.document.name} · ${state.document.width}×${state.document.height} · ${state.document.props.length} props · ${state.document.actors.length} actors${validation}`;
       }
     });
   }
@@ -243,6 +249,7 @@ export class EditorShell {
     if (!container) return;
 
     const state = this.editor.state;
+    const validationCard = this.validationCard(state.validationIssues);
     const prefab = state.selectedPrefabId ? this.prefabs.get(state.selectedPrefabId) : undefined;
 
     if (prefab) {
@@ -265,6 +272,39 @@ export class EditorShell {
           <strong>Semantic prefab</strong>
           <span>Click once to stamp this compound structure. The map stores only the resulting terrain, props and actors — never a prefab or sprite-frame dependency.</span>
         </div>
+        ${validationCard}
+      `;
+      return;
+    }
+
+    if (state.selection.tool === "route") {
+      const route = state.routePreview;
+      const routeStatus =
+        !route
+          ? "Click a walkable start cell."
+          : route.goal === null
+            ? `Start: ${route.start.x}, ${route.start.y} — now click a goal.`
+            : route.found
+              ? `Route found: ${route.path.length} cells, cost ${route.cost ?? 0}.`
+              : "No walkable route found.";
+
+      container.innerHTML = `
+        <div class="selection-card">
+          <span class="eyebrow">route inspector</span>
+          <h2>Navigation Route</h2>
+          <code>derived navigation · A*</code>
+        </div>
+        <dl class="property-grid">
+          <dt>Start</dt><dd>${route ? `${route.start.x}, ${route.start.y}` : "—"}</dd>
+          <dt>Goal</dt><dd>${route?.goal ? `${route.goal.x}, ${route.goal.y}` : "—"}</dd>
+          <dt>Found</dt><dd>${route?.found === null || route?.found === undefined ? "—" : route.found ? "Yes" : "No"}</dd>
+          <dt>Cost</dt><dd>${route?.cost ?? "—"}</dd>
+        </dl>
+        <div class="tip-card">
+          <strong>Route tool</strong>
+          <span>${routeStatus} Right-click the map to clear and start again.</span>
+        </div>
+        ${validationCard}
       `;
       return;
     }
@@ -288,6 +328,7 @@ export class EditorShell {
             <strong>Selection</strong>
             <span>Drag the actor to move it. Use Turn ↻ to change facing. Movement stays grid-aligned.</span>
           </div>
+          ${validationCard}
         `;
         return;
       }
@@ -309,6 +350,7 @@ export class EditorShell {
           <strong>Selection</strong>
           <span>Drag the prop by its grid anchor. Move validation respects the full multi-tile footprint.</span>
         </div>
+        ${validationCard}
       `;
       return;
     }
@@ -355,6 +397,26 @@ export class EditorShell {
         <strong>Builder rule</strong>
         <span>Actors always own one cell. Large props are anchored to a cell and declare a footprint, so pathfinding and future sprite replacement stay deterministic.</span>
       </div>
+      ${validationCard}
+    `;
+  }
+
+  private validationCard(issues: readonly ValidationIssue[]): string {
+    if (issues.length === 0) return "";
+
+    const errors = issues.filter((issue) => issue.severity === "error").length;
+    const warnings = issues.length - errors;
+    const sample = issues
+      .slice(0, 3)
+      .map((issue) => `<span>• ${issue.message}</span>`)
+      .join("");
+
+    return `
+      <div class="tip-card validation-card">
+        <strong>Validation · ${errors} error(s), ${warnings} warning(s)</strong>
+        ${sample}
+        ${issues.length > 3 ? `<span>+${issues.length - 3} more issue(s)</span>` : ""}
+      </div>
     `;
   }
 
@@ -362,29 +424,35 @@ export class EditorShell {
     const state = this.editor.state;
     const prefabMode = state.selectedPrefabId !== null;
     const selectMode = state.selection.tool === "select";
+    const routeMode = state.selection.tool === "route";
 
     this.setPressed("paint", state.selection.tool === "paint");
     this.setPressed("erase", state.selection.tool === "erase");
     this.setPressed("select", state.selection.tool === "select");
+    this.setPressed("route", state.selection.tool === "route");
     this.setPressed("grid", state.gridVisible);
     this.setPressed("navigation", state.navigationVisible);
 
     const paint = this.root.querySelector<HTMLButtonElement>('[data-action="paint"]');
     const erase = this.root.querySelector<HTMLButtonElement>('[data-action="erase"]');
     const select = this.root.querySelector<HTMLButtonElement>('[data-action="select"]');
+    const route = this.root.querySelector<HTMLButtonElement>('[data-action="route"]');
     const rotate = this.root.querySelector<HTMLButtonElement>('[data-action="rotate-entity"]');
     if (paint) paint.disabled = false;
     if (erase) erase.disabled = prefabMode;
     if (select) select.disabled = false;
+    if (route) route.disabled = false;
     if (rotate) rotate.disabled = state.entitySelection?.kind !== "actor";
 
     const selected = this.catalog.get(state.selection.catalogId);
     const supportsLine =
       !prefabMode &&
       !selectMode &&
+      !routeMode &&
       (state.selection.layer === "terrain" ||
         (selected?.layer === "prop" && selected.network !== undefined));
-    const supportsRect = !prefabMode && !selectMode && state.selection.layer === "terrain";
+    const supportsRect =
+      !prefabMode && !selectMode && !routeMode && state.selection.layer === "terrain";
 
     this.root.querySelectorAll<HTMLButtonElement>("[data-stroke-mode]").forEach((button) => {
       const mode = button.dataset.strokeMode;
@@ -392,6 +460,7 @@ export class EditorShell {
       button.disabled =
         prefabMode ||
         selectMode ||
+        routeMode ||
         (mode === "line" && !supportsLine) ||
         (mode === "rect" && !supportsRect);
     });
@@ -401,7 +470,8 @@ export class EditorShell {
         "active",
         !prefabMode && Number(button.dataset.brushSize) === state.selection.brushSize,
       );
-      button.disabled = prefabMode || selectMode || state.selection.layer !== "terrain";
+      button.disabled =
+        prefabMode || selectMode || routeMode || state.selection.layer !== "terrain";
     });
 
     const undo = this.root.querySelector<HTMLButtonElement>('[data-action="undo"]');
@@ -418,6 +488,17 @@ export class EditorShell {
     this.root.querySelector('[data-action="paint"]')?.addEventListener("click", () => this.editor.setTool("paint"));
     this.root.querySelector('[data-action="erase"]')?.addEventListener("click", () => this.editor.setTool("erase"));
     this.root.querySelector('[data-action="select"]')?.addEventListener("click", () => this.editor.setTool("select"));
+    this.root.querySelector('[data-action="route"]')?.addEventListener("click", () => this.editor.setTool("route"));
+    this.root.querySelector('[data-action="validate"]')?.addEventListener("click", () => {
+      const issues = this.editor.validateMap();
+      const errors = issues.filter((issue) => issue.severity === "error").length;
+      const warnings = issues.filter((issue) => issue.severity === "warning").length;
+      this.toast(
+        issues.length === 0
+          ? "Map validation passed."
+          : `${errors} errors · ${warnings} warnings`,
+      );
+    });
     this.root.querySelector('[data-action="rotate-entity"]')?.addEventListener("click", () => {
       this.editor.beginStroke();
       this.editor.rotateSelectedEntity(true);
@@ -491,6 +572,7 @@ export class EditorShell {
       if (event.key.toLowerCase() === "p") this.editor.setTool("paint");
       if (event.key.toLowerCase() === "e") this.editor.setTool("erase");
       if (event.key.toLowerCase() === "s") this.editor.setTool("select");
+      if (event.key.toLowerCase() === "f") this.editor.setTool("route");
       if (event.key.toLowerCase() === "b") this.editor.setStrokeMode("brush");
       if (event.key.toLowerCase() === "l") this.editor.setStrokeMode("line");
       if (event.key.toLowerCase() === "r") this.editor.setStrokeMode("rect");
