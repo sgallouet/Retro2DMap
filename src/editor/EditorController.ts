@@ -141,6 +141,10 @@ export class EditorController implements IEditorController {
       ...this.#selection,
       layer,
       catalogId,
+      tool:
+        this.#selection.tool === "select" || this.#selection.tool === "route"
+          ? "paint"
+          : this.#selection.tool,
       strokeMode: supportsCurrentMode ? currentMode : "brush",
     };
     this.#selectedPrefabId = null;
