@@ -72,6 +72,14 @@ The MVP rebuilds the visible world after a document mutation. This keeps the imp
 
 The editor chrome is regular HTML/CSS rather than Phaser UI. This gives us crisp controls, accessibility, responsive layout and simpler file import/export.
 
+### 7. Semantic prefabs
+
+`src/domain/prefab.ts`, `src/prefabs`, `src/editor/PrefabPlacer.ts`
+
+Prefabs are **recipes**, not persistent map entities. A prefab may paint terrain, place multi-tile props, draw connected networks, and place actors. Placement is atomic: if a reject-overlap recipe cannot fit, the original map stays unchanged.
+
+After placement the map contains only ordinary semantic terrain/props/actors. This keeps gameplay, serialization, topology, navigation and future sprite replacement independent from the prefab that produced the structure.
+
 ## Reference contracts
 
 - [Topology contract](TOPOLOGY.md)
@@ -101,12 +109,11 @@ Keeping the first renderer sprite-based makes large props, code-generated textur
 2. **Connected-network editor refinement**: live line preview, network-aware erase and richer road/wall/bridge tools.
 3. **SpriteAssetProvider** with atlas metadata and per-catalog fallbacks to procedural art.
 4. **Selection/move/rotate tools** and multi-cell marquee operations.
-5. **Collision/pathfinding preview** using catalog footprints.
-6. **Prefab system** for houses, rooms, castle wings and decorative clusters.
+5. **Validation + route/pathfinding preview** using the derived navigation model.
+6. **Prefab refinement**: rotation/orientation, authored compound variations and reusable room/building recipes.
 7. **Rule-based generator API** so algorithms or AI can lay out semantic maps through commands rather than drawing pixels.
-8. **Validation pass**: unreachable doors, blocked roads, overlaps, missing spawn points, water discontinuities.
-9. **Map chunks / streaming** for worlds much larger than one screen.
-10. **Tiled/LDtk adapter** only if interoperability becomes useful; the native JSON remains the clean canonical format.
+8. **Map chunks / streaming** for worlds much larger than one screen.
+9. **Tiled/LDtk adapter** only if interoperability becomes useful; the native JSON remains the clean canonical format.
 
 ## Visual direction
 
