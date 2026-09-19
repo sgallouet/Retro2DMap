@@ -260,6 +260,10 @@ Core editor capabilities:
 - footprint / gesture preview
 - derived walkability debug overlay
 - semantic prefab placement for compound terrain/props/networks/actors
+- select and drag-move actors / props
+- actor facing rotation
+- route/pathfinding inspection using derived navigation
+- semantic validation warnings/errors with map markers
 - zoom
 - pan
 - undo / redo
@@ -268,14 +272,12 @@ Core editor capabilities:
 
 Future editor direction:
 
-- select / move / rotate
+- prop/prefab orientation and rotation
 - marquee selection
 - connected-network refinement
-- prefab rotation / variation tools
+- prefab variation tools
 - room tools
-- route/pathfinding preview
 - richer topology/debug overlay
-- validation warnings
 - procedural generation tools
 
 Avoid bloated UI for features that can be inferred automatically.
