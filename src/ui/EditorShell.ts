@@ -340,7 +340,7 @@ export class EditorShell {
         definition?.layer === "prop" && prop
           ? rotatedFootprint(
               definition.footprint,
-              definition.network ? 0 : prop.rotation,
+              definition.rotatable ? prop.rotation : 0,
             )
           : undefined;
       container.innerHTML = `
@@ -457,7 +457,7 @@ export class EditorShell {
         (candidate) => candidate.id === state.entitySelection?.id,
       );
       const definition = prop ? this.catalog.get(prop.catalogId) : undefined;
-      canRotateEntity = definition?.layer === "prop" && !definition.network;
+      canRotateEntity = definition?.layer === "prop" && definition.rotatable;
     }
     if (rotate) rotate.disabled = !canRotateEntity;
 
