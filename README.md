@@ -43,7 +43,7 @@ npm run build
 
 The important boundary is `IAssetProvider`: today `ProceduralAssetProvider` creates all textures in code. A future `SpriteAssetProvider` can resolve the same catalog IDs to PNG/WebP/atlas frames without touching editor/domain code.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/TOPOLOGY.md](docs/TOPOLOGY.md), and [docs/ASSET_PIPELINE.md](docs/ASSET_PIPELINE.md).
 
 ## Current sample
 
