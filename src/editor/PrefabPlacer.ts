@@ -138,7 +138,10 @@ export class PrefabPlacer implements IPrefabPlacer {
     if (prefab.width < 1 || prefab.height < 1) return "Prefab size must be positive.";
 
     for (const patch of prefab.terrain) {
-      if (!this.catalog.get(patch.terrainId)) return `Unknown terrain ${patch.terrainId}.`;
+      const terrain = this.catalog.get(patch.terrainId);
+      if (!terrain || terrain.layer !== "terrain") {
+        return `Unknown terrain ${patch.terrainId}.`;
+      }
       if (
         patch.width < 1 ||
         patch.height < 1 ||
@@ -165,6 +168,13 @@ export class PrefabPlacer implements IPrefabPlacer {
     }
 
     for (const network of prefab.networks) {
+      const definition = this.catalog.get(network.catalogId);
+      if (!definition || definition.layer !== "prop" || !definition.network) {
+        return `Prefab network ${network.catalogId} is not a connected prop.`;
+      }
+      if (network.points.length === 0) {
+        return `Prefab network ${network.catalogId} has no points.`;
+      }
       if (
         network.points.some(
           (point) =>
