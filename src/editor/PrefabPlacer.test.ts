@@ -70,4 +70,35 @@ describe("PrefabPlacer", () => {
     );
     expect(topology?.role).toBe("corner");
   });
+  it("places oriented props declared by a semantic prefab recipe", () => {
+    const map = createBlankMap(10, 10, "grass");
+    const prefab = {
+      id: "oriented-table-room",
+      label: "Oriented Table Room",
+      category: "Test",
+      width: 5,
+      height: 5,
+      tags: [],
+      overlapPolicy: "reject" as const,
+      terrain: [
+        { terrainId: "stone-floor", x: 0, y: 0, width: 5, height: 5 },
+      ],
+      props: [
+        { catalogId: "table", x: 2, y: 1, rotation: 90 as const },
+      ],
+      networks: [],
+      actors: [],
+    };
+
+    const result = new PrefabPlacer(worldCatalog).place(
+      map,
+      prefab,
+      { x: 2, y: 2 },
+    );
+
+    expect(result.placed).toBe(true);
+    const table = map.props.find((prop) => prop.catalogId === "table");
+    expect(table?.rotation).toBe(90);
+  });
+
 });
