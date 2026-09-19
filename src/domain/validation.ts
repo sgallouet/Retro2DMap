@@ -164,7 +164,7 @@ export class MapValidator implements IMapValidator {
   ): boolean {
     const footprint = rotatedFootprint(
       definition.footprint,
-      definition.network ? 0 : prop.rotation,
+      definition.rotatable ? prop.rotation : 0,
     );
     return (
       prop.x >= 0 &&
@@ -182,11 +182,11 @@ export class MapValidator implements IMapValidator {
   ): boolean {
     const aFootprint = rotatedFootprint(
       aDefinition.footprint,
-      aDefinition.network ? 0 : a.rotation,
+      aDefinition.rotatable ? a.rotation : 0,
     );
     const bFootprint = rotatedFootprint(
       bDefinition.footprint,
-      bDefinition.network ? 0 : b.rotation,
+      bDefinition.rotatable ? b.rotation : 0,
     );
 
     return (
