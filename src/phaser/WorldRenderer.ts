@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
 import { PropTopologyResolver, TerrainTopologyResolver } from "../domain/autotile";
+import { rasterizeGridLine } from "../domain/grid";
 import type { EditorSelection, GridCoord, MapDocument } from "../domain/map";
 import { TILE_SIZE } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
@@ -8,12 +9,15 @@ import type { IAssetProvider } from "./IAssetProvider";
 export interface IWorldRenderer {
   render(document: MapDocument, gridVisible: boolean): void;
   setHover(coord: GridCoord | null, selection: EditorSelection): void;
+  setLinePreview(from: GridCoord, to: GridCoord, selection: EditorSelection): void;
+  clearLinePreview(): void;
   destroy(): void;
 }
 
 export class WorldRenderer implements IWorldRenderer {
   readonly #worldObjects: Phaser.GameObjects.GameObject[] = [];
   readonly #grid: Phaser.GameObjects.Graphics;
+  readonly #linePreview: Phaser.GameObjects.Graphics;
   readonly #hover: Phaser.GameObjects.Graphics;
   readonly #terrainTopology: TerrainTopologyResolver;
   readonly #propTopology: PropTopologyResolver;
@@ -25,6 +29,7 @@ export class WorldRenderer implements IWorldRenderer {
     private readonly assets: IAssetProvider,
   ) {
     this.#grid = scene.add.graphics().setDepth(100_000);
+    this.#linePreview = scene.add.graphics().setDepth(100_050);
     this.#hover = scene.add.graphics().setDepth(100_100);
     this.#terrainTopology = new TerrainTopologyResolver(catalog);
     this.#propTopology = new PropTopologyResolver(catalog);
@@ -125,9 +130,55 @@ export class WorldRenderer implements IWorldRenderer {
     );
   }
 
+  setLinePreview(
+    from: GridCoord,
+    to: GridCoord,
+    selection: EditorSelection,
+  ): void {
+    this.#linePreview.clear();
+    const document = this.#lastDocument;
+    if (!document) return;
+
+    const fill = selection.tool === "erase" ? 0xd14747 : 0xf5e09b;
+    const cells = new Set<string>();
+    const radius = selection.layer === "terrain" ? Math.floor(selection.brushSize / 2) : 0;
+
+    for (const point of rasterizeGridLine(from, to)) {
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        for (let dx = -radius; dx <= radius; dx += 1) {
+          const x = point.x + dx;
+          const y = point.y + dy;
+          if (x < 0 || y < 0 || x >= document.width || y >= document.height) continue;
+          cells.add(`${x}:${y}`);
+        }
+      }
+    }
+
+    this.#linePreview.fillStyle(fill, 0.18);
+    this.#linePreview.lineStyle(1, fill, 0.65);
+
+    for (const key of cells) {
+      const [rawX, rawY] = key.split(":");
+      const x = Number(rawX);
+      const y = Number(rawY);
+      this.#linePreview.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+      this.#linePreview.strokeRect(
+        x * TILE_SIZE + 1,
+        y * TILE_SIZE + 1,
+        TILE_SIZE - 2,
+        TILE_SIZE - 2,
+      );
+    }
+  }
+
+  clearLinePreview(): void {
+    this.#linePreview.clear();
+  }
+
   destroy(): void {
     this.#worldObjects.splice(0).forEach((object) => object.destroy());
     this.#grid.destroy();
+    this.#linePreview.destroy();
     this.#hover.destroy();
   }
 
