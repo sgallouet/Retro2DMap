@@ -243,15 +243,15 @@ export class ProceduralAssetProvider implements IAssetProvider {
   ): void {
     const random = rng(hash(entry.id) + variant * 997);
     const palette: Record<string, readonly [string, string, string]> = {
-      grass: ["#6f9f59", "#86b56a", "#4c7543"],
-      "grass-dark": ["#496e48", "#5d8353", "#35563a"],
-      path: ["#b99b6b", "#d1b681", "#866c4c"],
-      cobble: ["#96958b", "#aaa89b", "#666861"],
-      "stone-floor": ["#858a87", "#9ca19b", "#5b615f"],
-      "wood-floor": ["#93663f", "#aa794b", "#60442f"],
+      grass: ["#80C42F", "#94D53E", "#599E2B"],
+      "grass-dark": ["#2F792C", "#4B8F2A", "#0E4527"],
+      path: ["#EDCA61", "#F4DC73", "#A58D35"],
+      cobble: ["#949392", "#C6C2BB", "#65625C"],
+      "stone-floor": ["#949392", "#C6C2BB", "#65625C"],
+      "wood-floor": ["#9B6C32", "#BB8848", "#6E491E"],
       water: ["#187cc4", "#2f9ee0", "#0b599e"],
       "deep-water": ["#1265ad", "#2089cc", "#08477f"],
-      soil: ["#76543a", "#906748", "#4f3a2e"],
+      soil: ["#8E7520", "#C8A736", "#4E3F11"],
     };
     const colors = palette[entry.id] ?? ["#777", "#999", "#555"];
     rect(ctx, 0, 0, width, height, colors[0]);
@@ -477,8 +477,8 @@ export class ProceduralAssetProvider implements IAssetProvider {
         this.drawFlowers(ctx, width, height);
         return;
       case "rock":
-        ellipse(ctx, width / 2, height * 0.65, 15, 11, "#777f76", "#4f5852");
-        ellipse(ctx, width / 2 - 4, height * 0.58, 8, 5, "#aab0a4");
+        ellipse(ctx, width / 2, height * 0.65, 15, 11, "#949392", "#65625C");
+        ellipse(ctx, width / 2 - 4, height * 0.58, 8, 5, "#C6C2BB");
         return;
       case "cliff":
         this.drawCliffNetwork(ctx, width, height, networkMask);
@@ -491,7 +491,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
         return;
       case "house-blue":
       case "house-red":
-        this.drawHouse(ctx, width, height, entry.id === "house-blue" ? "#2f77ba" : "#b94e32");
+        this.drawHouse(ctx, width, height, entry.id === "house-blue" ? "#366CD6" : "#E76735");
         return;
       case "shop-sign":
       case "inn-sign":
@@ -501,12 +501,12 @@ export class ProceduralAssetProvider implements IAssetProvider {
         for (let x = 4; x < width; x += 6) {
           const sway = ((x / 6) % 3) - 1;
           const top = 10 + ((x * 7) % 6);
-          line(ctx, [[x, height - 3], [x + sway, top + 5]], "#765b2c", 2);
-          ellipse(ctx, x + sway, top, 3, 6, "#d4ad39", "#8d7028");
-          ellipse(ctx, x + sway - 2, top + 1, 2, 4, "#e5c65a");
+          line(ctx, [[x, height - 3], [x + sway, top + 5]], "#6E491E", 2);
+          ellipse(ctx, x + sway, top, 3, 6, "#C8A736", "#8E7520");
+          ellipse(ctx, x + sway - 2, top + 1, 2, 4, "#E9C752");
           if (x % 12 === 4) {
-            line(ctx, [[x, 28], [x - 5, 23]], "#9e8435", 1);
-            line(ctx, [[x, 32], [x + 5, 27]], "#9e8435", 1);
+            line(ctx, [[x, 28], [x - 5, 23]], "#8E7520", 1);
+            line(ctx, [[x, 32], [x + 5, 27]], "#8E7520", 1);
           }
         }
         return;
@@ -541,24 +541,24 @@ export class ProceduralAssetProvider implements IAssetProvider {
         for (let y = 8; y < height; y += 7) rect(ctx, 2, y, width - 4, 6, "#a8aaa5", "#6a6e6b");
         return;
       case "banner":
-        rect(ctx, 12, 2, 24, 31, "#8e2633", "#5e1d27");
-        rect(ctx, 15, 5, 18, 24, "#a92e3c");
-        ctx.fillStyle = referenceColor("#b8923e");
+        rect(ctx, 12, 2, 24, 31, "#B22022", "#602B11");
+        rect(ctx, 15, 5, 18, 24, "#B22022");
+        ctx.fillStyle = referenceColor("#DE9136");
         ctx.beginPath();
         ctx.moveTo(12, 33);
         ctx.lineTo(24, 44);
         ctx.lineTo(36, 33);
         ctx.closePath();
         ctx.fill();
-        line(ctx, [[13, 3], [35, 3]], "#d4ae51", 3);
+        line(ctx, [[13, 3], [35, 3]], "#F1A346", 3);
 
         // Tiny heraldic beast mark; deliberately abstract at one-tile scale.
-        ellipse(ctx, 24, 15, 5, 5, "#d7b44f");
-        rect(ctx, 22, 18, 5, 8, "#d7b44f");
-        line(ctx, [[22, 20], [17, 24]], "#d7b44f", 2);
-        line(ctx, [[27, 20], [31, 16]], "#d7b44f", 2);
-        line(ctx, [[23, 26], [20, 29]], "#d7b44f", 2);
-        line(ctx, [[26, 26], [29, 29]], "#d7b44f", 2);
+        ellipse(ctx, 24, 15, 5, 5, "#F1A346");
+        rect(ctx, 22, 18, 5, 8, "#F1A346");
+        line(ctx, [[22, 20], [17, 24]], "#F1A346", 2);
+        line(ctx, [[27, 20], [31, 16]], "#F1A346", 2);
+        line(ctx, [[23, 26], [20, 29]], "#F1A346", 2);
+        line(ctx, [[26, 26], [29, 29]], "#F1A346", 2);
         return;
       case "torch":
         rect(ctx, 21, 18, 6, 22, "#6b4930", "#3d3026");
@@ -571,8 +571,8 @@ export class ProceduralAssetProvider implements IAssetProvider {
         this.drawFountain(ctx, width, height);
         return;
       case "statue":
-        rect(ctx, 8, 34, 32, 10, "#777d7b", "#505555");
-        ellipse(ctx, 24, 23, 12, 14, "#a9afac", "#676d6a");
+        rect(ctx, 8, 34, 32, 10, "#949392", "#505555");
+        ellipse(ctx, 24, 23, 12, 14, "#a9afac", "#65625C");
         ellipse(ctx, 20, 20, 3, 3, "#5d6360");
         ellipse(ctx, 29, 20, 3, 3, "#5d6360");
         return;
@@ -688,7 +688,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
       line(ctx, [[cx + 14, 20], [cx + 14, 5]], "#6a4c2e", 2);
     } else if (entry.id === "king") {
       rect(ctx, cx - 9, 24, 18, 4, "#d2a744", "#76591e");
-      ctx.fillStyle = referenceColor("#d9b348");
+      ctx.fillStyle = referenceColor("#F1A346");
       ctx.beginPath();
       ctx.moveTo(cx - 9, 12);
       ctx.lineTo(cx - 7, 5);
@@ -699,7 +699,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
       ctx.lineTo(cx + 8, 13);
       ctx.closePath();
       ctx.fill();
-      rect(ctx, cx - 9, 11, 17, 4, "#d9b348", "#76591e");
+      rect(ctx, cx - 9, 11, 17, 4, "#F1A346", "#76591e");
     } else if (entry.id === "farmer") {
       ellipse(ctx, cx, 11, 15, 4, "#b8944e", "#70562d");
       rect(ctx, cx - 8, 6, 16, 7, "#c8a45b", "#70562d");
@@ -732,14 +732,14 @@ export class ProceduralAssetProvider implements IAssetProvider {
 
     if (pine) {
       const layers = [
-        [17, 17, "#355c3d"],
-        [29, 23, "#3f7047"],
-        [43, 28, "#487e4e"],
-        [57, 32, "#416f47"],
+        [17, 17, "#0E4527"],
+        [29, 23, "#2F792C"],
+        [43, 28, "#4B8F2A"],
+        [57, 32, "#2F792C"],
       ] as const;
 
       for (const [y, half, fill] of layers) {
-        ctx.fillStyle = referenceColor("#2d4d35");
+        ctx.fillStyle = referenceColor("#0E4527");
         ctx.beginPath();
         ctx.moveTo(cx + 2, y - 13);
         ctx.lineTo(cx - half - 2, y + 18);
@@ -761,18 +761,18 @@ export class ProceduralAssetProvider implements IAssetProvider {
     }
 
     const clusters: ReadonlyArray<readonly [number, number, number, number, string]> = [
-      [cx, 29, 25, 20, "#365f3f"],
-      [cx - 13, 40, 22, 18, "#47784a"],
-      [cx + 13, 40, 22, 18, "#3d6c43"],
-      [cx - 3, 52, 26, 19, "#467b48"],
-      [cx + 10, 28, 17, 14, "#507f4d"],
+      [cx, 29, 25, 20, "#0E4527"],
+      [cx - 13, 40, 22, 18, "#2F792C"],
+      [cx + 13, 40, 22, 18, "#2F792C"],
+      [cx - 3, 52, 26, 19, "#4B8F2A"],
+      [cx + 10, 28, 17, 14, "#599E2B"],
     ];
     clusters.forEach(([x, y, rx, ry, fill]) =>
-      ellipse(ctx, x, y, rx, ry, fill, "#2d5036"),
+      ellipse(ctx, x, y, rx, ry, fill, "#0E4527"),
     );
 
-    ellipse(ctx, cx - 10, 25, 10, 6, "#73965b");
-    ellipse(ctx, cx + 8, 36, 7, 5, "#648d55");
+    ellipse(ctx, cx - 10, 25, 10, 6, "#80C42F");
+    ellipse(ctx, cx + 8, 36, 7, 5, "#599E2B");
     rect(ctx, cx - 18, 42, 4, 3, "#2f5837");
     rect(ctx, cx + 14, 48, 5, 3, "#2f5837");
   }
@@ -792,15 +792,15 @@ export class ProceduralAssetProvider implements IAssetProvider {
     ellipse(ctx, cx + 3, height - 7, width * 0.39, 8, "rgba(38,40,31,.26)");
 
     // Lower plaster/timber facade.
-    rect(ctx, 15, 61, width - 30, height - 68, "#c7af7d", "#5a4430");
-    rect(ctx, 19, 65, width - 38, height - 75, "#dbc99a");
-    rect(ctx, 18, 63, 6, height - 71, "#76513a");
-    rect(ctx, width - 24, 63, 6, height - 71, "#76513a");
+    rect(ctx, 15, 61, width - 30, height - 68, "#B3A376", "#5a4430");
+    rect(ctx, 19, 65, width - 38, height - 75, "#D2C7B4");
+    rect(ctx, 18, 63, 6, height - 71, "#603F1A");
+    rect(ctx, width - 24, 63, 6, height - 71, "#603F1A");
     line(ctx, [[24, 68], [width - 24, height - 20]], "#7e593c", 3);
     line(ctx, [[width - 24, 68], [24, height - 20]], "#7e593c", 3);
 
     // Door and windows.
-    rect(ctx, cx - 12, height - 43, 24, 36, "#6f4a31", "#3f3025");
+    rect(ctx, cx - 12, height - 43, 24, 36, "#6E491E", "#392610");
     ellipse(ctx, cx + 6, height - 26, 2, 2, "#d6b65b");
     rect(ctx, 27, 79, 19, 17, "#6f9da8", "#4d4332");
     rect(ctx, width - 46, 79, 19, 17, "#6f9da8", "#4d4332");
@@ -808,7 +808,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     line(ctx, [[width - 37, 80], [width - 37, 95]], "rgba(232,235,198,.5)", 2);
 
     // Deep roof eaves first, then roof plane.
-    ctx.fillStyle = referenceColor("#49352e");
+    ctx.fillStyle = referenceColor("#392610");
     ctx.beginPath();
     ctx.moveTo(3, 67);
     ctx.lineTo(cx, 15);
@@ -845,8 +845,8 @@ export class ProceduralAssetProvider implements IAssetProvider {
     }
 
     // Small chimney gives the silhouette a JRPG landmark read.
-    rect(ctx, width - 40, 28, 13, 30, "#7f6b59", "#514437");
-    rect(ctx, width - 43, 24, 19, 7, "#a08a75", "#514437");
+    rect(ctx, width - 40, 28, 13, 30, "#8A6A44", "#392610");
+    rect(ctx, width - 43, 24, 19, 7, "#B3A376", "#392610");
   }
 
   private drawSign(ctx: CanvasRenderingContext2D, width: number, height: number, text: string): void {
@@ -915,7 +915,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     height: number,
   ): void {
     ellipse(ctx, width / 2, height - 7, 18, 7, "rgba(38,43,43,.28)");
-    rect(ctx, 13, 14, width - 26, height - 26, "#a4aaa8", "#5b6261");
+    rect(ctx, 13, 14, width - 26, height - 26, "#C6C2BB", "#65625C");
     rect(ctx, 8, 8, width - 16, 13, "#c2c6c2", "#646b69");
     rect(ctx, 8, height - 22, width - 16, 13, "#8b9290", "#565d5c");
     for (let y = 28; y < height - 26; y += 14) {
@@ -931,9 +931,9 @@ export class ProceduralAssetProvider implements IAssetProvider {
   ): void {
     const cx = width / 2;
     const cy = height / 2;
-    const rail = "#765039";
-    const railLight = "#9b6b46";
-    const railDark = "#463126";
+    const rail = "#6E491E";
+    const railLight = "#BB8848";
+    const railDark = "#392610";
     const effectiveMask = mask === 0 ? EAST | WEST : mask;
 
     const horizontalRail = (y: number): void => {
@@ -964,9 +964,9 @@ export class ProceduralAssetProvider implements IAssetProvider {
     verticalRail(cx + 4);
 
     // Chunky post with a pointed cap like the target farm/village fences.
-    rect(ctx, cx - 6, cy - 11, 12, 23, "#855a3c", railDark);
-    rect(ctx, cx - 4, cy - 9, 8, 18, "#a16f47");
-    ctx.fillStyle = referenceColor("#b07c4f");
+    rect(ctx, cx - 6, cy - 11, 12, 23, "#9B6C32", railDark);
+    rect(ctx, cx - 4, cy - 9, 8, 18, "#BB8848");
+    ctx.fillStyle = referenceColor("#BB8848");
     ctx.beginPath();
     ctx.moveTo(cx - 6, cy - 11);
     ctx.lineTo(cx, cy - 17);
@@ -1094,8 +1094,8 @@ export class ProceduralAssetProvider implements IAssetProvider {
     ): void => {
       // Strong lower/right shadow makes the cutaway castle read above floors.
       rect(ctx, x + 3, y + 4, w, h, "rgba(44,47,46,.42)");
-      rect(ctx, x, y, w, h, "#8e918b", "#4f5451");
-      rect(ctx, x + 2, y + 2, Math.max(1, w - 4), 4, "#b0b1aa");
+      rect(ctx, x, y, w, h, "#949392", "#363828");
+      rect(ctx, x + 2, y + 2, Math.max(1, w - 4), 4, "#C6C2BB");
     };
 
     if ((effectiveMask & NORTH) !== 0) drawBranch(cx - half, 0, half * 2, cy + half);
@@ -1119,7 +1119,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     // Sparse crenellation cues on exposed endpoints/junctions.
     if (mask === 0 || ((effectiveMask & NORTH) === 0 && (effectiveMask & SOUTH) === 0)) {
       for (let x = 3; x < width; x += 16) {
-        rect(ctx, x, cy - half - 5, 10, 7, "#a9aaa3", "#4f5451");
+        rect(ctx, x, cy - half - 5, 10, 7, "#a9aaa3", "#363828");
       }
     }
   }
@@ -1138,9 +1138,9 @@ export class ProceduralAssetProvider implements IAssetProvider {
     ellipse(ctx, cx + 3, height - 7, width * 0.39, 9, "rgba(38,42,41,.34)");
 
     // Cylindrical tower body with a cutaway-friendly stone face.
-    ellipse(ctx, cx, 34, width * 0.36, 18, "#7e8581", "#4d5552");
-    rect(ctx, 13, 34, width - 26, height - 45, "#8d9490", "#4d5552");
-    ellipse(ctx, cx, height - 12, width * 0.36, 13, "#727a76", "#4d5552");
+    ellipse(ctx, cx, 34, width * 0.36, 18, "#949392", "#363828");
+    rect(ctx, 13, 34, width - 26, height - 45, "#949392", "#363828");
+    ellipse(ctx, cx, height - 12, width * 0.36, 13, "#65625C", "#363828");
 
     for (let y = 43; y < height - 18; y += 14) {
       const shift = (Math.floor(y / 14) % 2) * 9;
@@ -1150,11 +1150,11 @@ export class ProceduralAssetProvider implements IAssetProvider {
     }
 
     // Raised battlement rim.
-    ellipse(ctx, cx, 25, width * 0.39, 14, "#a6aaa4", "#4d5552");
-    ellipse(ctx, cx, 28, width * 0.29, 9, "#6f7672", "#4d5552");
+    ellipse(ctx, cx, 25, width * 0.39, 14, "#C6C2BB", "#363828");
+    ellipse(ctx, cx, 28, width * 0.29, 9, "#65625C", "#363828");
     for (let x = 7; x < width - 5; x += 19) {
-      rect(ctx, x, 8, 14, 21, "#aeb1aa", "#505754");
-      rect(ctx, x + 2, 10, 10, 4, "#c0c2bb");
+      rect(ctx, x, 8, 14, 21, "#C6C2BB", "#363828");
+      rect(ctx, x + 2, 10, 10, 4, "#C6C2BB");
     }
 
     // Arrow slit.
@@ -1163,20 +1163,20 @@ export class ProceduralAssetProvider implements IAssetProvider {
 
   private drawGate(ctx: CanvasRenderingContext2D, width: number, height: number): void {
     ellipse(ctx, width / 2, height - 5, width * 0.42, 7, "rgba(34,38,37,.35)");
-    rect(ctx, 3, 16, width - 6, height - 19, "#8b918e", "#4b5350");
+    rect(ctx, 3, 16, width - 6, height - 19, "#949392", "#4b5350");
 
     // Masonry bands.
     for (let y = 22; y < height - 9; y += 13) {
       const shift = (Math.floor(y / 13) % 2) * 10;
       for (let x = 7 - shift; x < width - 6; x += 20) {
-        rect(ctx, x, y, 18, 11, "#9ea39f", "#626966");
+        rect(ctx, x, y, 18, 11, "#949392", "#65625C");
       }
     }
 
     // Battlements.
     for (let x = 4; x < width - 8; x += 22) {
-      rect(ctx, x, 3, 15, 20, "#b2b5af", "#4b5350");
-      rect(ctx, x + 2, 5, 11, 4, "#c5c7c1");
+      rect(ctx, x, 3, 15, 20, "#C6C2BB", "#4b5350");
+      rect(ctx, x + 2, 5, 11, 4, "#C6C2BB");
     }
 
     // Dark arch with warm wooden portcullis.
@@ -1219,11 +1219,11 @@ export class ProceduralAssetProvider implements IAssetProvider {
     ellipse(ctx, width / 2, height - 5, 13, 4, "rgba(41,35,30,.24)");
     rect(ctx, 15, 28, 18, 14, "#7f5540", "#49342a");
     rect(ctx, 12, 25, 24, 7, "#a06a4b", "#49342a");
-    line(ctx, [[24, 25], [24, 11]], "#3e6b3f", 2);
-    line(ctx, [[24, 20], [16, 14]], "#3e6b3f", 2);
-    line(ctx, [[24, 19], [32, 13]], "#3e6b3f", 2);
-    ellipse(ctx, 16, 14, 5, 3, "#5c8750");
-    ellipse(ctx, 32, 13, 5, 3, "#638d55");
+    line(ctx, [[24, 25], [24, 11]], "#2F792C", 2);
+    line(ctx, [[24, 20], [16, 14]], "#2F792C", 2);
+    line(ctx, [[24, 19], [32, 13]], "#2F792C", 2);
+    ellipse(ctx, 16, 14, 5, 3, "#599E2B");
+    ellipse(ctx, 32, 13, 5, 3, "#599E2B");
     ellipse(ctx, 24, 10, 4, 4, "#d76875");
     ellipse(ctx, 17, 12, 3, 3, "#e7c95d");
     ellipse(ctx, 31, 11, 3, 3, "#d88fc5");
@@ -1235,12 +1235,12 @@ export class ProceduralAssetProvider implements IAssetProvider {
     height: number,
   ): void {
     ellipse(ctx, width / 2, height - 5, 10, 4, "rgba(45,35,24,.24)");
-    rect(ctx, 22, 19, 4, 22, "#b68d3c", "#674f24");
-    line(ctx, [[24, 23], [13, 17], [13, 10]], "#b68d3c", 3);
-    line(ctx, [[24, 23], [35, 17], [35, 10]], "#b68d3c", 3);
-    line(ctx, [[24, 19], [24, 8]], "#b68d3c", 3);
+    rect(ctx, 22, 19, 4, 22, "#DE9136", "#6E491E");
+    line(ctx, [[24, 23], [13, 17], [13, 10]], "#DE9136", 3);
+    line(ctx, [[24, 23], [35, 17], [35, 10]], "#DE9136", 3);
+    line(ctx, [[24, 19], [24, 8]], "#DE9136", 3);
     [13, 24, 35].forEach((x) => {
-      ellipse(ctx, x, 7, 4, 6, "#e4952f");
+      ellipse(ctx, x, 7, 4, 6, "#DE9136");
       ellipse(ctx, x, 6, 2, 4, "#fff0a5");
     });
     ellipse(ctx, 24, 41, 10, 4, "#8b6c32", "#5d4823");
@@ -1268,11 +1268,11 @@ export class ProceduralAssetProvider implements IAssetProvider {
   }
 
   private drawBookshelf(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    rect(ctx, 3, 4, width - 6, height - 8, "#5c3d2b", "#35271f");
-    rect(ctx, 7, 7, width - 14, height - 14, "#785039", "#3b2a21");
+    rect(ctx, 3, 4, width - 6, height - 8, "#6E491E", "#392610");
+    rect(ctx, 7, 7, width - 14, height - 14, "#9B6C32", "#392610");
 
     for (let y = 10; y < height - 8; y += 15) {
-      rect(ctx, 8, y + 10, width - 16, 4, "#412d23");
+      rect(ctx, 8, y + 10, width - 16, 4, "#392610");
       for (let x = 10; x < width - 10; x += 7) {
         const colors = ["#8d4044", "#43647a", "#aa8a47", "#506a45", "#74557b"];
         const color = colors[(x + y) % colors.length] ?? "#888";
@@ -1281,14 +1281,14 @@ export class ProceduralAssetProvider implements IAssetProvider {
       }
     }
 
-    rect(ctx, 5, 4, 4, height - 8, "#8e6747");
-    rect(ctx, width - 9, 4, 4, height - 8, "#4a3226");
+    rect(ctx, 5, 4, 4, height - 8, "#BB8848");
+    rect(ctx, width - 9, 4, 4, height - 8, "#392610");
   }
 
   private drawTable(ctx: CanvasRenderingContext2D, width: number, height: number): void {
     ellipse(ctx, width / 2 + 2, height / 2 + 7, width * 0.42, height * 0.24, "rgba(48,37,27,.28)");
-    rect(ctx, 8, 12, width - 16, height - 25, "#704b31", "#3e2d23");
-    rect(ctx, 12, 9, width - 24, height - 24, "#8d603a", "#503624");
+    rect(ctx, 8, 12, width - 16, height - 25, "#6E491E", "#3e2d23");
+    rect(ctx, 12, 9, width - 24, height - 24, "#9B6C32", "#392610");
     line(ctx, [[15, 14], [width - 15, 14]], "rgba(238,201,133,.24)", 2);
 
     for (let x = 25; x < width - 18; x += 38) {
@@ -1300,28 +1300,28 @@ export class ProceduralAssetProvider implements IAssetProvider {
 
   private drawBed(ctx: CanvasRenderingContext2D, width: number, height: number, blanket: string): void {
     ellipse(ctx, width / 2 + 2, height - 6, width * 0.34, 5, "rgba(49,39,31,.26)");
-    rect(ctx, 6, 4, width - 12, height - 10, "#64452f", "#392a21");
+    rect(ctx, 6, 4, width - 12, height - 10, "#6E491E", "#392a21");
     rect(ctx, 9, 8, width - 18, 24, "#ddd4ba", "#91856d");
     rect(ctx, 10, 29, width - 20, height - 40, blanket, "#56373b");
     rect(ctx, 13, 10, width - 26, 13, "#eee8d4");
     line(ctx, [[12, 34], [width - 12, 34]], "rgba(255,230,195,.30)", 2);
 
     // Four simple bed posts.
-    rect(ctx, 4, 2, 5, 17, "#7b583a", "#3d2b21");
-    rect(ctx, width - 9, 2, 5, 17, "#7b583a", "#3d2b21");
-    rect(ctx, 4, height - 18, 5, 16, "#5c402d", "#3d2b21");
-    rect(ctx, width - 9, height - 18, 5, 16, "#5c402d", "#3d2b21");
+    rect(ctx, 4, 2, 5, 17, "#9B6C32", "#3d2b21");
+    rect(ctx, width - 9, 2, 5, 17, "#9B6C32", "#3d2b21");
+    rect(ctx, 4, height - 18, 5, 16, "#6E491E", "#3d2b21");
+    rect(ctx, width - 9, height - 18, 5, 16, "#6E491E", "#3d2b21");
   }
 
   private drawThrone(ctx: CanvasRenderingContext2D, width: number, height: number): void {
     ellipse(ctx, width / 2, height - 7, 18, 6, "rgba(43,31,29,.32)");
-    rect(ctx, 7, 10, width - 14, height - 19, "#742c35", "#4d2b2d");
-    rect(ctx, 11, 14, width - 22, height - 28, "#9a3440", "#5d2b31");
-    rect(ctx, 4, 44, 8, 38, "#b9903c", "#675022");
-    rect(ctx, width - 12, 44, 8, 38, "#b9903c", "#675022");
-    rect(ctx, 8, 7, width - 16, 8, "#c5a04a", "#675022");
+    rect(ctx, 7, 10, width - 14, height - 19, "#B22022", "#602B11");
+    rect(ctx, 11, 14, width - 22, height - 28, "#B22022", "#602B11");
+    rect(ctx, 4, 44, 8, 38, "#DE9136", "#6E491E");
+    rect(ctx, width - 12, 44, 8, 38, "#DE9136", "#6E491E");
+    rect(ctx, 8, 7, width - 16, 8, "#DE9136", "#6E491E");
 
-    ctx.fillStyle = referenceColor("#d0a949");
+    ctx.fillStyle = referenceColor("#DE9136");
     ctx.beginPath();
     ctx.moveTo(10, 12);
     ctx.lineTo(14, 2);
@@ -1331,8 +1331,8 @@ export class ProceduralAssetProvider implements IAssetProvider {
     ctx.closePath();
     ctx.fill();
 
-    ellipse(ctx, width / 2, 27, 7, 7, "#d3af54", "#745b28");
-    rect(ctx, 14, height - 26, width - 28, 15, "#b33b45", "#6d2a31");
+    ellipse(ctx, width / 2, 27, 7, 7, "#F1A346", "#745b28");
+    rect(ctx, 14, height - 26, width - 28, 15, "#B22022", "#602B11");
   }
 
   private drawWeaponRack(ctx: CanvasRenderingContext2D, width: number, height: number): void {
