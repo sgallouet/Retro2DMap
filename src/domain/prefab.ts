@@ -1,5 +1,4 @@
-import type { ActorInstance, GridCoord } from "./map";
-import type { OverlapPolicy } from "../editor/PlacementService";
+import type { ActorInstance, GridCoord, OverlapPolicy } from "./map";
 
 export interface PrefabTerrainPatch {
   terrainId: string;
