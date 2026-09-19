@@ -33,6 +33,7 @@ export class EditorShell {
             <span class="brush-label">Stroke</span>
             <button data-stroke-mode="brush" title="Free paint stroke">Free <kbd>B</kbd></button>
             <button data-stroke-mode="line" title="Straight semantic line">Line <kbd>L</kbd></button>
+            <button data-stroke-mode="rect" title="Filled semantic terrain rectangle">Rect <kbd>R</kbd></button>
             <span class="toolbar-separator"></span>
             <span class="brush-label">Size</span>
             <button data-brush-size="1" title="1×1 terrain brush">1</button>
@@ -65,7 +66,7 @@ export class EditorShell {
         <main class="viewport-panel">
           <div id="game-canvas" class="game-canvas"></div>
           <div class="viewport-help">
-            LMB paint · RMB erase · B free · L line · wheel zoom · middle/Space drag pan
+            LMB paint · RMB erase · B free · L line · R rect · wheel zoom · middle/Space drag pan
           </div>
         </main>
 
@@ -239,11 +240,14 @@ export class EditorShell {
     const supportsLine =
       state.selection.layer === "terrain" ||
       (selected?.layer === "prop" && selected.network !== undefined);
+    const supportsRect = state.selection.layer === "terrain";
 
     this.root.querySelectorAll<HTMLButtonElement>("[data-stroke-mode]").forEach((button) => {
       const mode = button.dataset.strokeMode;
       button.classList.toggle("active", mode === state.selection.strokeMode);
-      button.disabled = mode === "line" && !supportsLine;
+      button.disabled =
+        (mode === "line" && !supportsLine) ||
+        (mode === "rect" && !supportsRect);
     });
 
     this.root.querySelectorAll<HTMLButtonElement>("[data-brush-size]").forEach((button) => {
@@ -267,7 +271,9 @@ export class EditorShell {
     this.root.querySelectorAll<HTMLButtonElement>("[data-stroke-mode]").forEach((button) => {
       button.addEventListener("click", () => {
         const mode = button.dataset.strokeMode;
-        if (mode === "brush" || mode === "line") this.editor.setStrokeMode(mode);
+        if (mode === "brush" || mode === "line" || mode === "rect") {
+          this.editor.setStrokeMode(mode);
+        }
       });
     });
     this.root.querySelectorAll<HTMLButtonElement>("[data-brush-size]").forEach((button) => {
@@ -331,6 +337,7 @@ export class EditorShell {
       if (event.key.toLowerCase() === "e") this.editor.setTool("erase");
       if (event.key.toLowerCase() === "b") this.editor.setStrokeMode("brush");
       if (event.key.toLowerCase() === "l") this.editor.setStrokeMode("line");
+      if (event.key.toLowerCase() === "r") this.editor.setStrokeMode("rect");
       if (event.key === "1") this.editor.setBrushSize(1);
       if (event.key === "3") this.editor.setBrushSize(3);
       if (event.key === "5") this.editor.setBrushSize(5);
