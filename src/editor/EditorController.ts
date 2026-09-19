@@ -254,6 +254,11 @@ export class EditorController implements IEditorController {
   }
 
   applyAt(coord: GridCoord, eraseOverride = false): void {
+    if (this.#selection.tool === "select") {
+      this.selectEntityAt(coord);
+      return;
+    }
+
     const erase = eraseOverride || this.#selection.tool === "erase";
 
     if (this.#selectedPrefabId) {
