@@ -1,5 +1,5 @@
 import { History } from "../core/History";
-import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
+import type { IWorldCatalog } from "../domain/catalog";
 import {
   cloneMap,
   type BrushSize,
@@ -8,6 +8,7 @@ import {
   type LayerKind,
   type MapDocument,
 } from "../domain/map";
+import { EntityPlacementService } from "./PlacementService";
 import { LogicalWorldPainter } from "./WorldPainter";
 
 export interface EditorState {
@@ -48,9 +49,11 @@ export class EditorController implements IEditorController {
   readonly #listeners = new Set<EditorListener>();
   readonly #history = new History<MapDocument>(cloneMap);
   readonly #worldPainter = new LogicalWorldPainter();
+  readonly #placement: EntityPlacementService;
 
   constructor(document: MapDocument, private readonly catalog: IWorldCatalog) {
     this.#document = cloneMap(document);
+    this.#placement = new EntityPlacementService(catalog);
   }
 
   get state(): Readonly<EditorState> {
@@ -143,44 +146,18 @@ export class EditorController implements IEditorController {
     }
 
     if (this.#selection.layer === "actor") {
-      const existing = this.#document.actors.find(
-        (actor) => actor.x === coord.x && actor.y === coord.y && actor.catalogId === this.#selection.catalogId,
+      return this.#placement.placeActor(
+        this.#document,
+        this.#selection.catalogId,
+        coord,
       );
-      if (existing) return false;
-      this.#document.actors = this.#document.actors.filter((actor) => actor.x !== coord.x || actor.y !== coord.y);
-      this.#document.actors.push({
-        id: crypto.randomUUID(),
-        catalogId: this.#selection.catalogId,
-        x: coord.x,
-        y: coord.y,
-        facing: "south",
-      });
-      return true;
     }
 
-    const definition = this.catalog.get(this.#selection.catalogId);
-    if (!definition || definition.layer !== "prop") return false;
-    const propDefinition = definition as PropDefinition;
-    if (
-      coord.x + propDefinition.footprint.width > this.#document.width ||
-      coord.y + propDefinition.footprint.height > this.#document.height
-    ) {
-      return false;
-    }
-
-    const same = this.#document.props.find(
-      (prop) => prop.x === coord.x && prop.y === coord.y && prop.catalogId === this.#selection.catalogId,
-    );
-    if (same) return false;
-
-    this.#document.props = this.#document.props.filter((prop) => !this.propsOverlap(prop, coord, propDefinition));
-    this.#document.props.push({
-      id: crypto.randomUUID(),
+    return this.#placement.placeProp(this.#document, {
       catalogId: this.#selection.catalogId,
-      x: coord.x,
-      y: coord.y,
+      coord,
+      overlapPolicy: "replace",
     });
-    return true;
   }
 
   private eraseAt(coord: GridCoord): boolean {
@@ -193,42 +170,10 @@ export class EditorController implements IEditorController {
     }
 
     if (this.#selection.layer === "actor") {
-      const next = this.#document.actors.filter((actor) => actor.x !== coord.x || actor.y !== coord.y);
-      if (next.length === this.#document.actors.length) return false;
-      this.#document.actors = next;
-      return true;
+      return this.#placement.eraseActorsAt(this.#document, coord);
     }
 
-    const next = this.#document.props.filter((prop) => !this.propOccupies(prop, coord));
-    if (next.length === this.#document.props.length) return false;
-    this.#document.props = next;
-    return true;
-  }
-
-  private propOccupies(prop: MapDocument["props"][number], coord: GridCoord): boolean {
-    const definition = this.catalog.get(prop.catalogId);
-    if (!definition || definition.layer !== "prop") return false;
-    return (
-      coord.x >= prop.x &&
-      coord.y >= prop.y &&
-      coord.x < prop.x + definition.footprint.width &&
-      coord.y < prop.y + definition.footprint.height
-    );
-  }
-
-  private propsOverlap(
-    existing: MapDocument["props"][number],
-    nextCoord: GridCoord,
-    nextDefinition: PropDefinition,
-  ): boolean {
-    const existingDefinition = this.catalog.get(existing.catalogId);
-    if (!existingDefinition || existingDefinition.layer !== "prop") return false;
-    return (
-      existing.x < nextCoord.x + nextDefinition.footprint.width &&
-      existing.x + existingDefinition.footprint.width > nextCoord.x &&
-      existing.y < nextCoord.y + nextDefinition.footprint.height &&
-      existing.y + existingDefinition.footprint.height > nextCoord.y
-    );
+    return this.#placement.erasePropsAt(this.#document, coord);
   }
 
   private emit(): void {
