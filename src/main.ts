@@ -4,6 +4,7 @@ import { worldCatalog } from "./domain/catalog";
 import { EditorController } from "./editor/EditorController";
 import { createSampleKingdom } from "./maps/sampleKingdom";
 import { MapScene } from "./phaser/MapScene";
+import { prefabCatalog } from "./prefabs/catalog";
 import { ProceduralAssetProvider } from "./phaser/ProceduralAssetProvider";
 import { LocalStorageMapStore } from "./storage/LocalStorageMapStore";
 import { EditorShell } from "./ui/EditorShell";
@@ -11,13 +12,13 @@ import { EditorShell } from "./ui/EditorShell";
 const root = document.querySelector<HTMLElement>("#app");
 if (!root) throw new Error("Missing #app root.");
 
-const editor = new EditorController(createSampleKingdom(), worldCatalog);
+const editor = new EditorController(createSampleKingdom(), worldCatalog, prefabCatalog);
 const store = new LocalStorageMapStore();
-const shell = new EditorShell(root, editor, worldCatalog, store, createSampleKingdom);
+const shell = new EditorShell(root, editor, worldCatalog, prefabCatalog, store, createSampleKingdom);
 shell.mount();
 
 const assets = new ProceduralAssetProvider();
-const scene = new MapScene({ editor, catalog: worldCatalog, assets });
+const scene = new MapScene({ editor, catalog: worldCatalog, prefabs: prefabCatalog, assets });
 
 new Phaser.Game({
   type: Phaser.AUTO,
