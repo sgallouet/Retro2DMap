@@ -114,7 +114,7 @@ const actor = (id: string, label: string, category: string, faction: ActorDefini
 });
 
 export const terrains = [
-  terrain("grass", "Meadow Grass", "Nature", true, 1, "grass", "none"),
+  terrain("grass", "Meadow Grass", "Nature", true, 1, "grass", "soft"),
   terrain("grass-dark", "Forest Grass", "Nature", true, 1, "grass-dark", "soft"),
   terrain("path", "Warm Dirt Path", "Roads", true, 1, "path", "soft"),
   terrain("cobble", "Castle Cobble", "Roads", true, 1, "cobble", "hard"),
