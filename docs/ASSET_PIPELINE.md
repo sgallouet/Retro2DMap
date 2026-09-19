@@ -95,3 +95,19 @@ If an art requirement appears to need a new map field solely to name a particula
 - a renderer-only variation
 
 The map should remain an asset-independent description of the world.
+
+
+## First sprite trial
+
+The first authored asset trial is the static `tree-round` prop.
+
+Reason: it has no topology variants, is visually important, and immediately tests transparent overhang while keeping a simple 1×2 logical footprint.
+
+Prompt and sizing contract:
+
+- [SPRITE_PROMPT_TREE_ROUND.md](SPRITE_PROMPT_TREE_ROUND.md)
+- logical footprint: 48×96 px
+- visual canvas: 72×96 px
+- target path: `public/assets/props/tree-round.png`
+
+The runtime is already using `SpriteAssetProvider` with `ProceduralAssetProvider` fallback, so authored art can be enabled one asset at a time.
