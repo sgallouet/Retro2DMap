@@ -156,7 +156,15 @@ export class ProceduralAssetProvider implements IAssetProvider {
     });
 
     catalog.actors.forEach((entry) => {
-      this.create(scene, this.entryKey(entry.id), TILE_SIZE, TILE_SIZE, (ctx, w, h) => this.drawActor(ctx, w, h, entry));
+      (["north", "east", "south", "west"] as const).forEach((facing) => {
+        this.create(
+          scene,
+          this.actorKey(entry.id, facing),
+          TILE_SIZE,
+          TILE_SIZE,
+          (ctx, w, h) => this.drawActor(ctx, w, h, entry, facing),
+        );
+      });
     });
   }
 
@@ -174,6 +182,12 @@ export class ProceduralAssetProvider implements IAssetProvider {
 
     if (entry.layer === "prop" && entry.network) {
       return { key: this.networkKey(entry.id, context?.network?.neighborMask ?? 0) };
+    }
+
+    if (entry.layer === "actor") {
+      return {
+        key: this.actorKey(entry.id, context?.actor?.facing ?? "south"),
+      };
     }
 
     return { key: this.entryKey(entry.id) };
@@ -200,6 +214,10 @@ export class ProceduralAssetProvider implements IAssetProvider {
 
   private networkKey(id: string, neighborMask: number): string {
     return `proc:${id}:network-${neighborMask & 15}`;
+  }
+
+  private actorKey(id: string, facing: "north" | "east" | "south" | "west"): string {
+    return `proc:${id}:facing-${facing}`;
   }
 
   private drawTerrain(
@@ -604,6 +622,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     width: number,
     height: number,
     entry: ActorDefinition,
+    facing: "north" | "east" | "south" | "west",
   ): void {
     const cx = width / 2;
     ellipse(ctx, cx, height - 5, 12, 4, "rgba(27,31,29,.32)");
@@ -630,13 +649,35 @@ export class ProceduralAssetProvider implements IAssetProvider {
     rect(ctx, cx - 15, 25, 5, 10, body, dark);
     rect(ctx, cx + 10, 25, 5, 10, body, dark);
 
-    // Head, ears, hair/helmets.
+    // Head and facing cues. North shows the back of the head; east/west use
+    // one visible eye and a slightly offset nose. West is mirrored by renderer.
     ellipse(ctx, cx, 18, 9, 9, "#e0b68e", "#5a4033");
-    rect(ctx, cx - 7, 12, 14, 5, "#6a4631");
+    rect(ctx, cx - 7, 11, 14, facing === "north" ? 9 : 5, "#6a4631");
     rect(ctx, cx - 8, 14, 3, 8, "#6a4631");
     rect(ctx, cx + 5, 14, 3, 8, "#6a4631");
-    rect(ctx, cx - 3, 18, 2, 2, "#43352e");
-    rect(ctx, cx + 3, 18, 2, 2, "#43352e");
+
+    if (facing === "north") {
+      rect(ctx, cx - 5, 17, 10, 7, "#6a4631");
+      rect(ctx, cx - 2, 13, 4, 2, "#8a5d3d");
+    } else if (facing === "east" || facing === "west") {
+      rect(ctx, cx + 2, 18, 2, 2, "#43352e");
+      rect(ctx, cx + 7, 20, 3, 2, "#c69072");
+    } else {
+      rect(ctx, cx - 3, 18, 2, 2, "#43352e");
+      rect(ctx, cx + 3, 18, 2, 2, "#43352e");
+      rect(ctx, cx - 1, 21, 3, 1, "#9f6758");
+    }
+
+    if (entry.id === "hero" && facing === "north") {
+      ctx.fillStyle = "#8c3f43";
+      ctx.beginPath();
+      ctx.moveTo(cx - 11, 24);
+      ctx.lineTo(cx + 11, 24);
+      ctx.lineTo(cx + 8, 39);
+      ctx.lineTo(cx - 8, 39);
+      ctx.closePath();
+      ctx.fill();
+    }
 
     if (entry.id === "guard") {
       rect(ctx, cx - 10, 8, 20, 9, "#aeb8ba", "#475156");
