@@ -118,6 +118,7 @@ export const terrains = [
   terrain("grass-plain", "Plain Grass Tile", "Nature", true, 1, "grass-plain", "none"),
   terrain("grass-dark", "Forest Grass", "Nature", true, 1, "grass-dark", "soft"),
   terrain("path", "Warm Dirt Path", "Roads", true, 1, "path", "soft"),
+  terrain("road-layered", "Layered Road", "Roads", true, 1, "road-layered", "none"),
   terrain("cobble", "Castle Cobble", "Roads", true, 1, "cobble", "hard"),
   terrain("stone-floor", "Stone Floor", "Interior", true, 1, "stone-floor", "hard"),
   terrain("wood-floor", "Wood Floor", "Interior", true, 1, "wood-floor", "hard"),
