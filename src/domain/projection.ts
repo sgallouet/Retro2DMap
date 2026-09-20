@@ -12,8 +12,8 @@ export interface ProjectionBounds {
   height: number;
 }
 
-export const ISO_TILE_WIDTH = Math.round(TILE_SIZE * Math.SQRT2);
-export const ISO_TILE_HEIGHT = Math.round(TILE_SIZE / Math.SQRT2);
+export const ISO_TILE_WIDTH = TILE_SIZE * Math.SQRT2;
+export const ISO_TILE_HEIGHT = TILE_SIZE / Math.SQRT2;
 export const ISO_PADDING = TILE_SIZE * 2;
 
 export const projectionLabel = (mode: ProjectionMode): string =>
