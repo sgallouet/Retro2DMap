@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import type { IWorldCatalog, TerrainDefinition } from "../domain/catalog";
+import type { TerrainDefinition } from "../domain/catalog";
 import {
   ALL_CARDINAL,
   ALL_NEIGHBORS,
@@ -48,7 +48,6 @@ export class TerrainTransitionCompositor {
 
   constructor(
     private readonly scene: Phaser.Scene,
-    private readonly catalog: IWorldCatalog,
     private readonly assets: IAssetProvider,
   ) {}
 
