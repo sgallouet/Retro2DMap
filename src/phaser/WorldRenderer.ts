@@ -134,7 +134,9 @@ export class WorldRenderer implements IWorldRenderer {
         .setAngle(rotation)
         .setDepth(
           1_000 +
-            (prop.y + footprint.height) * TILE_SIZE +
+            (projection === "isometric"
+              ? (prop.x + prop.y + footprint.width + footprint.height) * TILE_SIZE
+              : (prop.y + footprint.height) * TILE_SIZE) +
             propDefinition.depthBias,
         );
       this.#projectionPlane.add(image);
@@ -150,7 +152,13 @@ export class WorldRenderer implements IWorldRenderer {
       const image = this.scene.add
         .image(actor.x * TILE_SIZE, actor.y * TILE_SIZE, texture.key, texture.frame)
         .setOrigin(0, 0)
-        .setDepth(1_000 + (actor.y + 1) * TILE_SIZE + 10);
+        .setDepth(
+          1_000 +
+            (projection === "isometric"
+              ? (actor.x + actor.y + 2) * TILE_SIZE
+              : (actor.y + 1) * TILE_SIZE) +
+            10,
+        );
       if (actor.facing === "west") image.setFlipX(true);
       this.#projectionPlane.add(image);
       this.#worldObjects.push(image);
