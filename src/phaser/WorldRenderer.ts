@@ -69,7 +69,7 @@ export class WorldRenderer implements IWorldRenderer {
     this.#terrainTopology = new TerrainTopologyResolver(catalog);
     this.#propTopology = new PropTopologyResolver(catalog);
     this.#navigation = new NavigationGridBuilder(catalog);
-    this.#terrainTransitions = new TerrainTransitionCompositor(scene, catalog, assets);
+    this.#terrainTransitions = new TerrainTransitionCompositor(scene, assets);
     this.#projectionPlane.add([
       this.#navigationOverlay,
       this.#validationOverlay,
