@@ -262,6 +262,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     const random = rng(hash(entry.id) + variant * 997);
     const palette: Record<string, readonly [string, string, string]> = {
       grass: ["#78BE22", "#94D53E", "#639A1E"],
+      "grass-plain": ["#75B92A", "#8BCF3A", "#5E9820"],
       "grass-dark": ["#29671D", "#39902C", "#053523"],
       path: ["#ECC75E", "#F4DC73", "#A58D35"],
       cobble: ["#BCB9B5", "#C4BFBB", "#7B7B7B"],
@@ -282,6 +283,30 @@ export class ProceduralAssetProvider implements IAssetProvider {
         }
       }
       rect(ctx, 0, height - 3, width, 3, colors[2]);
+      return;
+    }
+
+    if (entry.id === "grass-plain") {
+      // Intentionally simple: one self-contained square grass tile.
+      // No gradients, no autotile lips/edges, no per-cell random variation.
+      rect(ctx, 0, 0, width, height, "#75B92A");
+
+      const marks: readonly [number, number, string][] = [
+        [7, 9, "#8BCF3A"],
+        [18, 6, "#5E9820"],
+        [34, 11, "#8BCF3A"],
+        [42, 20, "#5E9820"],
+        [11, 27, "#5E9820"],
+        [25, 22, "#8BCF3A"],
+        [37, 34, "#8BCF3A"],
+        [16, 40, "#5E9820"],
+        [29, 43, "#8BCF3A"],
+      ];
+
+      marks.forEach(([x, y, color]) => {
+        rect(ctx, x, y, 2, 3, color);
+        rect(ctx, x + 2, y + 1, 1, 2, color);
+      });
       return;
     }
 
