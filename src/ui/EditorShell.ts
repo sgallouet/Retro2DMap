@@ -5,8 +5,9 @@ import type { IPrefabCatalog, PrefabDefinition } from "../domain/prefab";
 import type { ValidationIssue } from "../domain/validation";
 import type { IEditorController } from "../editor/EditorController";
 import type { IMapStore } from "../storage/LocalStorageMapStore";
+import { projectionLabel, type ProjectionMode } from "../domain/projection";
 
-type PaletteMode = LayerKind | "prefab";
+type PaletteMode = LayerKind | "prefab" | "settings";
 
 export class EditorShell {
   #activeLayer: PaletteMode = "terrain";
@@ -106,7 +107,9 @@ export class EditorShell {
     this.renderLayerTabs();
     this.bindActions();
     this.editor.subscribe((state) => {
-      this.#activeLayer = state.selectedPrefabId ? "prefab" : state.selection.layer;
+      if (this.#activeLayer !== "settings") {
+        this.#activeLayer = state.selectedPrefabId ? "prefab" : state.selection.layer;
+      }
       this.renderLayerTabs();
       this.renderPalette(state.selectedPrefabId ?? state.selection.catalogId);
       this.renderInspector();
@@ -116,7 +119,7 @@ export class EditorShell {
         const errors = state.validationIssues.filter((issue) => issue.severity === "error").length;
         const warnings = state.validationIssues.filter((issue) => issue.severity === "warning").length;
         const validation = errors + warnings > 0 ? ` · ${errors}E/${warnings}W` : "";
-        status.textContent = `${state.document.name} · ${state.document.width}×${state.document.height} · ${state.document.props.length} props · ${state.document.actors.length} actors${validation}`;
+        status.textContent = `${state.document.name} · ${state.document.width}×${state.document.height} · ${projectionLabel(state.projection)} · ${state.document.props.length} props · ${state.document.actors.length} actors${validation}`;
       }
     });
   }
@@ -130,6 +133,7 @@ export class EditorShell {
       ["prop", "Props"],
       ["actor", "Actors"],
       ["prefab", "Prefabs"],
+      ["settings", "Settings"],
     ];
 
     container.innerHTML = labels
@@ -142,6 +146,13 @@ export class EditorShell {
     container.querySelectorAll<HTMLButtonElement>("[data-palette-mode]").forEach((button) => {
       button.addEventListener("click", () => {
         const mode = button.dataset.paletteMode as PaletteMode;
+
+        if (mode === "settings") {
+          this.#activeLayer = "settings";
+          this.renderLayerTabs();
+          this.renderPalette("");
+          return;
+        }
 
         if (mode === "prefab") {
           const first = this.prefabs.all[0];
@@ -161,6 +172,14 @@ export class EditorShell {
   private renderPalette(selectedId: string): void {
     const container = this.root.querySelector<HTMLElement>('[data-role="palette"]');
     if (!container) return;
+
+    if (this.#activeLayer === "settings") {
+      container.dataset.paletteContent = "settings";
+      this.renderSettings(container);
+      return;
+    }
+
+    container.dataset.paletteContent = "assets";
 
     if (this.#activeLayer === "prefab") {
       const groups = new Map<string, PrefabDefinition[]>();
@@ -215,6 +234,65 @@ export class EditorShell {
       button.addEventListener("click", () => {
         const id = button.dataset.catalogId;
         if (id) this.editor.select(this.#activeLayer as LayerKind, id);
+      });
+    });
+  }
+
+  private renderSettings(container: HTMLElement): void {
+    const projection = this.editor.state.projection;
+    const option = (mode: ProjectionMode, label: string, description: string): string => `
+      <button
+        type="button"
+        class="projection-option ${projection === mode ? "selected" : ""}"
+        data-projection="${mode}"
+        aria-pressed="${projection === mode ? "true" : "false"}"
+      >
+        <span class="projection-preview projection-preview--${mode}" aria-hidden="true">
+          <span class="projection-preview-grid"></span>
+          <span class="projection-preview-object"></span>
+        </span>
+        <span class="projection-option-copy">
+          <strong>${label}</strong>
+          <small>${description}</small>
+        </span>
+        <span class="projection-option-check" aria-hidden="true">✓</span>
+      </button>
+    `;
+
+    container.innerHTML = `
+      <div class="settings-browser">
+        <div class="settings-heading">
+          <span class="eyebrow">Editor settings</span>
+          <h2>Viewport</h2>
+          <p>Change how the logical square map is projected while you build it.</p>
+        </div>
+
+        <section class="settings-section">
+          <div class="setting-label">
+            <div>
+              <strong>Projection</strong>
+              <small>The map data stays identical when switching views.</small>
+            </div>
+            <span class="setting-value">${projectionLabel(projection)}</span>
+          </div>
+          <div class="projection-options">
+            ${option("top-down", "Top-down", "Orthographic square grid")}
+            ${option("isometric", "Isometric", "45° diamond · 2:1 projection")}
+          </div>
+        </section>
+
+        <div class="settings-note">
+          <strong>Non-destructive view setting</strong>
+          <span>Terrain coordinates, entities, pathfinding and exported JSON remain on the same logical square grid. Only the editor projection changes.</span>
+        </div>
+      </div>
+    `;
+
+    container.querySelectorAll<HTMLButtonElement>("[data-projection]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const mode = button.dataset.projection;
+        if (mode !== "top-down" && mode !== "isometric") return;
+        this.editor.setProjection(mode);
       });
     });
   }

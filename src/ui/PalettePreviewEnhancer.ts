@@ -186,6 +186,11 @@ export class PalettePreviewEnhancer {
     const palette = this.root.querySelector<HTMLElement>('[data-role="palette"]');
     if (!palette) return;
 
+    const tools = this.root.querySelector<HTMLElement>('[data-role="palette-tools"]');
+    const settingsOpen = palette.dataset.paletteContent === "settings";
+    if (tools) tools.hidden = settingsOpen;
+    if (settingsOpen) return;
+
     palette.querySelectorAll<HTMLButtonElement>("[data-catalog-id]").forEach((button) => {
       if (force) button.dataset.visualEnhanced = "";
       if (button.dataset.visualEnhanced === "1") return;

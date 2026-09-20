@@ -8,6 +8,7 @@ import type { ValidationIssue } from "../domain/validation";
 import type { EditorEntitySelection, EditorSelection, GridCoord, MapDocument } from "../domain/map";
 import { TILE_SIZE } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
+import { ISO_PADDING, ISO_TILE_WIDTH, type ProjectionMode } from "../domain/projection";
 
 export interface IWorldRenderer {
   render(
@@ -17,6 +18,7 @@ export interface IWorldRenderer {
     entitySelection: EditorEntitySelection | null,
     validationIssues: readonly ValidationIssue[],
     routePath: readonly GridCoord[],
+    projection: ProjectionMode,
   ): void;
   setHover(
     coord: GridCoord | null,
@@ -31,6 +33,8 @@ export interface IWorldRenderer {
 
 export class WorldRenderer implements IWorldRenderer {
   readonly #worldObjects: Phaser.GameObjects.GameObject[] = [];
+  readonly #projectionRoot: Phaser.GameObjects.Container;
+  readonly #projectionPlane: Phaser.GameObjects.Container;
   readonly #navigationOverlay: Phaser.GameObjects.Graphics;
   readonly #validationOverlay: Phaser.GameObjects.Graphics;
   readonly #routeOverlay: Phaser.GameObjects.Graphics;
@@ -42,12 +46,17 @@ export class WorldRenderer implements IWorldRenderer {
   readonly #propTopology: PropTopologyResolver;
   readonly #navigation: NavigationGridBuilder;
   #lastDocument: MapDocument | null = null;
+  #projection: ProjectionMode = "top-down";
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly catalog: IWorldCatalog,
     private readonly assets: IAssetProvider,
   ) {
+    this.#projectionRoot = scene.add.container(0, 0);
+    this.#projectionPlane = scene.add.container(0, 0);
+    this.#projectionRoot.add(this.#projectionPlane);
+
     this.#navigationOverlay = scene.add.graphics().setDepth(99_900);
     this.#validationOverlay = scene.add.graphics().setDepth(99_930);
     this.#routeOverlay = scene.add.graphics().setDepth(99_940);
@@ -58,6 +67,15 @@ export class WorldRenderer implements IWorldRenderer {
     this.#terrainTopology = new TerrainTopologyResolver(catalog);
     this.#propTopology = new PropTopologyResolver(catalog);
     this.#navigation = new NavigationGridBuilder(catalog);
+    this.#projectionPlane.add([
+      this.#navigationOverlay,
+      this.#validationOverlay,
+      this.#routeOverlay,
+      this.#entitySelectionOverlay,
+      this.#grid,
+      this.#linePreview,
+      this.#hover,
+    ]);
   }
 
   render(
@@ -67,8 +85,11 @@ export class WorldRenderer implements IWorldRenderer {
     entitySelection: EditorEntitySelection | null,
     validationIssues: readonly ValidationIssue[],
     routePath: readonly GridCoord[],
+    projection: ProjectionMode,
   ): void {
     this.#lastDocument = document;
+    this.#projection = projection;
+    this.applyProjection(document, projection);
     this.#worldObjects.splice(0).forEach((object) => object.destroy());
 
     for (let y = 0; y < document.height; y += 1) {
@@ -84,7 +105,8 @@ export class WorldRenderer implements IWorldRenderer {
           .image(x * TILE_SIZE, y * TILE_SIZE, texture.key, texture.frame)
           .setOrigin(0, 0)
           .setDepth(0);
-        this.#worldObjects.push(image);
+        this.#projectionPlane.add(image);
+      this.#worldObjects.push(image);
       }
     }
 
@@ -112,9 +134,12 @@ export class WorldRenderer implements IWorldRenderer {
         .setAngle(rotation)
         .setDepth(
           1_000 +
-            (prop.y + footprint.height) * TILE_SIZE +
+            (projection === "isometric"
+              ? (prop.x + prop.y + footprint.width + footprint.height) * TILE_SIZE
+              : (prop.y + footprint.height) * TILE_SIZE) +
             propDefinition.depthBias,
         );
+      this.#projectionPlane.add(image);
       this.#worldObjects.push(image);
     });
 
@@ -127,8 +152,15 @@ export class WorldRenderer implements IWorldRenderer {
       const image = this.scene.add
         .image(actor.x * TILE_SIZE, actor.y * TILE_SIZE, texture.key, texture.frame)
         .setOrigin(0, 0)
-        .setDepth(1_000 + (actor.y + 1) * TILE_SIZE + 10);
+        .setDepth(
+          1_000 +
+            (projection === "isometric"
+              ? (actor.x + actor.y + 2) * TILE_SIZE
+              : (actor.y + 1) * TILE_SIZE) +
+            10,
+        );
       if (actor.facing === "west") image.setFlipX(true);
+      this.#projectionPlane.add(image);
       this.#worldObjects.push(image);
     });
 
@@ -137,6 +169,7 @@ export class WorldRenderer implements IWorldRenderer {
     this.drawRoute(routePath);
     this.drawEntitySelection(document, entitySelection);
     this.drawGrid(document, gridVisible);
+    this.#projectionPlane.sort("depth");
   }
 
   setHover(
@@ -266,6 +299,24 @@ export class WorldRenderer implements IWorldRenderer {
     this.#grid.destroy();
     this.#linePreview.destroy();
     this.#hover.destroy();
+    this.#projectionPlane.destroy();
+    this.#projectionRoot.destroy();
+  }
+
+  private applyProjection(document: MapDocument, projection: ProjectionMode): void {
+    if (projection === "top-down") {
+      this.#projectionRoot.setPosition(0, 0).setScale(1, 1);
+      this.#projectionPlane.setRotation(0);
+      return;
+    }
+
+    this.#projectionRoot
+      .setPosition(
+        ISO_PADDING + document.height * (ISO_TILE_WIDTH / 2),
+        ISO_PADDING,
+      )
+      .setScale(1, 0.5);
+    this.#projectionPlane.setRotation(Math.PI / 4);
   }
 
   private drawValidation(issues: readonly ValidationIssue[]): void {

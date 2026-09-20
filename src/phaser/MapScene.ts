@@ -11,6 +11,7 @@ import {
   type MapDocument,
 } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
+import { projectedBounds, worldToGrid, type ProjectionMode } from "../domain/projection";
 import { WorldRenderer } from "./WorldRenderer";
 
 export interface MapSceneDependencies {
@@ -36,6 +37,7 @@ export class MapScene extends Phaser.Scene {
   #gestureStart: GridCoord | null = null;
   #selectedPrefabId: string | null = null;
   #entitySelection: EditorEntitySelection | null = null;
+  #projection: ProjectionMode = "top-down";
   #selection: EditorSelection = {
     layer: "terrain",
     catalogId: "grass",
@@ -62,6 +64,8 @@ export class MapScene extends Phaser.Scene {
     this.input.mouse?.disableContextMenu();
 
     this.#unsubscribe = this.#editor.subscribe((state) => {
+      const projectionChanged = this.#projection !== state.projection;
+      this.#projection = state.projection;
       this.#selection = state.selection;
       this.#selectedPrefabId = state.selectedPrefabId;
       this.#entitySelection = state.entitySelection;
@@ -72,6 +76,7 @@ export class MapScene extends Phaser.Scene {
         state.entitySelection,
         state.validationIssues,
         state.routePreview?.path ?? [],
+        state.projection,
       );
       const prefab = state.selectedPrefabId ? this.#prefabs.get(state.selectedPrefabId) : undefined;
       const selectedFootprint =
@@ -86,6 +91,7 @@ export class MapScene extends Phaser.Scene {
           : selectedFootprint,
       );
       this.updateCameraBounds(state.document);
+      if (projectionChanged) this.fitCameraToMap(state.document);
     });
 
     this.fitCameraToMap(this.#editor.state.document);
@@ -297,11 +303,8 @@ export class MapScene extends Phaser.Scene {
 
   private pointerToGrid(pointer: Phaser.Input.Pointer): GridCoord | null {
     const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-    const x = Math.floor(world.x / TILE_SIZE);
-    const y = Math.floor(world.y / TILE_SIZE);
     const document = this.#editor.state.document;
-    if (x < 0 || y < 0 || x >= document.width || y >= document.height) return null;
-    return { x, y };
+    return worldToGrid(document, world, this.#projection);
   }
 
   private entityFootprint(
@@ -324,8 +327,9 @@ export class MapScene extends Phaser.Scene {
 
   private fitCameraToMap(document: MapDocument): void {
     const camera = this.cameras.main;
-    const worldWidth = document.width * TILE_SIZE;
-    const worldHeight = document.height * TILE_SIZE;
+    const bounds = projectedBounds(document, this.#projection);
+    const worldWidth = bounds.width;
+    const worldHeight = bounds.height;
     const horizontalZoom = camera.width / worldWidth;
     const verticalZoom = camera.height / worldHeight;
     const zoom = Phaser.Math.Clamp(
@@ -339,7 +343,8 @@ export class MapScene extends Phaser.Scene {
   }
 
   private updateCameraBounds(document: MapDocument): void {
-    this.cameras.main.setBounds(0, 0, document.width * TILE_SIZE, document.height * TILE_SIZE);
+    const bounds = projectedBounds(document, this.#projection);
+    this.cameras.main.setBounds(0, 0, bounds.width, bounds.height);
   }
 
   private sameCoord(a: GridCoord | null, b: GridCoord | null): boolean {
