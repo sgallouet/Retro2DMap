@@ -35,6 +35,14 @@ const assets = new SpriteAssetProvider(
   new ProceduralAssetProvider(),
 );
 const scene = new MapScene({ editor, catalog: worldCatalog, prefabs: prefabCatalog, assets });
+const palettePreview = new PalettePreviewEnhancer(
+  root,
+  scene,
+  assets,
+  worldCatalog,
+  prefabCatalog,
+);
+palettePreview.mount();
 
 new Phaser.Game({
   type: Phaser.AUTO,
