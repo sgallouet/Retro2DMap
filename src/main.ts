@@ -12,6 +12,7 @@ import { SpriteAssetProvider } from "./phaser/SpriteAssetProvider";
 import { spriteAssetManifest } from "./assets/spriteManifest";
 import { LocalStorageMapStore } from "./storage/LocalStorageMapStore";
 import { EditorShell } from "./ui/EditorShell";
+import { PalettePreviewEnhancer } from "./ui/PalettePreviewEnhancer";
 
 const root = document.querySelector<HTMLElement>("#app");
 if (!root) throw new Error("Missing #app root.");
@@ -35,6 +36,14 @@ const assets = new SpriteAssetProvider(
   new ProceduralAssetProvider(),
 );
 const scene = new MapScene({ editor, catalog: worldCatalog, prefabs: prefabCatalog, assets });
+const palettePreview = new PalettePreviewEnhancer(
+  root,
+  scene,
+  assets,
+  worldCatalog,
+  prefabCatalog,
+);
+palettePreview.mount();
 
 new Phaser.Game({
   type: Phaser.AUTO,
