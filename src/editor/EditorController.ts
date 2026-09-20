@@ -1,5 +1,6 @@
 import { History } from "../core/History";
 import type { IWorldCatalog } from "../domain/catalog";
+import type { ProjectionMode } from "../domain/projection";
 import type { CommandBatchResult, WorldCommand } from "../domain/commands";
 import type { IPrefabCatalog } from "../domain/prefab";
 import { NavigationGridBuilder } from "../domain/navigation";
@@ -33,6 +34,7 @@ export interface EditorState {
   selection: EditorSelection;
   gridVisible: boolean;
   navigationVisible: boolean;
+  projection: ProjectionMode;
   selectedPrefabId: string | null;
   entitySelection: EditorEntitySelection | null;
   validationIssues: readonly ValidationIssue[];
@@ -62,6 +64,7 @@ export interface IEditorController {
   setBrushSize(size: BrushSize): void;
   setGridVisible(visible: boolean): void;
   setNavigationVisible(visible: boolean): void;
+  setProjection(projection: ProjectionMode): void;
   beginStroke(): void;
   applyAt(coord: GridCoord, eraseOverride?: boolean): void;
   applyLine(from: GridCoord, to: GridCoord, eraseOverride?: boolean): void;
@@ -83,6 +86,7 @@ export class EditorController implements IEditorController {
   };
   #gridVisible = false;
   #navigationVisible = false;
+  #projection: ProjectionMode = "top-down";
   #selectedPrefabId: string | null = null;
   #entitySelection: EditorEntitySelection | null = null;
   #validationIssues: readonly ValidationIssue[] = [];
@@ -119,6 +123,7 @@ export class EditorController implements IEditorController {
       selection: this.#selection,
       gridVisible: this.#gridVisible,
       navigationVisible: this.#navigationVisible,
+      projection: this.#projection,
       selectedPrefabId: this.#selectedPrefabId,
       entitySelection: this.#entitySelection,
       validationIssues: this.#validationIssues,
@@ -392,6 +397,13 @@ export class EditorController implements IEditorController {
 
   setNavigationVisible(visible: boolean): void {
     this.#navigationVisible = visible;
+    this.emit();
+  }
+
+  setProjection(projection: ProjectionMode): void {
+    if (projection === this.#projection) return;
+    this.#projection = projection;
+    this.#routePreview = null;
     this.emit();
   }
 
