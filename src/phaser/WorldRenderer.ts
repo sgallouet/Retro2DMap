@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import type { IWorldCatalog, PropDefinition } from "../domain/catalog";
+import type { IWorldCatalog, PropDefinition, TerrainDefinition } from "../domain/catalog";
 import { PropTopologyResolver, TerrainTopologyResolver } from "../domain/autotile";
 import { rotatedFootprint } from "../domain/geometry";
 import { rasterizeGridLine } from "../domain/grid";
@@ -9,6 +9,7 @@ import type { EditorEntitySelection, EditorSelection, GridCoord, MapDocument } f
 import { TILE_SIZE } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
 import { ISO_PADDING, ISO_TILE_WIDTH, type ProjectionMode } from "../domain/projection";
+import { TerrainTransitionCompositor, type TerrainTransitionSide } from "./TerrainTransitionCompositor";
 
 export interface IWorldRenderer {
   render(
@@ -45,6 +46,7 @@ export class WorldRenderer implements IWorldRenderer {
   readonly #terrainTopology: TerrainTopologyResolver;
   readonly #propTopology: PropTopologyResolver;
   readonly #navigation: NavigationGridBuilder;
+  readonly #terrainTransitions: TerrainTransitionCompositor;
   #lastDocument: MapDocument | null = null;
   #projection: ProjectionMode = "top-down";
 
@@ -67,6 +69,7 @@ export class WorldRenderer implements IWorldRenderer {
     this.#terrainTopology = new TerrainTopologyResolver(catalog);
     this.#propTopology = new PropTopologyResolver(catalog);
     this.#navigation = new NavigationGridBuilder(catalog);
+    this.#terrainTransitions = new TerrainTransitionCompositor(scene, catalog, assets);
     this.#projectionPlane.add([
       this.#navigationOverlay,
       this.#validationOverlay,
@@ -106,7 +109,11 @@ export class WorldRenderer implements IWorldRenderer {
           .setOrigin(0, 0)
           .setDepth(0);
         this.#projectionPlane.add(image);
-      this.#worldObjects.push(image);
+        this.#worldObjects.push(image);
+
+        if (definition.id === "road-layered") {
+          this.renderTerrainTransitions(document, { x, y }, definition);
+        }
       }
     }
 
@@ -299,8 +306,72 @@ export class WorldRenderer implements IWorldRenderer {
     this.#grid.destroy();
     this.#linePreview.destroy();
     this.#hover.destroy();
+    this.#terrainTransitions.destroy();
     this.#projectionPlane.destroy();
     this.#projectionRoot.destroy();
+  }
+
+  private renderTerrainTransitions(
+    document: MapDocument,
+    coord: GridCoord,
+    road: TerrainDefinition,
+  ): void {
+    const neighbors: readonly Readonly<{
+      side: TerrainTransitionSide;
+      x: number;
+      y: number;
+    }>[] = [
+      { side: "north", x: coord.x, y: coord.y - 1 },
+      { side: "east", x: coord.x + 1, y: coord.y },
+      { side: "south", x: coord.x, y: coord.y + 1 },
+      { side: "west", x: coord.x - 1, y: coord.y },
+    ];
+
+    for (const neighborCoord of neighbors) {
+      if (
+        neighborCoord.x < 0 ||
+        neighborCoord.y < 0 ||
+        neighborCoord.x >= document.width ||
+        neighborCoord.y >= document.height
+      ) {
+        continue;
+      }
+
+      const cell =
+        document.tiles[neighborCoord.y * document.width + neighborCoord.x];
+      if (!cell) continue;
+
+      const neighbor = this.catalog.get(cell.terrainId);
+      if (
+        !neighbor ||
+        neighbor.layer !== "terrain" ||
+        neighbor.connectGroup === road.connectGroup
+      ) {
+        continue;
+      }
+
+      const overlay = this.#terrainTransitions.overlayRef(
+        road.id,
+        neighbor,
+        neighborCoord.side,
+        coord.x,
+        coord.y,
+      );
+      if (!overlay) continue;
+
+      const image = this.scene.add
+        .image(
+          coord.x * TILE_SIZE,
+          coord.y * TILE_SIZE,
+          overlay.key,
+          overlay.frame,
+        )
+        .setOrigin(0, 0)
+        .setDepth(1);
+
+      this.#projectionPlane.add(image);
+      this.#worldObjects.push(image);
+    }
   }
 
   private applyProjection(document: MapDocument, projection: ProjectionMode): void {
