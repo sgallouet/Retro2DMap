@@ -11,7 +11,7 @@ import { ProceduralAssetProvider } from "./phaser/ProceduralAssetProvider";
 import { SpriteAssetProvider } from "./phaser/SpriteAssetProvider";
 import { spriteAssetManifest } from "./assets/spriteManifest";
 import { LocalStorageMapStore } from "./storage/LocalStorageMapStore";
-import { EditorShell } from "./ui/EditorShell";
+import { EditorShell } from "./ui/EditorShell";\nimport { PalettePreviewEnhancer } from "./ui/PalettePreviewEnhancer";
 
 const root = document.querySelector<HTMLElement>("#app");
 if (!root) throw new Error("Missing #app root.");
