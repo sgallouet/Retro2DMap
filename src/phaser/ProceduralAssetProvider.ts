@@ -265,6 +265,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
       "grass-plain": ["#75B92A", "#8BCF3A", "#5E9820"],
       "grass-dark": ["#29671D", "#39902C", "#053523"],
       path: ["#ECC75E", "#F4DC73", "#A58D35"],
+      "road-layered": ["#ECC75E", "#F4DC73", "#A58D35"],
       cobble: ["#BCB9B5", "#C4BFBB", "#7B7B7B"],
       "stone-floor": ["#97999B", "#A3A29C", "#656666"],
       "wood-floor": ["#A87F45", "#C48743", "#614221"],
@@ -369,7 +370,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
       return;
     }
 
-    if (entry.id === "path") {
+    if (entry.id === "path" || entry.id === "road-layered") {
       for (let i = 0; i < 18; i += 1) {
         const x = Math.floor(random() * width);
         const y = Math.floor(random() * height);
