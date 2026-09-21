@@ -124,6 +124,7 @@ export class TerrainTransitionCompositor {
         innerCornerMask: 0,
         topologyKey: terrainTopologyKey(neighborMask),
         variation,
+        materialNeighbors: { grass: 0, path: 0, cobble: 0 },
       },
     };
   }
@@ -137,6 +138,7 @@ export class TerrainTransitionCompositor {
         innerCornerMask: 0,
         topologyKey: terrainTopologyKey(ALL_NEIGHBORS),
         variation,
+        materialNeighbors: { grass: 0, path: 0, cobble: 0 },
       },
     };
   }

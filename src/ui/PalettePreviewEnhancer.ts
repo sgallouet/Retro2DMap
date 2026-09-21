@@ -167,6 +167,7 @@ export class PalettePreviewEnhancer {
           innerCornerMask: 0,
           topologyKey: terrainTopologyKey(ALL_NEIGHBORS),
           variation: 0,
+          materialNeighbors: { grass: 0, path: 0, cobble: 0 },
         },
       };
     }

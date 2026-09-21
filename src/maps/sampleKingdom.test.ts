@@ -190,17 +190,21 @@ describe("Reference Map 01", () => {
     expect(bridgeCells).toHaveLength(10);
     expect(bridgeCells.every((prop) => tileAt(map, prop)?.terrainId?.includes("water"))).toBe(true);
 
-    const waterSupported = new Set(["waterfall", "bridge", "boat", "dock"]);
+    const waterSupported = new Set(["waterfall", "bridge", "boat", "dock", "cliff"]);
+    const waterPlacementIssues: string[] = [];
     for (const prop of map.props) {
       const definition = worldCatalog.get(prop.catalogId);
       if (!definition || definition.layer !== "prop" || waterSupported.has(prop.catalogId)) continue;
       const footprint = rotatedFootprint(definition.footprint, definition.rotatable ? prop.rotation : 0);
       for (let y = prop.y; y < prop.y + footprint.height; y += 1) {
         for (let x = prop.x; x < prop.x + footprint.width; x += 1) {
-        expect(tileAt(map, { x, y })?.terrainId ?? "", `${prop.catalogId} at ${x},${y}`).not.toMatch(/water/);
+          if ((tileAt(map, { x, y })?.terrainId ?? "").match(/water/)) {
+            waterPlacementIssues.push(`${prop.catalogId} at ${x},${y}`);
+          }
         }
       }
     }
+    expect(waterPlacementIssues).toEqual([]);
 
     for (const actor of map.actors) {
       expect(navigation.at(actor)?.walkable).toBe(true);

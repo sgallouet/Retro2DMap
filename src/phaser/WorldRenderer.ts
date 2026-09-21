@@ -35,7 +35,7 @@ export interface IWorldRenderer {
 }
 
 export class WorldRenderer implements IWorldRenderer {
-  readonly #worldObjects: Phaser.GameObjects.GameObject[] = [];
+  readonly #worldObjects: Phaser.GameObjects.Image[] = [];
   readonly #projectionRoot: Phaser.GameObjects.Container;
   readonly #projectionPlane: Phaser.GameObjects.Container;
   readonly #navigationOverlay: Phaser.GameObjects.Graphics;
@@ -361,6 +361,7 @@ export class WorldRenderer implements IWorldRenderer {
         document.tiles[neighborCoord.y * document.width + neighborCoord.x];
       if (!cell) continue;
 
+      if (!cell.terrainId) continue;
       const neighbor = this.catalog.get(cell.terrainId);
       if (
         !neighbor ||
