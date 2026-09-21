@@ -56,7 +56,7 @@ const palettePreview = new PalettePreviewEnhancer(
   worldCatalog,
   prefabCatalog,
 );
-palettePreview.mount();
+scene.onReady(() => palettePreview.mount());
 
 new Phaser.Game({
   type: Phaser.AUTO,

@@ -41,6 +41,8 @@ export class MapScene extends Phaser.Scene {
   #gestureStart: GridCoord | null = null;
   #selectedPrefabId: string | null = null;
   #entitySelection: EditorEntitySelection | null = null;
+  #ready = false;
+  readonly #readyCallbacks: Array<() => void> = [];
   #projection: ProjectionMode = "top-down";
   #selection: EditorSelection = {
     layer: "terrain",
@@ -61,6 +63,14 @@ export class MapScene extends Phaser.Scene {
   preload(): void {
     this.load.image("reference-map-target", "/reference/target-map.png");
     this.#assets.preload(this, this.#catalog);
+  }
+
+  onReady(callback: () => void): void {
+    if (this.#ready) {
+      callback();
+      return;
+    }
+    this.#readyCallbacks.push(callback);
   }
 
   create(): void {
@@ -109,6 +119,9 @@ export class MapScene extends Phaser.Scene {
 
     this.bindPointerControls();
     this.bindKeyboardControls();
+
+    this.#ready = true;
+    this.#readyCallbacks.splice(0).forEach((callback) => callback());
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.#unsubscribe?.();

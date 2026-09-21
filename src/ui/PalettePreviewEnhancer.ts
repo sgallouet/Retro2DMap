@@ -96,17 +96,8 @@ export class PalettePreviewEnhancer {
 
     this.#observer.observe(palette, { childList: true, subtree: true });
     this.enhancePalette();
-
-    const refresh = (): void => {
-      this.captureRuntimePreviews();
-      this.enhancePalette(true);
-    };
-
-    if (this.scene.sys.isActive()) {
-      queueMicrotask(refresh);
-    } else {
-      this.scene.events.once("create", refresh);
-    }
+    this.captureRuntimePreviews();
+    this.enhancePalette(true);
   }
 
   private captureRuntimePreviews(): void {
