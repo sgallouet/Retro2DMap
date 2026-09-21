@@ -8,19 +8,19 @@ import {
 
 export interface TerrainBrushRequest {
   center: GridCoord;
-  terrainId: string;
+  terrainId: string | undefined;
   size: BrushSize;
 }
 
 export interface TerrainRectRequest {
   from: GridCoord;
   to: GridCoord;
-  terrainId: string;
+  terrainId: string | undefined;
 }
 
 export interface TerrainPathRequest {
   points: readonly GridCoord[];
-  terrainId: string;
+  terrainId: string | undefined;
   width: BrushSize;
 }
 
@@ -83,10 +83,11 @@ export class LogicalWorldPainter implements IWorldPainter {
     return changed;
   }
 
-  private paintCell(document: MapDocument, coord: GridCoord, terrainId: string): boolean {
+  private paintCell(document: MapDocument, coord: GridCoord, terrainId: string | undefined): boolean {
     const cell = tileAt(document, coord);
     if (!cell || cell.terrainId === terrainId) return false;
-    cell.terrainId = terrainId;
+    if (terrainId === undefined) delete cell.terrainId;
+    else cell.terrainId = terrainId;
     return true;
   }
 }

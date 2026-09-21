@@ -1,9 +1,19 @@
 # Authored Terrain Materials
 
-`grass-center.png` is the 48×48 seamless fill for semantic terrain `grass`.
+Center fills (48×48, seamless):
 
-It is the interior material only. N/E/S/W edges, outer corners, and inner
-corners still come from the existing procedural topology overlay.
+- `grass-center-transition.png` → semantic terrain `grass` (temporary rejected proof asset; not approved production art)
+- `path-center.png` → semantic terrain `path`
+- `cobble-center.png` → semantic terrain `cobble`
+- `wood-floor-center.png` → semantic terrain `wood-floor`
+- `water-center.png` → semantic terrain `water`
+- `soil-center.png` → semantic terrain `soil`
+- `stone-floor-center.png` → semantic terrain `stone-floor`
 
-Inspect tiling with `?map=grass-seam` (10×10 interior, no topology edges)
-and mapping with `?map=grass-study`.
+They are interior material only. N/E/S/W edges, outer corners, and inner
+corners still come from the topology-aware renderer. Grass/road contact is
+composed into the road-owned tile using the same grass source; it does not
+borrow pixels from the reference image.
+
+Inspect tiling with `?map=grass-seam` and `?map=path-seam` (10×10 interior,
+no topology edges) and mapping/topology with `?map=terrain-study`.

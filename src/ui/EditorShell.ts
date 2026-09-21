@@ -6,6 +6,7 @@ import type { ValidationIssue } from "../domain/validation";
 import type { IEditorController } from "../editor/EditorController";
 import type { IMapStore } from "../storage/LocalStorageMapStore";
 import { projectionLabel, type ProjectionMode } from "../domain/projection";
+import { terrainComparisonColors, type ReferenceView } from "../phaser/ReferenceView";
 
 type PaletteMode = LayerKind | "prefab" | "settings";
 
@@ -20,6 +21,7 @@ export class EditorShell {
     private readonly prefabs: IPrefabCatalog,
     private readonly store: IMapStore,
     private readonly createResetMap: () => MapDocument,
+    private readonly onReferenceView: (view: ReferenceView) => void,
   ) {}
 
   mount(): void {
@@ -60,7 +62,7 @@ export class EditorShell {
             <button data-action="load">Load local</button>
             <button data-action="export">Export JSON</button>
             <button data-action="import">Import</button>
-            <button data-action="reset" class="danger-soft">Reset sample</button>
+            <button data-action="reset" class="danger-soft">Reset default map</button>
             <input data-role="import-input" type="file" accept=".json,application/json" hidden />
           </div>
         </header>
@@ -71,6 +73,17 @@ export class EditorShell {
             <small>1 tile = 1 character</small>
           </div>
           <div class="layer-tabs" data-role="layers"></div>
+          <section class="reference-controls" aria-label="Target comparison">
+            <strong>Target comparison</strong>
+            <label for="map-alpha">Our map opacity <output id="map-alpha-value">100%</output></label>
+            <input id="map-alpha" type="range" min="0" max="100" value="100" step="1" />
+            <small>0% = target only · 100% = map over target</small>
+            <label><input id="terrain-only" type="checkbox" /> Terrain only</label>
+            <label><input id="terrain-colors" type="checkbox" /> Colored tile cells</label>
+            <small>Target aligned to 40 × 30 cells. Grid stays above it.</small>
+            <details><summary>Tile colors</summary>${this.catalog.terrains.map((terrain) =>
+              `<span class="terrain-color-key"><i style="background:#${terrainComparisonColors[terrain.id]!.toString(16).padStart(6, "0")}"></i>${terrain.label}</span>`).join("")}</details>
+          </section>
           <div class="palette-scroll" data-role="palette"></div>
         </aside>
 
@@ -89,7 +102,7 @@ export class EditorShell {
           <div data-role="inspector" class="inspector-content"></div>
           <div class="architecture-note">
             <strong>Asset boundary</strong>
-            <p>Everything visible is generated in code today. Map IDs stay stable when PNG/WebP/atlas assets replace the procedural provider later.</p>
+            <p>Authored PNG trials replace selected catalog families while the remaining families stay procedural. Map IDs stay stable as art coverage expands.</p>
           </div>
         </aside>
 
@@ -580,6 +593,16 @@ export class EditorShell {
   }
 
   private bindActions(): void {
+    const mapAlpha = this.root.querySelector<HTMLInputElement>("#map-alpha")!;
+    const terrainOnly = this.root.querySelector<HTMLInputElement>("#terrain-only")!;
+    const colorCells = this.root.querySelector<HTMLInputElement>("#terrain-colors")!;
+    const updateReference = (): void => {
+      this.root.querySelector<HTMLOutputElement>("#map-alpha-value")!.value = `${mapAlpha.value}%`;
+      this.onReferenceView({ mapAlpha: Number(mapAlpha.value), terrainOnly: terrainOnly.checked, colorCells: colorCells.checked });
+    };
+    mapAlpha.addEventListener("input", updateReference);
+    terrainOnly.addEventListener("change", updateReference);
+    colorCells.addEventListener("change", updateReference);
     this.root.querySelector('[data-action="paint"]')?.addEventListener("click", () => this.editor.setTool("paint"));
     this.root.querySelector('[data-action="erase"]')?.addEventListener("click", () => this.editor.setTool("erase"));
     this.root.querySelector('[data-action="select"]')?.addEventListener("click", () => this.editor.setTool("select"));
@@ -659,7 +682,7 @@ export class EditorShell {
 
     this.root.querySelector('[data-action="reset"]')?.addEventListener("click", () => {
       this.editor.replaceDocument(this.createResetMap());
-      this.toast("Sample kingdom restored.");
+      this.toast("Default map restored.");
     });
 
     window.addEventListener("keydown", (event) => {

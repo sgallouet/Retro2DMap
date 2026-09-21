@@ -22,6 +22,22 @@ describe("EditorController semantic gestures", () => {
     }
   });
 
+  it("erases terrain to a transparent cell instead of painting grass", () => {
+    const editor = new EditorController(createBlankMap(4, 4, "grass"), worldCatalog);
+    editor.select("terrain", "path");
+    editor.beginStroke();
+    editor.applyAt({ x: 1, y: 1 });
+    editor.endStroke();
+
+    editor.setTool("erase");
+    editor.beginStroke();
+    editor.applyAt({ x: 1, y: 1 });
+    editor.endStroke();
+
+    expect(editor.state.document.tiles[1 * 4 + 1]).toEqual({});
+    expect(editor.validateMap()).toEqual([]);
+  });
+
   it("draws connected prop lines through the same semantic placement service", () => {
     const editor = new EditorController(createBlankMap(7, 7, "grass"), worldCatalog);
     editor.select("prop", "castle-wall");

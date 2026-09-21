@@ -22,7 +22,7 @@ export interface TerrainDefinition extends CatalogBase {
   edgeStyle: TerrainEdgeStyle;
 }
 
-export type PropNetworkKind = "wall" | "fence" | "bridge" | "cliff";
+export type PropNetworkKind = "wall" | "fence" | "bridge" | "cliff" | "surface";
 
 export interface PropNetworkDefinition {
   group: string;
@@ -147,7 +147,7 @@ export const props = [
   prop("castle-wall", "Castle Wall", "Castle", 1, 1, true, 20, { group: "castle-wall", kind: "wall" }),
   prop("garden-border", "Garden Stone Border", "Castle", 1, 1, false, 4, { group: "garden-border", kind: "fence" }),
   prop("castle-tower", "Round Tower", "Castle", 2, 3, true, 30),
-  prop("castle-gate", "Castle Gate", "Castle", 2, 2, true, 24, undefined, true),
+  prop("castle-gate", "Open Castle Gate", "Castle", 2, 2, false, 24, undefined, false),
   prop("stairs", "Stone Stairs", "Castle", 2, 1, false, 5, undefined, true),
   prop("banner", "Royal Banner", "Castle", 1, 1, false, 22),
   prop("torch", "Wall Torch", "Castle", 1, 1, false, 23),
@@ -161,10 +161,10 @@ export const props = [
   prop("table", "Long Table", "Interior", 3, 1, true, 8, undefined, true),
   prop("bed-red", "Red Bed", "Interior", 1, 2, true, 8, undefined, true),
   prop("bed-blue", "Blue Bed", "Interior", 1, 2, true, 8, undefined, true),
-  prop("throne", "Royal Throne", "Interior", 1, 2, true, 14, undefined, true),
+  prop("throne", "Royal Throne", "Interior", 2, 2, true, 14, undefined, false),
   prop("weapon-rack", "Weapon Rack", "Interior", 2, 1, true, 9, undefined, true),
   prop("barrels", "Barrels", "Interior", 1, 1, true, 7),
-  prop("rug-red", "Red Rug", "Interior", 1, 1, false, -1),
+  prop("rug-red", "Red Rug", "Interior", 1, 1, false, -1, { group: "rug-red", kind: "surface" }),
 ] as const satisfies readonly PropDefinition[];
 
 export const actors = [

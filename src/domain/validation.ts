@@ -54,6 +54,7 @@ export class MapValidator implements IMapValidator {
     }
 
     document.tiles.forEach((tile, index) => {
+      if (!tile.terrainId) return;
       const definition = this.catalog.get(tile.terrainId);
       if (!definition || definition.layer !== "terrain") {
         issues.push({

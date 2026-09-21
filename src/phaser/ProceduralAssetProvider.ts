@@ -18,10 +18,32 @@ import {
   WEST,
   enumerateTerrainTopologies,
 } from "../domain/autotile";
+import type { TerrainMaterialNeighborMasks } from "../domain/autotile";
 import { TILE_SIZE } from "../domain/map";
 import type { AssetRenderContext, IAssetProvider, TextureRef } from "./IAssetProvider";
+import { applyRoadContour, type RoadMaterial } from "./RoadTerrainCompositor";
 
 type Draw = (ctx: CanvasRenderingContext2D, width: number, height: number) => void;
+const EMPTY_MATERIAL_NEIGHBORS: TerrainMaterialNeighborMasks = {
+  grass: 0,
+  path: 0,
+  cobble: 0,
+};
+
+export const terrainTransitionKey = (
+  id: string,
+  materialNeighbors: TerrainMaterialNeighborMasks,
+): string => {
+  if (id === "grass") {
+    return materialNeighbors.path === 0 && materialNeighbors.cobble === 0
+      ? ""
+      : `p${materialNeighbors.path & 255}-c${materialNeighbors.cobble & 255}`;
+  }
+  if (id === "path" || id === "cobble") {
+    return materialNeighbors.grass === 0 ? "" : `g${materialNeighbors.grass & 255}`;
+  }
+  return "";
+};
 
 const hash = (value: string): number => {
   let h = 2166136261;
@@ -132,6 +154,9 @@ export class ProceduralAssetProvider implements IAssetProvider {
                 variant,
                 topology.cardinalMask,
                 topology.innerCornerMask,
+                EMPTY_MATERIAL_NEIGHBORS,
+                0,
+                0,
               );
             },
           );
@@ -186,7 +211,23 @@ export class ProceduralAssetProvider implements IAssetProvider {
     if (entry.layer === "terrain") {
       const variant = context?.terrain?.variation ?? hash(`${entry.id}:${x}:${y}`) % 4;
       const topologyKey = context?.terrain?.topologyKey ?? "c15-i0";
-      return { key: this.terrainKey(entry.id, variant, topologyKey) };
+      const materialNeighbors = context?.terrain?.materialNeighbors ?? EMPTY_MATERIAL_NEIGHBORS;
+      const key = this.terrainKey(entry.id, variant, topologyKey, materialNeighbors);
+      if (this.needsTerrainTransition(entry.id, materialNeighbors)) {
+        if (!this.#scene) throw new Error("Procedural terrain transition requested before prepare().");
+        this.ensureTerrainTexture(
+          this.#scene,
+          entry,
+          variant,
+          topologyKey,
+          context?.terrain?.cardinalMask ?? 0,
+          context?.terrain?.innerCornerMask ?? 0,
+          materialNeighbors,
+          x * TILE_SIZE,
+          y * TILE_SIZE,
+        );
+      }
+      return { key };
     }
 
     if (entry.layer === "prop" && entry.network) {
@@ -217,8 +258,64 @@ export class ProceduralAssetProvider implements IAssetProvider {
     return `proc:${id}`;
   }
 
-  private terrainKey(id: string, variant: number, topologyKey: string): string {
-    return `proc:${id}:${variant}:${topologyKey}`;
+  private terrainKey(
+    id: string,
+    variant: number,
+    topologyKey: string,
+    materialNeighbors: TerrainMaterialNeighborMasks = EMPTY_MATERIAL_NEIGHBORS,
+  ): string {
+    const transition = this.terrainTransitionKey(id, materialNeighbors);
+    return transition
+      ? `proc:${id}:${variant}:${topologyKey}:transition-${transition}`
+      : `proc:${id}:${variant}:${topologyKey}`;
+  }
+
+  private terrainTransitionKey(
+    id: string,
+    materialNeighbors: TerrainMaterialNeighborMasks,
+  ): string {
+    return terrainTransitionKey(id, materialNeighbors);
+  }
+
+  private needsTerrainTransition(
+    id: string,
+    materialNeighbors: TerrainMaterialNeighborMasks,
+  ): boolean {
+    return this.terrainTransitionKey(id, materialNeighbors) !== "";
+  }
+
+  private ensureTerrainTexture(
+    scene: Phaser.Scene,
+    entry: TerrainDefinition,
+    variant: number,
+    topologyKey: string,
+    cardinalMask: number,
+    innerCornerMask: number,
+    materialNeighbors: TerrainMaterialNeighborMasks,
+    worldPixelX: number,
+    worldPixelY: number,
+  ): void {
+    const key = this.terrainKey(entry.id, variant, topologyKey, materialNeighbors);
+    this.create(
+      scene,
+      key,
+      TILE_SIZE,
+      TILE_SIZE,
+      (ctx, w, h) => {
+        this.drawTerrain(
+          ctx,
+          w,
+          h,
+          entry,
+          variant,
+          cardinalMask,
+          innerCornerMask,
+          materialNeighbors,
+          worldPixelX,
+          worldPixelY,
+        );
+      },
+    );
   }
 
   private networkKey(id: string, neighborMask: number): string {
@@ -237,8 +334,26 @@ export class ProceduralAssetProvider implements IAssetProvider {
     variant: number,
     cardinalMask: number,
     innerCornerMask: number,
+    materialNeighbors: TerrainMaterialNeighborMasks,
+    worldPixelX: number,
+    worldPixelY: number,
   ): void {
     this.drawTerrainBase(ctx, width, height, entry, variant);
+    if (entry.id === "path" || entry.id === "cobble") {
+      applyRoadContour(
+        ctx,
+        entry.id as RoadMaterial,
+        width,
+        height,
+        cardinalMask,
+        innerCornerMask,
+        materialNeighbors.grass,
+        this.terrainMaterialSource("grass"),
+        worldPixelX,
+        worldPixelY,
+      );
+      return;
+    }
     this.drawTerrainEdges(
       ctx,
       width,
@@ -247,7 +362,14 @@ export class ProceduralAssetProvider implements IAssetProvider {
       cardinalMask,
       innerCornerMask,
       variant,
+      materialNeighbors,
     );
+  }
+
+  private terrainMaterialSource(catalogId: string): { image: CanvasImageSource; size: number } | undefined {
+    const key = this.#terrainMaterials.get(catalogId);
+    if (!key || !this.#scene?.textures.exists(key)) return undefined;
+    return { image: this.#scene.textures.get(key).getSourceImage() as CanvasImageSource, size: TILE_SIZE };
   }
 
   private drawTerrainBase(
@@ -476,6 +598,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
     cardinalMask: number,
     innerCornerMask: number,
     variant: number,
+    materialNeighbors: TerrainMaterialNeighborMasks = EMPTY_MATERIAL_NEIGHBORS,
   ): void {
     if (entry.edgeStyle === "none") return;
 
@@ -488,6 +611,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
         innerCornerMask,
         variant,
         this.#terrainMaterials.has(entry.id),
+        materialNeighbors,
       );
       return;
     }
@@ -586,11 +710,14 @@ export class ProceduralAssetProvider implements IAssetProvider {
     innerCornerMask: number,
     variant: number,
     authoredBase = false,
+    materialNeighbors: TerrainMaterialNeighborMasks = EMPTY_MATERIAL_NEIGHBORS,
   ): void {
-    const openNorth = (cardinalMask & NORTH) === 0;
-    const openEast = (cardinalMask & EAST) === 0;
-    const openSouth = (cardinalMask & SOUTH) === 0;
-    const openWest = (cardinalMask & WEST) === 0;
+    const roadNeighborMask = materialNeighbors.path | materialNeighbors.cobble;
+    const openNorth = (cardinalMask & NORTH) === 0 && (roadNeighborMask & NORTH) === 0;
+    const openEast = (cardinalMask & EAST) === 0 && (roadNeighborMask & EAST) === 0;
+    const openSouth = (cardinalMask & SOUTH) === 0 && (roadNeighborMask & SOUTH) === 0;
+    const openWest = (cardinalMask & WEST) === 0 && (roadNeighborMask & WEST) === 0;
+    const visibleInnerCornerMask = innerCornerMask & ~roadNeighborMask;
 
     // Grass owns only its grassy lip. It must NOT paint a fake dark cliff or
     // substrate when adjacent to path/cobble/soil; those materials own their
@@ -710,12 +837,12 @@ export class ProceduralAssetProvider implements IAssetProvider {
     // both cardinal neighbors are still grass. A tiny L/arc cue is enough.
     // Painting a big square here was visually wrong and made holes look like
     // posts or blobs.
-    if ((innerCornerMask & NORTH_EAST) !== 0) {
+    if ((visibleInnerCornerMask & NORTH_EAST) !== 0) {
       line(ctx, [[width - 8, 1], [width - 3, 1], [width - 3, 7]], shadow, 2);
       line(ctx, [[width - 8, 3], [width - 5, 3], [width - 5, 7]], light, 1);
       rect(ctx, width - 7, 5, 1, 2, deep);
     }
-    if ((innerCornerMask & SOUTH_EAST) !== 0) {
+    if ((visibleInnerCornerMask & SOUTH_EAST) !== 0) {
       line(
         ctx,
         [[width - 3, height - 8], [width - 3, height - 3], [width - 8, height - 3]],
@@ -730,12 +857,12 @@ export class ProceduralAssetProvider implements IAssetProvider {
       );
       rect(ctx, width - 7, height - 7, 1, 2, deep);
     }
-    if ((innerCornerMask & SOUTH_WEST) !== 0) {
+    if ((visibleInnerCornerMask & SOUTH_WEST) !== 0) {
       line(ctx, [[3, height - 8], [3, height - 3], [8, height - 3]], shadow, 2);
       line(ctx, [[5, height - 8], [5, height - 5], [8, height - 5]], light, 1);
       rect(ctx, 6, height - 7, 1, 2, deep);
     }
-    if ((innerCornerMask & NORTH_WEST) !== 0) {
+    if ((visibleInnerCornerMask & NORTH_WEST) !== 0) {
       line(ctx, [[8, 1], [3, 1], [3, 7]], shadow, 2);
       line(ctx, [[8, 3], [5, 3], [5, 7]], light, 1);
       rect(ctx, 6, 5, 1, 2, deep);
@@ -940,10 +1067,7 @@ export class ProceduralAssetProvider implements IAssetProvider {
         line(ctx, [[10, 30], [38, 30]], "#4f4f4d", 3);
         return;
       case "rug-red":
-        rect(ctx, 5, 3, width - 10, height - 6, "#B81F25", "#F3CF63");
-        rect(ctx, 9, 7, width - 18, height - 14, "#B22022");
-        line(ctx, [[10, 10], [width - 10, 10]], "#ECC75E", 1);
-        line(ctx, [[10, height - 10], [width - 10, height - 10]], "#ECC75E", 1);
+        this.drawRugSurface(ctx, width, height, networkMask);
         return;
       default:
         rect(ctx, 4, 4, width - 8, height - 8, "#d54f7b", "#6b243e");
@@ -1535,11 +1659,32 @@ export class ProceduralAssetProvider implements IAssetProvider {
     ctx.closePath();
     ctx.fill();
 
+    // The gate is intentionally open: the dark arch is an unblocked passage,
+    // with the raised portcullis hinted above it instead of filling the route.
+    line(ctx, [[cx - 29, height - 28], [cx - 29, height - 2]], "#A87F45", 4);
+    line(ctx, [[cx + 29, height - 28], [cx + 29, height - 2]], "#A87F45", 4);
+    line(ctx, [[cx - 27, height - 41], [cx + 27, height - 41]], "#BEA475", 2);
     for (let x = cx - 21; x <= cx + 21; x += 8) {
-      line(ctx, [[x, height - 49], [x, height]], "#A87F45", 4);
+      line(ctx, [[x, 20], [x, height - 43]], "#A87F45", 3);
     }
-    line(ctx, [[cx - 27, height - 28], [cx + 27, height - 28]], "#614221", 4);
-    line(ctx, [[cx - 25, height - 41], [cx + 25, height - 41]], "#BEA475", 2);
+  }
+
+  private drawRugSurface(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    networkMask: number,
+  ): void {
+    const exposed = (bit: number): boolean => (networkMask & bit) === 0;
+    rect(ctx, 0, 0, width, height, "#B22022");
+    const gold = "#F3CF63";
+    if (exposed(NORTH)) line(ctx, [[3, 2], [width - 3, 2]], gold, 3);
+    if (exposed(EAST)) line(ctx, [[width - 2, 3], [width - 2, height - 3]], gold, 3);
+    if (exposed(SOUTH)) line(ctx, [[3, height - 2], [width - 3, height - 2]], gold, 3);
+    if (exposed(WEST)) line(ctx, [[2, 3], [2, height - 3]], gold, 3);
+    if (networkMask === 0) {
+      rect(ctx, 7, 7, width - 14, height - 14, "#B81F25");
+    }
   }
 
   private drawFountain(ctx: CanvasRenderingContext2D, width: number, height: number): void {

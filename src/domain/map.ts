@@ -15,7 +15,8 @@ export interface GridCoord {
 }
 
 export interface TileCell {
-  terrainId: string;
+  /** Omitted terrain is an intentionally transparent cell. */
+  terrainId?: string;
 }
 
 export interface PropInstance {
@@ -105,6 +106,11 @@ export function validateMapDocument(value: unknown): MapDocument {
   if (!candidate.width || !candidate.height || candidate.width < 1 || candidate.height < 1) throw new Error("Map size must be positive.");
   if (!Array.isArray(candidate.tiles) || candidate.tiles.length !== candidate.width * candidate.height) {
     throw new Error("Terrain cell count does not match map dimensions.");
+  }
+  if (candidate.tiles.some((tile) =>
+    !tile || typeof tile !== "object" ||
+    ("terrainId" in tile && tile.terrainId !== undefined && typeof tile.terrainId !== "string"))) {
+    throw new Error("Invalid terrain cell.");
   }
   if (!Array.isArray(candidate.props) || !Array.isArray(candidate.actors)) throw new Error("Props and actors must be arrays.");
   if (typeof candidate.id !== "string" || typeof candidate.name !== "string") throw new Error("Map id/name missing.");

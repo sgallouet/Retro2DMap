@@ -5,7 +5,7 @@
 > Read this file before making architectural, editor, rendering, map-format, or asset-pipeline changes.
 > If a proposed implementation conflicts with this document, preserve these requirements unless the user explicitly changes them.
 
-Last clarified: **2026-09-19**
+Last clarified: **2026-09-20**
 
 ---
 
@@ -176,25 +176,15 @@ This logic should eventually apply to both terrain and connected structures, esp
 
 ### 6.1 Current phase
 
-For now, visual assets are generated in code.
+The user paints the map. Current element: meadow grass and its transitions with dirt path and cobble. Roads are implemented but visually provisional until reviewed beside grass. Preserve their center textures initially; minimal boundary-composition changes are allowed to establish a coherent join.
 
-This is intentional.
+Preserve all painted cells and intentional transparency. Work on one small grass/road proof before expanding. No other terrain, props, map reconstruction or editor expansion. Execute [GRASS_COURSE_CORRECTION.md](docs/GRASS_COURSE_CORRECTION.md). The current grass art is rejected. First approve one reference-matched sample at final displayed size; no additional renderer work before that proof. Logical cell size does not prescribe artwork resolution.
 
-The goal is to stabilize:
-
-- world model
-- painter semantics
-- editor workflow
-- topology rules
-- footprints
-- rendering contracts
-- serialization
-
-before investing heavily in final sprite production.
+At 100% map opacity, painted interiors and fully painted seams must use our pixels, with no reference leakage. Missing declared art must fail clearly; no new fallback paths.
 
 ### 6.2 Future phase
 
-Later, generated art may be replaced by:
+During this milestone, provisional art may be replaced by:
 
 - PNG sprites
 - WebP sprites
@@ -323,21 +313,11 @@ The system should support maps with combinations such as:
 
 Do not optimize the architecture around a visually trivial tile map.
 
-### 9.1 Water visual work is intentionally deferred
+### 9.1 Current visual scope: grass and road contacts
 
-For the current reference-map fidelity loop, **do not spend meaningful iteration time on water rendering, river-bank polish, waterfall polish, or water animation**.
+Finish a readable meadow grass material and a single coherent grass/dirt or grass/cobble boundary. Evaluate roads and grass together; road acceptance remains provisional. Preserve user-painted geometry and empty cells.
 
-Water will use a substantially different approach later. Keep its semantic/topology hooks intact, but prioritize visual fidelity elsewhere:
-
-- castle silhouette and cutaway readability
-- village buildings
-- vegetation
-- roads / ground texture
-- castle rooms and props
-- characters / NPC readability
-- overall color harmony and density
-
-Do not let temporary water art drive architecture or consume polish time.
+All other materials, water, props and characters are deferred until the user chooses the next element. The target is a reference, not a source of detail inside our painted surfaces. Use opacity 100% and a neutral background for acceptance; 50% is diagnostic only.
 
 ---
 
@@ -416,16 +396,11 @@ Do not silently trade long-term map-builder architecture for a short-term visual
 
 ## 13. Current strategic priorities
 
-In rough order:
+1. Preserve the user's manually painted map.
+2. Prove meadow grass and its dirt-road transition in one small rendered patch, with complete seam coverage and readable material.
+3. Verify corners and cobble contact, review grass and roads together, then let the user choose the next element.
 
-1. Marquee selection and bulk semantic editing.
-2. Room/castle composition tools built from terrain + connected networks + prefabs.
-3. Prefab-level orientation and reusable structural variations.
-4. Generator refinement on top of the shared serializable world-command API.
-5. Large-map chunking/streaming and dirty-region rendering.
-6. Richer validation for entrances, connectivity and generated layouts.
-7. Progressive authored sprite/atlas replacement while preserving semantic IDs.
-8. Optional Tiled/LDtk interoperability without replacing native JSON.
+Execute [GRASS_COURSE_CORRECTION.md](docs/GRASS_COURSE_CORRECTION.md). The current grass art is rejected. First approve one reference-matched sample at final displayed size; no additional renderer work before that proof. Logical cell size does not prescribe artwork resolution. Earlier road-only and terrain-wide instructions do not override this scope. Change road boundary composition only as needed for the join; defer independent road redesign.
 
 ---
 

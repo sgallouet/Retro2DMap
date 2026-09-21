@@ -1,17 +1,11 @@
-# Milestones — TL;DR
+# Current milestone — recover grass art quality
 
-> Keep this short. [REQUIREMENTS.md](REQUIREMENTS.md) is the project contract.
+The user rejected the current grass result. Roads also remain provisional.
 
-**Current phase:** first authored sprite trial
+Execute [GRASS_COURSE_CORRECTION.md](docs/GRASS_COURSE_CORRECTION.md).
 
-- ✅ Semantic grid + topology + procedural fallback remain intact.
-- ✅ Grass mapping study established a clean terrain-topology contract.
-- ✅ Runtime now uses `SpriteAssetProvider` with procedural fallback.
-- ✅ Added support for one-off PNG/WebP sprites before atlas packing.
-- ✅ Chosen first authored asset: **round deciduous tree** (static 1×2 prop, high visual impact, zero topology complexity).
-- ✅ Exact generation prompt + sizing contract saved in `docs/SPRITE_PROMPT_TREE_ROUND.md`.
-- ✅ First authored sprite trial: `tree-round.png` (72×96) enabled in the manifest; other assets stay procedural.
-- ✅ Authored `grass` center material (`grass-center.png`) under the existing topology overlay.
-- ⏭ Next: second tree variant → pine → flowers/rocks → then authored terrain edge families.
+Next deliverable: one reference-matched grass/road-edge comparison at final displayed scale. No more renderer work or tests before this visual proof. Match the actual reference style, not generic hard-edged retro tufts.
 
-**Rule:** introduce sprites incrementally; never change semantic map data just to accommodate art.
+Preserve the user-painted map and existing transition infrastructure. A 48px logical cell does not require 48px source artwork. Establish appearance and sampling before production integration.
+
+Status: failure audited; selected grass is rejected; no new art or runtime changes made in this audit.

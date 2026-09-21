@@ -2,9 +2,13 @@ import Phaser from "phaser";
 import "./styles.css";
 import { worldCatalog } from "./domain/catalog";
 import { EditorController } from "./editor/EditorController";
-import { createSampleKingdom } from "./maps/sampleKingdom";
 import { createGrassStudy } from "./maps/grassStudy";
 import { createGrassSeamStudy } from "./maps/grassSeamStudy";
+import { createGrassTransitionStudy } from "./maps/grassTransitionStudy";
+import { createPathSeamStudy } from "./maps/pathSeamStudy";
+import { createReferenceMap01RoadsOnly } from "./maps/referenceMap01";
+import { createTerrainStudy } from "./maps/terrainStudy";
+import { createWoodFloorSeamStudy } from "./maps/woodFloorSeamStudy";
 import { MapScene } from "./phaser/MapScene";
 import { prefabCatalog } from "./prefabs/catalog";
 import { ProceduralAssetProvider } from "./phaser/ProceduralAssetProvider";
@@ -24,18 +28,27 @@ const createInitialMap =
     ? createGrassStudy
     : mapParam === "grass-seam"
       ? createGrassSeamStudy
-      : createSampleKingdom;
+      : mapParam === "grass-transition-study"
+        ? createGrassTransitionStudy
+      : mapParam === "path-seam"
+      ? createPathSeamStudy
+        : mapParam === "terrain-study"
+          ? createTerrainStudy
+        : mapParam === "wood-seam"
+          ? createWoodFloorSeamStudy
+        : createReferenceMap01RoadsOnly;
 
 const editor = new EditorController(createInitialMap(), worldCatalog, prefabCatalog);
 const store = new LocalStorageMapStore();
-const shell = new EditorShell(root, editor, worldCatalog, prefabCatalog, store, createInitialMap);
-shell.mount();
 
 const assets = new SpriteAssetProvider(
   spriteAssetManifest,
   new ProceduralAssetProvider(),
 );
 const scene = new MapScene({ editor, catalog: worldCatalog, prefabs: prefabCatalog, assets });
+const shell = new EditorShell(root, editor, worldCatalog, prefabCatalog, store, createInitialMap,
+  (view) => scene.setReferenceView(view));
+shell.mount();
 const palettePreview = new PalettePreviewEnhancer(
   root,
   scene,

@@ -97,9 +97,11 @@ If an art requirement appears to need a new map field solely to name a particula
 The map should remain an asset-independent description of the world.
 
 
-## First sprite trial
+## Incremental authored trials
 
-The first authored asset trial is the static `tree-round` prop.
+The first authored trial was the static `tree-round` prop. M1 adds normalized
+castle-tower and house-blue trials so the whole-map composition contains both
+an architectural landmark and a village building in the authored style.
 
 Reason: it has no topology variants, is visually important, and immediately tests transparent overhang while keeping a simple 1×2 logical footprint.
 
@@ -111,5 +113,28 @@ Prompt and sizing contract:
 - target paths: `public/assets/props/tree-round.png` plus `tree-round-02.png` / `tree-round-03.png` / `tree-round-04.png` as deterministic visual variants
 
 The runtime is already using `SpriteAssetProvider` with `ProceduralAssetProvider` fallback, so authored art can be enabled one asset at a time.
+
+M1 authored additions:
+
+- `public/assets/props/castle-tower-authored.png`: 96×144 RGBA, normalized to
+  the declared 2×3 tower footprint.
+- `public/assets/props/castle-gate-authored.png`: 96×96 RGBA, normalized to
+  the declared 2×2 open-gate footprint.
+- `public/assets/props/house-blue-authored.png`: 144×144 RGBA, normalized to
+  the declared 3×3 house footprint.
+- `public/assets/props/throne-authored.png`: 96×96 RGBA, normalized to the
+  declared 2×2 throne footprint.
+- `public/assets/props/bookshelf-authored.png`: 96×48 RGBA, normalized to the
+  declared 2×1 bookshelf footprint.
+- `public/assets/props/table-authored.png`: 144×48 RGBA, normalized to the
+  declared 3×1 table footprint.
+- `public/assets/props/stairs-authored.png`: 96×48 RGBA, normalized to the
+  declared 2×1 stairs footprint.
+- `public/assets/props/pillar-authored.png`: 48×96 RGBA, normalized to the
+  declared 1×2 pillar footprint.
+
+All are mapped by catalog ID in `src/assets/spriteManifest.ts`. The red house,
+castle wall/gate, banners, actors, and remaining prop families stay procedural
+until their topology and anchor contracts are authored and reviewed.
 
 `kind: "terrain-base"` maps a catalog terrain to a fill image. The procedural provider still paints topology edges on top of that fill. Missing images fall back to a fully procedural tile.

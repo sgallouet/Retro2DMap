@@ -88,6 +88,29 @@ describe("terrain topology", () => {
     const topology = new TerrainTopologyResolver(worldCatalog).resolve(map, { x: 1, y: 1 }, water);
     expect(topology.cardinalMask & NORTH).toBe(NORTH);
   });
+
+  it("derives exact grass/path/cobble material neighbors without treating empty or out-of-bounds cells as grass", () => {
+    const map = createBlankMap(5, 5);
+    map.tiles.fill({});
+    map.tiles[1 * map.width + 2] = { terrainId: "path" };
+    map.tiles[2 * map.width + 3] = { terrainId: "cobble" };
+    map.tiles[3 * map.width + 1] = {};
+
+    const grass = worldCatalog.get("grass");
+    if (!grass || grass.layer !== "terrain") throw new Error("grass definition missing");
+
+    const center = new TerrainTopologyResolver(worldCatalog).resolve(
+      map,
+      { x: 2, y: 2 },
+      grass,
+    );
+    expect(center.materialNeighbors.path).toBe(NORTH);
+    expect(center.materialNeighbors.cobble).toBe(EAST);
+    expect(center.materialNeighbors.grass).toBe(0);
+
+    const edge = new TerrainTopologyResolver(worldCatalog).resolve(map, { x: 0, y: 0 }, grass);
+    expect(edge.materialNeighbors.grass).toBe(0);
+  });
 });
 
 describe("connected prop topology", () => {

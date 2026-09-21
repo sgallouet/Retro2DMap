@@ -19,6 +19,17 @@ export type CardinalMask = number;
 export type NeighborMask = number;
 export type CornerMask = number;
 
+/**
+ * Material context used only while composing the grass/road proof. These
+ * masks are derived from the document at render time and are never persisted
+ * in map JSON.
+ */
+export interface TerrainMaterialNeighborMasks {
+  readonly grass: NeighborMask;
+  readonly path: NeighborMask;
+  readonly cobble: NeighborMask;
+}
+
 export type NetworkRole =
   | "isolated"
   | "end"
@@ -48,6 +59,8 @@ export interface TerrainRenderContext {
   topologyKey: string;
   /** Deterministic cosmetic variant. Never gameplay-relevant. */
   variation: number;
+  /** Render-only material context for the grass/road boundary compositor. */
+  materialNeighbors: TerrainMaterialNeighborMasks;
 }
 
 export interface NetworkRenderContext {
@@ -122,6 +135,43 @@ export const terrainTopologyKey = (neighborMask: NeighborMask): string => {
   const inner = innerCornerMaskOf(neighborMask);
   return `c${cardinal}-i${inner}`;
 };
+
+const MATERIAL_IDS = ["grass", "path", "cobble"] as const;
+type MaterialId = (typeof MATERIAL_IDS)[number];
+
+const materialNeighborBit = (
+  document: MapDocument,
+  coord: GridCoord,
+  catalog: IWorldCatalog,
+  material: MaterialId,
+): NeighborMask => {
+  const offsets: readonly [number, number, number][] = [
+    [NORTH, 0, -1],
+    [EAST, 1, 0],
+    [SOUTH, 0, 1],
+    [WEST, -1, 0],
+    [NORTH_EAST, 1, -1],
+    [SOUTH_EAST, 1, 1],
+    [SOUTH_WEST, -1, 1],
+    [NORTH_WEST, -1, -1],
+  ];
+
+  return offsets.reduce((mask, [bit, dx, dy]) => {
+    const cell = tileAt(document, { x: coord.x + dx, y: coord.y + dy });
+    const neighbor = cell?.terrainId ? catalog.get(cell.terrainId) : undefined;
+    return neighbor?.id === material ? mask | bit : mask;
+  }, 0);
+};
+
+export const terrainMaterialNeighborMasks = (
+  document: MapDocument,
+  coord: GridCoord,
+  catalog: IWorldCatalog,
+): TerrainMaterialNeighborMasks => ({
+  grass: materialNeighborBit(document, coord, catalog, "grass"),
+  path: materialNeighborBit(document, coord, catalog, "path"),
+  cobble: materialNeighborBit(document, coord, catalog, "cobble"),
+});
 
 /**
  * Returns every distinct topology key the 8-neighbour resolver can emit.
@@ -212,6 +262,7 @@ export class TerrainTopologyResolver implements ITerrainTopologyResolver {
       innerCornerMask: innerCornerMaskOf(neighborMask),
       topologyKey: terrainTopologyKey(neighborMask),
       variation: hash(`${terrain.id}:${coord.x}:${coord.y}`) % 4,
+      materialNeighbors: terrainMaterialNeighborMasks(document, coord, this.catalog),
     };
   }
 
@@ -222,7 +273,7 @@ export class TerrainTopologyResolver implements ITerrainTopologyResolver {
     // an accidental decorative coastline/border.
     if (!cell) return true;
 
-    const neighbor = this.catalog.get(cell.terrainId);
+    const neighbor = cell.terrainId ? this.catalog.get(cell.terrainId) : undefined;
     return neighbor?.layer === "terrain" && neighbor.connectGroup === terrain.connectGroup;
   }
 }

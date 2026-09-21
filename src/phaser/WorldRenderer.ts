@@ -10,6 +10,7 @@ import { TILE_SIZE } from "../domain/map";
 import type { IAssetProvider } from "./IAssetProvider";
 import { ISO_PADDING, ISO_TILE_WIDTH, type ProjectionMode } from "../domain/projection";
 import { TerrainTransitionCompositor, type TerrainTransitionSide } from "./TerrainTransitionCompositor";
+import { WaterSurface } from "./WaterSurface";
 
 export interface IWorldRenderer {
   render(
@@ -20,6 +21,7 @@ export interface IWorldRenderer {
     validationIssues: readonly ValidationIssue[],
     routePath: readonly GridCoord[],
     projection: ProjectionMode,
+    terrainOnly?: boolean,
   ): void;
   setHover(
     coord: GridCoord | null,
@@ -47,8 +49,10 @@ export class WorldRenderer implements IWorldRenderer {
   readonly #propTopology: PropTopologyResolver;
   readonly #navigation: NavigationGridBuilder;
   readonly #terrainTransitions: TerrainTransitionCompositor;
+  readonly #waterSurface: WaterSurface;
   #lastDocument: MapDocument | null = null;
   #projection: ProjectionMode = "top-down";
+  #mapAlpha = 1;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -70,6 +74,7 @@ export class WorldRenderer implements IWorldRenderer {
     this.#propTopology = new PropTopologyResolver(catalog);
     this.#navigation = new NavigationGridBuilder(catalog);
     this.#terrainTransitions = new TerrainTransitionCompositor(scene, assets);
+    this.#waterSurface = new WaterSurface(scene, catalog);
     this.#projectionPlane.add([
       this.#navigationOverlay,
       this.#validationOverlay,
@@ -89,6 +94,7 @@ export class WorldRenderer implements IWorldRenderer {
     validationIssues: readonly ValidationIssue[],
     routePath: readonly GridCoord[],
     projection: ProjectionMode,
+    terrainOnly = false,
   ): void {
     this.#lastDocument = document;
     this.#projection = projection;
@@ -98,7 +104,7 @@ export class WorldRenderer implements IWorldRenderer {
     for (let y = 0; y < document.height; y += 1) {
       for (let x = 0; x < document.width; x += 1) {
         const cell = document.tiles[y * document.width + x];
-        if (!cell) continue;
+        if (!cell?.terrainId) continue;
         const definition = this.catalog.get(cell.terrainId);
         if (!definition || definition.layer !== "terrain") continue;
         const texture = this.assets.textureRef(definition, x, y, {
@@ -107,6 +113,7 @@ export class WorldRenderer implements IWorldRenderer {
         const image = this.scene.add
           .image(x * TILE_SIZE, y * TILE_SIZE, texture.key, texture.frame)
           .setOrigin(0, 0)
+          .setAlpha(this.#mapAlpha)
           .setDepth(0);
         this.#projectionPlane.add(image);
         this.#worldObjects.push(image);
@@ -117,7 +124,10 @@ export class WorldRenderer implements IWorldRenderer {
       }
     }
 
+    this.#waterSurface.render(document);
+
     document.props.forEach((prop) => {
+      if (terrainOnly) return;
       const definition = this.catalog.get(prop.catalogId);
       if (!definition || definition.layer !== "prop") return;
       const propDefinition = definition as PropDefinition;
@@ -138,6 +148,7 @@ export class WorldRenderer implements IWorldRenderer {
           texture.frame,
         )
         .setOrigin(0.5, 0.5)
+        .setAlpha(this.#mapAlpha)
         .setAngle(rotation)
         .setDepth(
           1_000 +
@@ -151,6 +162,7 @@ export class WorldRenderer implements IWorldRenderer {
     });
 
     document.actors.forEach((actor) => {
+      if (terrainOnly) return;
       const definition = this.catalog.get(actor.catalogId);
       if (!definition || definition.layer !== "actor") return;
       const texture = this.assets.textureRef(definition, actor.x, actor.y, {
@@ -159,6 +171,7 @@ export class WorldRenderer implements IWorldRenderer {
       const image = this.scene.add
         .image(actor.x * TILE_SIZE, actor.y * TILE_SIZE, texture.key, texture.frame)
         .setOrigin(0, 0)
+        .setAlpha(this.#mapAlpha)
         .setDepth(
           1_000 +
             (projection === "isometric"
@@ -177,6 +190,12 @@ export class WorldRenderer implements IWorldRenderer {
     this.drawEntitySelection(document, entitySelection);
     this.drawGrid(document, gridVisible);
     this.#projectionPlane.sort("depth");
+  }
+
+  setMapAlpha(alpha: number): void {
+    this.#mapAlpha = Math.max(0, Math.min(1, alpha));
+    this.#worldObjects.forEach((object) => object.setAlpha(this.#mapAlpha));
+    this.#waterSurface.setAlpha(this.#mapAlpha);
   }
 
   setHover(
@@ -307,6 +326,7 @@ export class WorldRenderer implements IWorldRenderer {
     this.#linePreview.destroy();
     this.#hover.destroy();
     this.#terrainTransitions.destroy();
+    this.#waterSurface.destroy();
     this.#projectionPlane.destroy();
     this.#projectionRoot.destroy();
   }

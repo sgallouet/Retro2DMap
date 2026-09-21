@@ -13,6 +13,7 @@ import {
 import type { IAssetProvider } from "./IAssetProvider";
 import { projectedBounds, worldToGrid, type ProjectionMode } from "../domain/projection";
 import { WorldRenderer } from "./WorldRenderer";
+import { terrainComparisonColors, type ReferenceView } from "./ReferenceView";
 
 export interface MapSceneDependencies {
   editor: IEditorController;
@@ -28,6 +29,9 @@ export class MapScene extends Phaser.Scene {
   readonly #assets: IAssetProvider;
 
   #renderer?: WorldRenderer;
+  #referenceImage?: Phaser.GameObjects.Image;
+  #terrainCells?: Phaser.GameObjects.Graphics;
+  #referenceView: ReferenceView = { mapAlpha: 100, terrainOnly: false, colorCells: false };
   #unsubscribe?: () => void;
   #painting = false;
   #eraseOverride = false;
@@ -55,12 +59,16 @@ export class MapScene extends Phaser.Scene {
   }
 
   preload(): void {
+    this.load.image("reference-map-target", "/reference/target-map.png");
     this.#assets.preload(this, this.#catalog);
   }
 
   create(): void {
     this.#assets.prepare(this, this.#catalog);
     this.#renderer = new WorldRenderer(this, this.#catalog, this.#assets);
+    if (!this.textures.exists("reference-map-target")) throw new Error("Target reference image failed to load.");
+    this.#terrainCells = this.add.graphics().setDepth(90_000);
+    this.#referenceImage = this.add.image(0, 0, "reference-map-target").setOrigin(0).setDepth(-100);
     this.input.mouse?.disableContextMenu();
 
     this.#unsubscribe = this.#editor.subscribe((state) => {
@@ -77,7 +85,10 @@ export class MapScene extends Phaser.Scene {
         state.validationIssues,
         state.routePreview?.path ?? [],
         state.projection,
+        this.#referenceView.terrainOnly || this.#referenceView.colorCells,
       );
+      this.#renderer?.setMapAlpha(this.#referenceView.mapAlpha / 100);
+      this.updateReferenceView();
       const prefab = state.selectedPrefabId ? this.#prefabs.get(state.selectedPrefabId) : undefined;
       const selectedFootprint =
         state.selection.tool === "select"
@@ -102,6 +113,41 @@ export class MapScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.#unsubscribe?.();
       this.#renderer?.destroy();
+    });
+  }
+
+  setReferenceView(view: ReferenceView): void {
+    const visibilityChanged = (this.#referenceView.terrainOnly || this.#referenceView.colorCells)
+      !== (view.terrainOnly || view.colorCells);
+    this.#referenceView = view;
+    if (visibilityChanged && this.#renderer) {
+      const state = this.#editor.state;
+      this.#renderer.render(state.document, state.gridVisible, state.navigationVisible,
+        state.entitySelection, state.validationIssues, state.routePreview?.path ?? [],
+        this.#projection,
+        view.terrainOnly || view.colorCells);
+    }
+    this.#renderer?.setMapAlpha(view.mapAlpha / 100);
+    this.updateReferenceView();
+  }
+
+  private updateReferenceView(): void {
+    const document = this.#editor.state.document;
+    // Fixed registration: the entire 4:3 target covers the 40x30 reference world.
+    // Do not stretch it to imported maps or terrain studies with different dimensions.
+    this.#referenceImage?.setDisplaySize(40 * TILE_SIZE, 30 * TILE_SIZE)
+      .setAlpha(1);
+    const cells = this.#terrainCells;
+    if (!cells) return;
+    cells.clear();
+    cells.setAlpha(this.#referenceView.mapAlpha / 100);
+    if (!this.#referenceView.colorCells) return;
+    document.tiles.forEach((tile, index) => {
+      if (!tile.terrainId) return;
+      const color = terrainComparisonColors[tile.terrainId];
+      if (color === undefined) throw new Error(`No comparison color for terrain '${tile.terrainId}'.`);
+      cells.fillStyle(color).fillRect((index % document.width) * TILE_SIZE,
+        Math.floor(index / document.width) * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     });
   }
 

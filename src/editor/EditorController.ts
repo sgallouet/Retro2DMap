@@ -454,7 +454,7 @@ export class EditorController implements IEditorController {
     if (this.#selection.layer === "terrain") {
       changed = this.#worldPainter.paintTerrainPath(this.#document, {
         points: [from, to],
-        terrainId: erase ? "grass" : this.#selection.catalogId,
+        terrainId: erase ? undefined : this.#selection.catalogId,
         width: this.#selection.brushSize,
       });
     } else if (this.#selection.layer === "prop") {
@@ -480,7 +480,7 @@ export class EditorController implements IEditorController {
     const changed = this.#worldPainter.paintTerrainRect(this.#document, {
       from,
       to,
-      terrainId: erase ? "grass" : this.#selection.catalogId,
+      terrainId: erase ? undefined : this.#selection.catalogId,
     });
 
     if (changed) {
@@ -553,7 +553,7 @@ export class EditorController implements IEditorController {
     if (this.#selection.layer === "terrain") {
       return this.#worldPainter.paintTerrainBrush(this.#document, {
         center: coord,
-        terrainId: "grass",
+        terrainId: undefined,
         size: this.#selection.brushSize,
       });
     }

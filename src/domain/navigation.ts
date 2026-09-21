@@ -34,12 +34,12 @@ export class NavigationGridBuilder {
     options: NavigationBuildOptions = {},
   ): NavigationGrid {
     const mutable = document.tiles.map((tile) => {
-      const terrain = this.catalog.get(tile.terrainId);
+      const terrain = tile.terrainId ? this.catalog.get(tile.terrainId) : undefined;
       if (!terrain || terrain.layer !== "terrain") {
         return {
           walkable: false,
           movementCost: Number.POSITIVE_INFINITY,
-          blockedBy: ["unknown-terrain"],
+          blockedBy: [tile.terrainId ? "unknown-terrain" : "empty-terrain"],
         };
       }
 
